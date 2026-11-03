@@ -1,4 +1,5 @@
 "use client";
+import { StudentAvatar } from "./student-avatar";
 import { useState } from "react";
 import { Cake, ArrowRight } from "lucide-react";
 import { type Store, type Student, displayDate } from "@/lib/domain";
@@ -62,7 +63,8 @@ export function BirthdaysPanel({
                       .replace(".", "")}
               </small>
             </span>
-            <span>
+            <StudentAvatar student={b.student} size={28} />
+            <span className="birthday-name">
               <strong>{b.student.name}</strong>
               <small>
                 {store.classes.find((c) => c.id === b.student.class_id)?.name}

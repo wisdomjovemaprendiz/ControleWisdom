@@ -31,6 +31,24 @@ test("relatório institucional inclui imagem da marca, tabelas e paginação de 
     assert.equal(table.body.length, 100);
     assert.equal((table.body[99].raw as string[])[0], "Aluno 099");
     assert.ok(table.pageNumber > 1);
+    const portrait = new Uint8Array(
+      readFileSync(new URL("../public/wisdom-logo.jpg", import.meta.url)),
+    );
+    const photographed = await createInstitutionalPdf({
+      title: "Resumo da aula",
+      unit: "Unidade Centro",
+      author: "Equipe de teste",
+      lines: ["Aluno com foto | Presente", "Aluno sem foto | Atrasado"],
+      photos: [{ id: "s1", name: "Aluno com foto", data: portrait }],
+    });
+    const picturedTable = (
+      photographed as typeof photographed & { lastAutoTable: Table }
+    ).lastAutoTable;
+    assert.equal(picturedTable.body[0].cells[0].styles.minCellHeight, 11);
+    assert.notEqual(picturedTable.body[1].cells[0].styles.minCellHeight, 11);
+    assert.ok(
+      (photographed.output().match(/\/Subtype \/Image/g) || []).length >= 2,
+    );
   } finally {
     globalThis.fetch = original;
   }

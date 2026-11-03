@@ -1,4 +1,5 @@
 "use client";
+import { StudentAvatar } from "./student-avatar";
 import { useState } from "react";
 import { ArrowRight, Check, ClipboardList, Search } from "lucide-react";
 import {
@@ -95,10 +96,11 @@ export function FollowUpCenter({
             </div>
             <div className="followup-detail">
               <button
-                className="student-link"
+                className="student-link with-photo"
                 onClick={() => onStudent(task.student)}
               >
-                {task.student.name}
+                <StudentAvatar student={task.student} size={29} />
+                <span>{task.student.name}</span>
               </button>
               <h3>{task.title}</h3>
               <p>{task.detail}</p>

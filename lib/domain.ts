@@ -1,4 +1,4 @@
-export type Role = "coordenacao" | "secretaria" | "professor";
+export type Role = "admin" | "coordenacao" | "secretaria" | "professor";
 export type Status =
   "ativo" | "conclusao" | "inadimplencia" | "abandono" | "cancelamento";
 export type AttendanceStatus =
@@ -11,6 +11,9 @@ export interface Unit {
 export interface Profile {
   id: string;
   name: string;
+  username?: string | null;
+  active?: boolean;
+  must_change_password?: boolean;
   role: Role;
   unit_id: string;
 }
@@ -34,6 +37,7 @@ export interface Offering {
   courses: string;
 }
 export interface Student {
+  photo_path?: string | null;
   id: string;
   unit_id: string;
   class_id: string;
@@ -103,6 +107,7 @@ export interface Store {
   contacts: Contact[];
 }
 export const labels: Record<string, string> = {
+  admin: "Administrador",
   ativo: "Ativo",
   conclusao: "Conclusão",
   inadimplencia: "Inadimplência",
@@ -117,7 +122,13 @@ export const labels: Record<string, string> = {
   professor: "Professor",
 };
 export function canAccess(profile: Profile, unitId: string) {
-  return profile.role === "coordenacao" || profile.unit_id === unitId;
+  return (
+    profile.active !== false &&
+    !profile.must_change_password &&
+    (profile.role === "admin" ||
+      profile.role === "coordenacao" ||
+      profile.unit_id === unitId)
+  );
 }
 export function absenceCount(store: Store, studentId: string) {
   return store.attendance.filter(

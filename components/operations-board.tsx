@@ -1,4 +1,5 @@
 "use client";
+import { StudentAvatar } from "./student-avatar";
 import { BirthdaysPanel } from "./birthdays-panel";
 import { useState } from "react";
 import {
@@ -355,10 +356,11 @@ export function OperationsBoard({
                       <tr key={s.id}>
                         <td>
                           <button
-                            className="student-link"
+                            className="student-link with-photo"
                             onClick={() => onStudent(s)}
                           >
-                            {s.name}
+                            <StudentAvatar student={s} size={25} />
+                            <span>{s.name}</span>
                           </button>
                         </td>
                         {lessons.map((l) => {
@@ -454,10 +456,11 @@ export function OperationsBoard({
                   </div>
                   <h3>{task.title}</h3>
                   <button
-                    className="student-link"
+                    className="student-link with-photo"
                     onClick={() => onStudent(task.student)}
                   >
-                    {task.student.name}
+                    <StudentAvatar student={task.student} size={25} />
+                    <span>{task.student.name}</span>
                   </button>
                   <p>{task.detail}</p>
                   <button

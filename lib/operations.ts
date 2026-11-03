@@ -1,3 +1,4 @@
+import { isManager } from "@/lib/accounts";
 import {
   absenceCount,
   canAccess,
@@ -22,7 +23,7 @@ export function followUps(
 ): FollowUp[] {
   const visible = (unitId: string) =>
     canAccess(profile, unitId) &&
-    (profile.role !== "coordenacao" || unit === "all" || unit === unitId);
+    (!isManager(profile.role) || unit === "all" || unit === unitId);
   const students = store.students.filter(
     (s) => visible(s.unit_id) && s.status === "ativo",
   );

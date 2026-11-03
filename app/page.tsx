@@ -1,4 +1,5 @@
 "use client";
+import { isManager, loginAddress } from "@/lib/accounts";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -35,7 +36,17 @@ import { birthdaysThisWeek } from "@/lib/birthdays";
 import { OperationsBoard } from "@/components/operations-board";
 import { FollowUpCenter } from "@/components/follow-up-center";
 import { StudentDossier } from "@/components/student-dossier";
-import { demoStore } from "@/lib/demo";
+import { TeamManager } from "@/components/team-manager";
+import { PasswordChange } from "@/components/password-change";
+import { DailyAnalysis } from "@/components/daily-analysis";
+import { StudentAvatar } from "@/components/student-avatar";
+import { StudentPhotoEditor } from "@/components/student-photo-editor";
+import {
+  clearPhotoCache,
+  photoForReport,
+  type CompressedPhoto,
+  type ReportPhoto,
+} from "@/lib/photos";
 import { supabase } from "@/lib/supabase";
 import {
   type Store,
@@ -124,7 +135,7 @@ export default function App() {
       phone: string;
       title: string;
     } | null>(null),
-    [login, setLogin] = useState({ email: "", password: "" }),
+    [login, setLogin] = useState({ username: "", password: "" }),
     [sessionReady, setSessionReady] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -138,7 +149,14 @@ export default function App() {
     [marks, setMarks] = useState<Record<string, AttendanceStatus>>({}),
     [reportFrom, setReportFrom] = useState(""),
     [reportTo, setReportTo] = useState(today());
-  const isDemo = !supabase;
+  const [photoDraft, setPhotoDraft] = useState<CompressedPhoto | null>(null),
+    [removePhoto, setRemovePhoto] = useState(false),
+    [photoBusy, setPhotoBusy] = useState(false);
+  useEffect(() => {
+    setPhotoDraft(null);
+    setRemovePhoto(false);
+    setPhotoBusy(false);
+  }, [modal]);
   async function load() {
     if (!supabase) return;
     setBusy(true);
@@ -161,6 +179,13 @@ export default function App() {
         throw new Error(
           "Seu usuário ainda não possui perfil de acesso. Solicite o vínculo à coordenação.",
         );
+      if (p.active === false)
+        throw new Error("Seu acesso está desativado. Procure a administração.");
+      if (p.must_change_password) {
+        setProfile(p);
+        setStore(null);
+        return;
+      }
       const next = {} as Store;
       for (const table of tables) {
         const collected: unknown[] = [];
@@ -178,8 +203,10 @@ export default function App() {
       }
       setStore(next);
       setProfile(p);
-      setUnit(p.role === "coordenacao" ? "all" : p.unit_id);
+      setUnit(isManager(p.role) ? "all" : p.unit_id);
     } catch (e) {
+      setProfile(null);
+      setStore(null);
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -187,30 +214,24 @@ export default function App() {
     }
   }
   useEffect(() => {
-    if (isDemo) {
-      try {
-        const cached = localStorage.getItem("wisdom-demo-v2");
-        const data = cached ? JSON.parse(cached) : demoStore();
-        setStore(data);
-        setProfile(data.profiles[0]);
-      } catch {
-        const data = demoStore();
-        setStore(data);
-        setProfile(data.profiles[0]);
-      }
+    if (!supabase) {
+      setError("O acesso ainda não foi configurado. Procure a administração.");
       setSessionReady(true);
-    } else {
-      void load();
-      const { data } = supabase!.auth.onAuthStateChange(() => {
-        setTimeout(() => void load(), 0);
-      });
-      return () => data.subscription.unsubscribe();
+      return;
     }
+    void load();
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      clearPhotoCache();
+      if (event === "SIGNED_OUT") {
+        setProfile(null);
+        setStore(null);
+        setPage("overview");
+        return;
+      }
+      setTimeout(() => void load(), 0);
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
-  useEffect(() => {
-    if (isDemo && store)
-      localStorage.setItem("wisdom-demo-v2", JSON.stringify(store));
-  }, [store, isDemo]);
   useEffect(() => {
     if (notice) {
       const timer = setTimeout(() => setNotice(""), 5000);
@@ -218,7 +239,7 @@ export default function App() {
     }
   }, [notice]);
   const scoped = (id: string) =>
-    profile?.role === "coordenacao"
+    profile && isManager(profile.role)
       ? unit === "all" || id === unit
       : id === profile?.unit_id;
   const students = store?.students.filter((s) => scoped(s.unit_id)) || [],
@@ -271,7 +292,8 @@ export default function App() {
     setBusy(true);
     setError("");
     try {
-      if (supabase) {
+      if (!supabase) throw new Error("Acesso não configurado.");
+      {
         const { error } = await (table === "pedagogy" || table === "contacts"
           ? supabase.from(table).insert(record)
           : supabase.from(table).upsert(record));
@@ -307,16 +329,53 @@ export default function App() {
   async function loginSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase!.auth.signInWithPassword(login);
-    setBusy(false);
-    if (error) setError("Não foi possível entrar. Confira seu e-mail e senha.");
+    setError("");
+    try {
+      if (!supabase) throw new Error("Acesso não configurado.");
+      const email = loginAddress(login.username);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: login.password,
+      });
+      if (error)
+        throw new Error(
+          "Não foi possível entrar. Confira o nome de usuário e a senha.",
+        );
+      setLogin((current) => ({ ...current, password: "" }));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
   async function pdf(title: string, lines: string[]) {
     try {
       const { createInstitutionalPdf } = await import("@/lib/pdf");
       const scopeUnit =
-        profile?.role === "coordenacao" ? unit : profile?.unit_id;
+        profile && isManager(profile.role) ? unit : profile?.unit_id;
+      const photos: ReportPhoto[] = [];
+      const reportStudents = [
+        "Frequência e faltas",
+        "Acompanhamento pedagógico",
+        "Resumo da aula",
+        "Ficha do aluno",
+        "Evolução do aluno",
+        "Evolução pedagógica",
+      ].includes(title)
+        ? students.filter(
+            (s) => s.photo_path && lines.some((line) => line.includes(s.name)),
+          )
+        : [];
+      for (let i = 0; i < reportStudents.length; i += 4) {
+        const batch = await Promise.all(
+          reportStudents.slice(i, i + 4).map(photoForReport),
+        );
+        photos.push(...batch.filter((p): p is ReportPhoto => Boolean(p)));
+      }
       const doc = await createInstitutionalPdf({
+        photos,
+        featuredStudent:
+          title === "Ficha do aluno" ? reportStudents[0] : undefined,
         title,
         lines,
         unit:
@@ -343,14 +402,15 @@ export default function App() {
       return false;
     if (
       records.some(
-        (s) => profile.role !== "coordenacao" && s.unit_id !== profile.unit_id,
+        (s) => !isManager(profile.role) && s.unit_id !== profile.unit_id,
       )
     )
       return false;
     setBusy(true);
     try {
       let saved = records;
-      if (supabase) {
+      if (!supabase) return false;
+      {
         const { data, error } = await supabase
           .from("students")
           .insert(records)
@@ -412,7 +472,8 @@ export default function App() {
     setBusy(true);
     setError("");
     try {
-      if (supabase) {
+      if (!supabase) throw new Error("Acesso não configurado.");
+      {
         const { error } = await supabase.rpc("save_lesson_attendance", {
           lesson_data: lesson,
           attendance_data: rows,
@@ -453,6 +514,7 @@ export default function App() {
       const record: Student = {
         id,
         unit_id: c?.unit_id || "",
+        photo_path: previous?.photo_path || null,
         class_id: v("class_id"),
         offering_id: v("offering_id") || null,
         name: v("name"),
@@ -501,6 +563,56 @@ export default function App() {
         return;
       }
       ok = await save("students", record);
+      if (ok && supabase && (photoDraft || removePhoto)) {
+        setBusy(true);
+        const oldPath = previous?.photo_path || null;
+        let uploadedPath: string | null = null;
+        try {
+          if (photoDraft) {
+            uploadedPath = `${record.unit_id}/${record.id}/${crypto.randomUUID()}.${photoDraft.extension}`;
+            const upload = await supabase.storage
+              .from("student-photos")
+              .upload(uploadedPath, photoDraft.blob, {
+                contentType: photoDraft.blob.type,
+                upsert: false,
+                cacheControl: "3600",
+              });
+            if (upload.error) throw upload.error;
+          }
+          const change = await supabase
+            .from("students")
+            .update({ photo_path: uploadedPath })
+            .eq("id", record.id);
+          if (change.error) throw change.error;
+          setStore((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  students: prev.students.map((st) =>
+                    st.id === record.id
+                      ? { ...st, photo_path: uploadedPath }
+                      : st,
+                  ),
+                }
+              : prev,
+          );
+          clearPhotoCache();
+          if (oldPath)
+            await supabase.storage.from("student-photos").remove([oldPath]);
+        } catch {
+          if (uploadedPath)
+            await supabase.storage
+              .from("student-photos")
+              .remove([uploadedPath]);
+          setModal(null);
+          setError(
+            "A matrícula foi salva, mas a foto não pôde ser atualizada. Abra a edição do aluno para tentar novamente.",
+          );
+          return;
+        } finally {
+          setBusy(false);
+        }
+      }
     }
     if (modal.kind === "class") {
       const p = store.profiles.find((p) => p.id === v("teacher_id"));
@@ -591,14 +703,6 @@ export default function App() {
         next_contact: v("next_contact"),
       } as Contact);
     }
-    if (modal.kind === "profile") {
-      ok = await save("profiles", {
-        id: v("id"),
-        name: v("name"),
-        role: v("role") as Role,
-        unit_id: v("unit_id"),
-      });
-    }
     if (ok) {
       setModal(null);
       notify("Registro salvo com sucesso.");
@@ -609,6 +713,20 @@ export default function App() {
       <div className="loading">
         <Loader2 className="spin" /> Preparando seu espaço…
       </div>
+    );
+  if (profile?.must_change_password)
+    return (
+      <main className="password-required">
+        <img src="/wisdom-logo.svg" alt="Wisdom Cursos" />
+        <PasswordChange
+          required
+          onDone={() => {
+            setProfile(null);
+            setStore(null);
+            setNotice("Senha alterada. Entre novamente com sua senha pessoal.");
+          }}
+        />
+      </main>
     );
   if (!profile || !store)
     return (
@@ -640,13 +758,13 @@ export default function App() {
             </div>
           )}
           <label>
-            E-mail
+            Nome de usuário
             <input
-              type="email"
+              type="text"
               autoComplete="username"
               required
-              value={login.email}
-              onChange={(e) => setLogin({ ...login, email: e.target.value })}
+              value={login.username}
+              onChange={(e) => setLogin({ ...login, username: e.target.value })}
             />
           </label>
           <label>
@@ -660,7 +778,7 @@ export default function App() {
               onChange={(e) => setLogin({ ...login, password: e.target.value })}
             />
           </label>
-          <button className="primary" disabled={busy}>
+          <button className="primary" disabled={busy || !supabase}>
             {busy ? "Entrando…" : "Entrar"}
             <ArrowRight size={17} />
           </button>
@@ -680,9 +798,9 @@ export default function App() {
     store.classes.find((c) => c.id === id)?.name || "—";
   const studentName = (id: string | null) =>
     store.students.find((s) => s.id === id)?.name || "Toda a turma";
-  const currentUnit = profile.role === "coordenacao" ? unit : profile.unit_id;
+  const currentUnit = isManager(profile.role) ? unit : profile.unit_id;
   const unitOptions = store.units.filter(
-    (u) => profile.role === "coordenacao" || u.id === profile.unit_id,
+    (u) => isManager(profile.role) || u.id === profile.unit_id,
   );
   const reportLessons = store.lessons.filter(
     (l) =>
@@ -718,7 +836,7 @@ export default function App() {
           <strong>Olá, {profile.name.split(" ")[0]}!</strong>
           <span>
             {labels[profile.role]} •{" "}
-            {profile.role === "coordenacao"
+            {isManager(profile.role)
               ? "Visão das unidades"
               : store.units.find((u) => u.id === profile.unit_id)?.name}
           </span>
@@ -742,10 +860,8 @@ export default function App() {
           </button>
         </form>
         <div className="institutional-tools">
-          <span className="system-label">
-            {isDemo ? "DEMONSTRAÇÃO" : "ÁREA DA EQUIPE"}
-          </span>
-          {!isDemo && (
+          <span className="system-label">ÁREA DA EQUIPE</span>
+          {supabase && (
             <button
               className="icon-button"
               title="Atualizar dados"
@@ -785,7 +901,7 @@ export default function App() {
             </span>
             <div className="avatar">{initials(profile.name)}</div>
           </div>
-          {!isDemo && (
+          {supabase && (
             <button
               className="icon-button"
               title="Sair"
@@ -809,11 +925,7 @@ export default function App() {
         aria-label="Módulos do sistema"
       >
         {nav
-          .filter(
-            (n) =>
-              !["units", "settings"].includes(n[0]) ||
-              profile.role === "coordenacao",
-          )
+          .filter((n) => n[0] !== "units" || isManager(profile.role))
           .map(([key, label, Icon], index) => (
             <button
               key={key}
@@ -830,15 +942,6 @@ export default function App() {
       </nav>
       <div className="main-shell">
         <main className="content">
-          {isDemo && (
-            <div className="demo-strip">
-              <span>DEMONSTRAÇÃO</span> Dados fictícios para avaliação dos
-              fluxos. As alterações ficam neste navegador.{" "}
-              <button onClick={() => goto("settings")}>
-                Configurar acesso <ArrowUpRight size={13} />
-              </button>
-            </div>
-          )}
           <div className="page-heading">
             <div>
               <div className="eyebrow">
@@ -898,7 +1001,7 @@ export default function App() {
                 <select
                   aria-label="Filtrar unidade"
                   value={currentUnit}
-                  disabled={profile.role !== "coordenacao"}
+                  disabled={!isManager(profile.role)}
                   onChange={(e) => {
                     setUnit(e.target.value);
                     setStudentClass("all");
@@ -906,7 +1009,7 @@ export default function App() {
                     setDossierId(null);
                   }}
                 >
-                  {profile.role === "coordenacao" && (
+                  {isManager(profile.role) && (
                     <option value="all">Todas as unidades</option>
                   )}
                   {unitOptions.map((u) => (
@@ -1056,7 +1159,7 @@ export default function App() {
                       <tr key={s.id}>
                         <td>
                           <div className="person">
-                            <div className="avatar">{initials(s.name)}</div>
+                            <StudentAvatar student={s} />
                             <div>
                               <button
                                 className="student-link"
@@ -1442,7 +1545,7 @@ export default function App() {
                   .map((s) => (
                     <div className="attendance-row" key={s.id}>
                       <div className="person">
-                        <div className="avatar">{initials(s.name)}</div>
+                        <StudentAvatar student={s} />
                         <button
                           className="student-link"
                           type="button"
@@ -1546,7 +1649,17 @@ export default function App() {
                         </Badge>
                         <small>{displayDate(p.date)}</small>
                       </div>
-                      <h2>{studentName(p.student_id)}</h2>
+                      <h2 className="student-heading">
+                        {p.student_id &&
+                          store.students.find((s) => s.id === p.student_id) && (
+                            <StudentAvatar
+                              student={store.students.find(
+                                (s) => s.id === p.student_id,
+                              )!}
+                            />
+                          )}{" "}
+                        {studentName(p.student_id)}
+                      </h2>
                       <p>{className(p.class_id)}</p>
                       <div className="skill-level">
                         <span>{p.skill}</span>
@@ -1624,6 +1737,13 @@ export default function App() {
                   .map((c) => (
                     <div className="history-item" key={c.id}>
                       <strong>
+                        {store.students.find((s) => s.id === c.student_id) && (
+                          <StudentAvatar
+                            student={store.students.find(
+                              (s) => s.id === c.student_id,
+                            )!}
+                          />
+                        )}{" "}
                         {studentName(c.student_id)}{" "}
                         <small>{displayDate(c.date)}</small>
                       </strong>
@@ -1644,6 +1764,9 @@ export default function App() {
           )}
           {page === "reports" && (
             <>
+              {isManager(profile.role) && (
+                <DailyAnalysis unit={currentUnit} units={store.units} />
+              )}
               <section className="panel report-filters">
                 <Filter size={19} />
                 <strong>Período dos relatórios</strong>
@@ -1825,7 +1948,7 @@ export default function App() {
               </section>
             </>
           )}
-          {page === "units" && profile.role === "coordenacao" && (
+          {page === "units" && isManager(profile.role) && (
             <div className="class-grid">
               {store.units.map((u) => (
                 <section className="panel class-card" key={u.id}>
@@ -1866,121 +1989,22 @@ export default function App() {
             </div>
           )}
           {page === "settings" && (
-            <>
-              <div className="info-banner">
-                <Settings size={23} />
-                <div>
-                  <strong>
-                    {isDemo
-                      ? "Explore os perfis de demonstração"
-                      : "Acesso definido pelo perfil autenticado"}
-                  </strong>
-                  <p>
-                    {isDemo
-                      ? "A troca abaixo existe apenas na demonstração. Em produção, o banco aplica as permissões de cada usuário."
-                      : "Professores e secretaria acessam sua unidade. A coordenação tem visão consolidada."}
-                  </p>
-                </div>
-              </div>
-              {isDemo && (
-                <section className="panel settings-panel">
-                  <h2>Testar um perfil</h2>
-                  <div className="profile-options">
-                    {store.profiles.map((p) => (
-                      <button
-                        key={p.id}
-                        className={p.id === profile.id ? "selected" : ""}
-                        onClick={() => {
-                          setProfile(p);
-                          setUnit(p.role === "coordenacao" ? "all" : p.unit_id);
-                          setPage("overview");
-                          setClassId("");
-                          notify(`Visão de ${labels[p.role]} ativada.`);
-                        }}
-                      >
-                        <div className="avatar">{initials(p.name)}</div>
-                        <strong>{p.name}</strong>
-                        <small>
-                          {labels[p.role]} •{" "}
-                          {store.units.find((u) => u.id === p.unit_id)?.name}
-                        </small>
-                      </button>
-                    ))}
-                  </div>
-                  <p>
-                    Para ativar o banco real, configure as variáveis do Supabase
-                    conforme o README. Os dados de demonstração não são enviados
-                    ao banco.
-                  </p>
-                  <button
-                    className="secondary"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Restaurar os dados fictícios e apagar as alterações da demonstração?",
-                        )
-                      ) {
-                        const data = demoStore();
-                        setStore(data);
-                        setProfile(data.profiles[0]);
-                        setUnit("all");
-                        notify("Demonstração restaurada.");
-                      }
-                    }}
-                  >
-                    Restaurar demonstração
-                  </button>
-                </section>
+            <div className="account-settings">
+              {profile.role === "admin" && (
+                <TeamManager
+                  profiles={store.profiles}
+                  units={store.units}
+                  actor={profile}
+                  onSaved={load}
+                />
               )}
-              {profile.role === "coordenacao" && (
-                <section className="panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>Equipe e permissões</h2>
-                      <p>
-                        Cadastre primeiro o usuário em Supabase Authentication e
-                        vincule seu UUID ao perfil.
-                      </p>
-                    </div>
-                    <button
-                      className="primary"
-                      onClick={() => setModal({ kind: "profile" })}
-                    >
-                      <Plus size={17} /> Vincular usuário
-                    </button>
-                  </div>
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>NOME</th>
-                          <th>PERFIL</th>
-                          <th>UNIDADE</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {store.profiles.map((p) => (
-                          <tr key={p.id}>
-                            <td>
-                              <strong>{p.name}</strong>
-                            </td>
-                            <td>
-                              <Badge tone="neutral">{labels[p.role]}</Badge>
-                            </td>
-                            <td>
-                              {
-                                store.units.find((u) => u.id === p.unit_id)
-                                  ?.name
-                              }
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              )}
-            </>
+              <PasswordChange
+                onDone={() => {
+                  setProfile(null);
+                  setStore(null);
+                }}
+              />
+            </div>
           )}
           <footer className="page-footer">
             <span>
@@ -2045,7 +2069,8 @@ export default function App() {
         <div
           className="modal-overlay"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget && !busy) setModal(null);
+            if (e.target === e.currentTarget && !busy && !photoBusy)
+              setModal(null);
           }}
         >
           <section
@@ -2069,7 +2094,6 @@ export default function App() {
                         archive: "Arquivar matrícula",
                         pedagogy: "Registro pedagógico",
                         contact: "Registrar contato",
-                        profile: "Vincular usuário",
                         offering: modal.data
                           ? "Editar formação"
                           : "Novo curso ou pacote",
@@ -2082,6 +2106,7 @@ export default function App() {
                 className="icon-button"
                 type="button"
                 aria-label="Fechar"
+                disabled={busy || photoBusy}
                 onClick={() => setModal(null)}
               >
                 <X size={21} />
@@ -2095,6 +2120,15 @@ export default function App() {
               )}
               {modal.kind === "student" && (
                 <>
+                  <StudentPhotoEditor
+                    key={modal.data?.id || "new"}
+                    student={modal.data as Student | undefined}
+                    onChange={(photo, remove) => {
+                      setPhotoDraft(photo);
+                      setRemovePhoto(remove);
+                    }}
+                    onBusy={setPhotoBusy}
+                  />
                   <div className="form-section-label">DADOS DO ALUNO</div>
                   <label>
                     Nome completo *
@@ -2256,12 +2290,11 @@ export default function App() {
                       </option>
                       {store.profiles
                         .filter(
-                          (p) =>
-                            p.role === "professor" || p.role === "coordenacao",
+                          (p) => p.role === "professor" || isManager(p.role),
                         )
                         .filter(
                           (p) =>
-                            profile.role === "coordenacao" ||
+                            isManager(profile.role) ||
                             p.unit_id === profile.unit_id,
                         )
                         .map((p) => (
@@ -2536,11 +2569,12 @@ export default function App() {
                 <button
                   type="button"
                   className="secondary"
+                  disabled={busy || photoBusy}
                   onClick={() => setModal(null)}
                 >
                   Cancelar
                 </button>
-                <button className="primary" disabled={busy}>
+                <button className="primary" disabled={busy || photoBusy}>
                   {busy ? "Salvando…" : "Salvar registro"}
                   <Check size={16} />
                 </button>

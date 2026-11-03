@@ -1,4 +1,5 @@
 "use client";
+import { isManager } from "@/lib/accounts";
 import { useState } from "react";
 import {
   Upload,
@@ -29,7 +30,7 @@ export function StudentImporter({
   onImport: (students: Student[]) => Promise<boolean>;
 }) {
   const units = store.units.filter(
-    (u) => profile.role === "coordenacao" || u.id === profile.unit_id,
+    (u) => isManager(profile.role) || u.id === profile.unit_id,
   );
   const [unit, setUnit] = useState(initialUnit === "all" ? "" : initialUnit),
     [raw, setRaw] = useState<ImportCell[][]>([]),
@@ -155,7 +156,7 @@ export function StudentImporter({
               <select
                 aria-label="Unidade da importação"
                 value={unit}
-                disabled={busy || profile.role !== "coordenacao"}
+                disabled={busy || !isManager(profile.role)}
                 onChange={(e) => {
                   setUnit(e.target.value);
                   setRows([]);

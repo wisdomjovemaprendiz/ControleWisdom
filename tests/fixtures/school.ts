@@ -1,6 +1,6 @@
-import type { Store } from "./domain";
-import { today } from "./domain";
-export function demoStore(): Store {
+import type { Store } from "../../lib/domain";
+import { today } from "../../lib/domain";
+export function schoolFixture(): Store {
   const d = today();
   return {
     offerings: [
@@ -44,10 +44,42 @@ export function demoStore(): Store {
       },
     ],
     profiles: [
-      { id: "p1", name: "Marina Costa", role: "coordenacao", unit_id: "u1" },
-      { id: "p2", name: "Ana Oliveira", role: "professor", unit_id: "u1" },
-      { id: "p3", name: "Lucas Santos", role: "secretaria", unit_id: "u1" },
-      { id: "p4", name: "Pedro Lima", role: "professor", unit_id: "u2" },
+      {
+        id: "p1",
+        name: "Marina Costa",
+        username: "admin",
+        active: true,
+        must_change_password: false,
+        role: "admin",
+        unit_id: "u1",
+      },
+      {
+        id: "p2",
+        name: "Ana Oliveira",
+        username: "ana.oliveira",
+        active: true,
+        must_change_password: false,
+        role: "professor",
+        unit_id: "u1",
+      },
+      {
+        id: "p3",
+        name: "Lucas Santos",
+        username: "secretaria",
+        active: true,
+        must_change_password: false,
+        role: "secretaria",
+        unit_id: "u1",
+      },
+      {
+        id: "p4",
+        name: "Pedro Lima",
+        username: "pedro.lima",
+        active: true,
+        must_change_password: false,
+        role: "professor",
+        unit_id: "u2",
+      },
     ],
     classes: [
       {

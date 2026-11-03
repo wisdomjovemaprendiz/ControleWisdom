@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { demoStore } from "../lib/demo";
+import { schoolFixture } from "./fixtures/school";
 import {
   canAccess,
   absenceCount,
@@ -11,20 +11,20 @@ import {
   whatsappUrl,
 } from "../lib/domain";
 test("professor e secretaria só acessam a própria unidade; coordenação acessa todas", () => {
-  const store = demoStore();
+  const store = schoolFixture();
   for (const profile of store.profiles) {
     assert.equal(
       canAccess(profile, "u1"),
-      profile.role === "coordenacao" || profile.unit_id === "u1",
+      (profile.role === "coordenacao" || profile.role === "admin") || profile.unit_id === "u1",
     );
     assert.equal(
       canAccess(profile, "u2"),
-      profile.role === "coordenacao" || profile.unit_id === "u2",
+      (profile.role === "coordenacao" || profile.role === "admin") || profile.unit_id === "u2",
     );
   }
 });
 test("faltas e frequência tratam atraso como presença e excluem justificativas", () => {
-  const s = demoStore();
+  const s = schoolFixture();
   assert.equal(absenceCount(s, "s3"), 3);
   assert.equal(frequency(s, "s3"), 0);
   assert.equal(frequency(s, "s5"), 100);
@@ -39,7 +39,7 @@ test("faltas e frequência tratam atraso como presença e excluem justificativas
   assert.equal(frequency(s, "s5"), 100);
 });
 test("resumo inclui conteúdo, professor e situações da chamada correta", () => {
-  const s = demoStore(),
+  const s = schoolFixture(),
     message = attendanceMessage(s, s.lessons[0]);
   assert.match(message, /Planilhas/);
   assert.match(message, /Ana Oliveira/);
@@ -51,7 +51,7 @@ test("resumo inclui conteúdo, professor e situações da chamada correta", () =
   assert.doesNotMatch(message, /Valentina Ribeiro/);
 });
 test("evolução individual não mistura registros de outros alunos", () => {
-  const s = demoStore(),
+  const s = schoolFixture(),
     message = evolutionMessage(s, s.students[0]);
   assert.match(message, /Resolve fórmulas/);
   assert.doesNotMatch(message, /As faltas estão/);

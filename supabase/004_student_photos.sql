@@ -1,0 +1,12 @@
+begin;
+alter table public.students add column if not exists photo_path text;
+alter table public.students drop constraint if exists students_photo_path_check;
+alter table public.students add constraint students_photo_path_check check(photo_path is null or photo_path ~ ('^'||unit_id::text||'/'||id::text||'/[0-9a-f-]{36}\.(webp|jpg)$'));
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('student-photos','student-photos',false,102400,array['image/webp','image/jpeg']) on conflict(id) do update set public=false,file_size_limit=102400,allowed_mime_types=array['image/webp','image/jpeg'];
+drop policy if exists wisdom_student_photo_read on storage.objects;
+drop policy if exists wisdom_student_photo_insert on storage.objects;
+drop policy if exists wisdom_student_photo_delete on storage.objects;
+create policy wisdom_student_photo_read on storage.objects for select to authenticated using(bucket_id='student-photos' and exists(select 1 from public.students s where s.unit_id::text=(storage.foldername(storage.objects.name))[1] and s.id::text=(storage.foldername(storage.objects.name))[2] and public.can_access(s.unit_id)));
+create policy wisdom_student_photo_insert on storage.objects for insert to authenticated with check(bucket_id='student-photos' and exists(select 1 from public.students s where s.unit_id::text=(storage.foldername(storage.objects.name))[1] and s.id::text=(storage.foldername(storage.objects.name))[2] and public.can_access(s.unit_id)));
+create policy wisdom_student_photo_delete on storage.objects for delete to authenticated using(bucket_id='student-photos' and exists(select 1 from public.students s where s.unit_id::text=(storage.foldername(storage.objects.name))[1] and s.id::text=(storage.foldername(storage.objects.name))[2] and public.can_access(s.unit_id)));
+commit;

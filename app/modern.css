@@ -252,25 +252,6 @@ body {
 .content {
   padding: 13px 4px 0 13px;
 }
-.demo-strip {
-  font-size: 9px;
-  color: #969c9b;
-  margin: 0 0 20px;
-  gap: 7px;
-}
-.demo-strip > span {
-  font-size: 7px;
-  padding: 3px 5px;
-  border: 0;
-  border-radius: 4px;
-  background: #e1e5e1;
-  color: #879185;
-}
-.demo-strip button {
-  font-size: 9px;
-  text-decoration: none;
-  color: #8f9cad;
-}
 .page-heading {
   margin: 0 0 24px;
   gap: 20px;
@@ -1986,19 +1967,6 @@ td small {
   .content {
     padding: 9px 0 0;
   }
-  .demo-strip {
-    font-size: 8px;
-    line-height: 1.8;
-    gap: 6px;
-    margin-bottom: 18px;
-  }
-  .demo-strip > span {
-    font-size: 6px;
-    padding: 2px 4px;
-  }
-  .demo-strip button {
-    font-size: 8px;
-  }
   .page-heading {
     margin: 0 0 20px;
     gap: 15px;
@@ -2880,5 +2848,278 @@ td small {
   }
   .journal-table .student-link {
     font-size: 11px;
+  }
+}
+.student-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  border-radius: 10px;
+  background: #edf2f9;
+  color: #89a1c1;
+  font-family: Manrope, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.student-avatar img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+}
+.with-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.student-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.history-item > strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dossier-photo {
+  margin-bottom: 20px;
+}
+.dossier-photo .student-avatar {
+  font-size: 20px;
+  border-radius: 17px;
+}
+.birthday-student .birthday-name {
+  flex: 1;
+  min-width: 0;
+}
+.birthday-student .birthday-name > strong {
+  font-size: 10px;
+  color: #6d87a7;
+  font-weight: 600;
+}
+.birthday-student .birthday-name > small {
+  display: block;
+  font-size: 8px;
+  color: #8a9db4;
+  margin-top: 4px;
+  line-height: 1.6;
+}
+.birthday-student > .student-avatar {
+  border-radius: 9px;
+}
+.student-photo-editor {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #f6f9fd;
+  border: 1px solid #e7eef7;
+  border-radius: 15px;
+  padding: 19px;
+}
+.photo-editor-preview {
+  width: 76px;
+  height: 76px;
+  border-radius: 15px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf0f8;
+  color: #9bb1ce;
+  flex-shrink: 0;
+}
+.photo-editor-preview > img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+.photo-editor-preview .student-avatar {
+  border-radius: 15px;
+}
+.student-photo-editor strong {
+  font-size: 12px;
+  color: #6a85a8;
+}
+.student-photo-editor p {
+  font-size: 10px;
+  color: #95a7bf;
+  line-height: 1.8;
+  margin: 5px 0 11px;
+}
+.photo-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.photo-file-label {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  font-size: 10px !important;
+  flex-direction: row;
+  gap: 7px !important;
+  align-items: center;
+  padding: 9px 11px !important;
+  min-height: 32px;
+}
+.photo-file-label input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+}
+.student-photo-editor small {
+  display: block;
+  font-size: 9px;
+  color: #91a7c1;
+  margin-top: 9px;
+}
+.photo-error {
+  color: #b97e77 !important;
+}
+.account-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.team-notice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 24px 20px;
+  padding: 15px 17px;
+  background: #edf6f0;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #709a82;
+}
+.password-change {
+  width: 440px;
+  max-width: 100%;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+}
+.password-change h2 {
+  font-size: 23px;
+  color: #537194;
+}
+.password-change > p {
+  font-size: 12px;
+  color: #8da2bc;
+}
+.password-change label {
+  font-size: 11px;
+  color: #8a9fba;
+}
+.password-change input {
+  border-color: #e3ebf5;
+  border-radius: 10px;
+}
+.password-change > small {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #9aacc4;
+}
+.password-required {
+  min-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  gap: 27px;
+}
+.password-required > img {
+  width: 125px;
+  height: 84px;
+  object-fit: contain;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-direction: row !important;
+}
+.checkbox-label input {
+  width: 17px;
+  height: 17px;
+}
+.daily-analysis {
+  margin-bottom: 24px;
+}
+.daily-analysis > .panel-header > svg {
+  color: #9bb0cd;
+}
+@media (max-width: 700px) {
+  .with-photo {
+    gap: 7px;
+  }
+  .student-photo-editor {
+    padding: 16px;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .photo-editor-preview {
+    width: 62px;
+    height: 62px;
+    border-radius: 13px;
+  }
+  .photo-editor-preview .student-avatar {
+    width: 62px !important;
+    min-width: 62px !important;
+    height: 62px !important;
+  }
+  .student-photo-editor strong {
+    font-size: 11px;
+  }
+  .student-photo-editor p {
+    font-size: 9px;
+  }
+  .photo-editor-actions {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .photo-file-label {
+    font-size: 9px !important;
+  }
+  .photo-editor-actions .text-link {
+    font-size: 9px;
+  }
+  .password-change {
+    padding: 23px;
+    gap: 18px;
+  }
+  .password-change h2 {
+    font-size: 23px;
+  }
+  .team-notice {
+    font-size: 11px;
+    margin: 0 17px 19px;
+  }
+  .birthday-student .birthday-name > strong {
+    font-size: 10px;
+  }
+  .birthday-student .birthday-name > small {
+    font-size: 8px;
+  }
+  .birthday-student .student-avatar {
+    width: 25px !important;
+    min-width: 25px !important;
+    height: 25px !important;
+  }
+  .journal-table td:first-child {
+    min-width: 190px;
+  }
+  .password-required {
+    padding: 24px 12px;
   }
 }

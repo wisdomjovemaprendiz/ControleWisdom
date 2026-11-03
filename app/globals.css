@@ -311,33 +311,6 @@ small {
 .content {
   padding: 24px 42px 0;
 }
-.demo-strip {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #6f756d;
-  font-size: 11px;
-  margin-bottom: 28px;
-}
-.demo-strip > span {
-  font-size: 9px;
-  letter-spacing: 0.8px;
-  font-weight: 700;
-  background: #e8e6dc;
-  border: 1px solid #d8d6ca;
-  padding: 4px 6px;
-  color: #757262;
-}
-.demo-strip button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  margin-left: auto;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  color: #4f657d;
-}
 .page-heading {
   display: flex;
   justify-content: space-between;
@@ -1567,34 +1540,6 @@ tr:last-child td {
   color: #7d8fa2;
   margin: 24px 0;
 }
-.profile-options {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-top: 25px;
-}
-.profile-options > button {
-  padding: 22px;
-  text-align: left;
-  border: 1px solid #cdd5df;
-  background: #f8fafb;
-  border-radius: 2px;
-}
-.profile-options > button.selected {
-  border-color: #5d7fa7;
-  background: #eaf0f8;
-}
-.profile-options strong {
-  display: block;
-  font-size: 13px;
-  margin-top: 16px;
-}
-.profile-options small {
-  font-size: 11px;
-  display: block;
-  line-height: 1.7;
-  margin-top: 8px;
-}
 .empty {
   display: flex;
   flex-direction: column;
@@ -2287,9 +2232,6 @@ tr:last-child td {
   .class-directory td {
     font-size: 11px;
   }
-  .profile-options {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 @media (max-width: 950px) {
   .system-label,
@@ -2551,24 +2493,6 @@ tr:last-child td {
   }
   .content {
     padding: 19px 17px 0;
-  }
-  .demo-strip {
-    font-size: 9px;
-    line-height: 1.7;
-    align-items: flex-start;
-    gap: 7px;
-    flex-wrap: wrap;
-    margin-bottom: 22px;
-  }
-  .demo-strip > span {
-    font-size: 7px;
-    padding: 2px 4px;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-  .demo-strip button {
-    font-size: 9px;
-    margin-left: auto;
   }
   .page-heading {
     margin: 0 0 23px;
@@ -3087,18 +3011,6 @@ tr:last-child td {
   .report-card p {
     font-size: 13px;
   }
-  .profile-options {
-    gap: 10px;
-  }
-  .profile-options > button {
-    padding: 17px;
-  }
-  .profile-options strong {
-    font-size: 12px;
-  }
-  .profile-options small {
-    font-size: 10px;
-  }
   .settings-panel {
     padding: 21px;
   }
@@ -3256,18 +3168,6 @@ tr:last-child td {
   }
 }
 @media print {
-  .institutional-header,
-  .module-navigation,
-  .demo-strip,
-  .heading-actions,
-  .page-footer,
-  .row-actions,
-  .toast,
-  .operational-shortcuts,
-  .queue-footer,
-  .journal-actions {
-    display: none;
-  }
   .content {
     padding: 0;
   }

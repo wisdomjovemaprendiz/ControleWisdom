@@ -1,4 +1,5 @@
 "use client";
+import { StudentAvatar } from "./student-avatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Download, MessageCircle, Pencil, X } from "lucide-react";
 import {
@@ -99,12 +100,8 @@ export function StudentDossier({
           </button>
         </header>
         <div className="dossier-identity">
-          <div className="dossier-monogram">
-            {s.name
-              .split(" ")
-              .slice(0, 2)
-              .map((n) => n[0])
-              .join("")}
+          <div className="dossier-photo">
+            <StudentAvatar student={s} size={68} />
           </div>
           <span
             className={`attendance-state ${s.status === "ativo" ? "done" : "pending"}`}

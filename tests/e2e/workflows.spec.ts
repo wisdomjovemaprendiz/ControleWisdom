@@ -1,11 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { installSchoolApi, login } from "../support/supabase";
+let schoolApi: Awaited<ReturnType<typeof installSchoolApi>>;
 test.beforeEach(async ({ page }) => {
+  schoolApi = await installSchoolApi(page);
   await page.goto("/");
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Operação das unidades" }),
-  ).toBeVisible();
+  await login(page);
 });
 test("matrícula expressa persiste e busca encontra aluno", async ({ page }) => {
   await page
@@ -84,7 +83,8 @@ test("filtro de unidade e perfil restringem dados na interface", async ({
     .locator("nav")
     .getByRole("button", { name: "Equipe e acesso", exact: true })
     .click();
-  await page.getByRole("button", { name: /Ana Oliveira Professor/ }).click();
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "ana.oliveira");
   await expect(page.getByLabel("Filtrar unidade")).toBeDisabled();
   await expect(
     page.locator("nav").getByRole("button", { name: "Unidades", exact: true }),
@@ -383,4 +383,147 @@ test("alterações não salvas exigem finalizar novamente antes de compartilhar"
       exact: true,
     }),
   ).toBeEnabled();
+});
+
+test("administrador cria login e senha sem cadastro de e-mail", async ({
+  page,
+}) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Equipe e acesso", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Novo usuário", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Criar usuário" });
+  await dialog
+    .getByLabel("Nome completo", { exact: true })
+    .fill("Professora de Teste");
+  await dialog
+    .getByLabel("Nome de login", { exact: true })
+    .fill("professora.teste");
+  await dialog
+    .getByLabel("Senha inicial", { exact: true })
+    .fill("SenhaInicialTeste123");
+  await dialog
+    .getByLabel("Confirmar senha inicial", { exact: true })
+    .fill("SenhaInicialTeste123");
+  await expect(dialog.getByLabel("E-mail", { exact: true })).toHaveCount(0);
+  await dialog
+    .getByRole("button", { name: "Criar login", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    page.getByText("professora.teste", { exact: true }),
+  ).toBeVisible();
+  expect(
+    schoolApi.store.profiles.find((p) => p.username === "professora.teste")
+      ?.must_change_password,
+  ).toBe(true);
+});
+test("primeiro acesso exige senha pessoal antes de mostrar alunos", async ({
+  page,
+}) => {
+  schoolApi.store.profiles.find((p) => p.id === "p2")!.must_change_password =
+    true;
+  await page.getByTitle("Sair", { exact: true }).click();
+  await page
+    .getByLabel("Nome de usuário", { exact: true })
+    .fill("ana.oliveira");
+  await page.getByLabel("Senha", { exact: true }).fill("SenhaInicialTeste123");
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Defina sua senha pessoal" }),
+  ).toBeVisible();
+  await expect(page.locator("nav")).toHaveCount(0);
+  await expect(page.getByText("Gabriel Almeida", { exact: true })).toHaveCount(
+    0,
+  );
+  await page
+    .getByLabel("Nova senha", { exact: true })
+    .fill("MinhaSenhaPessoal123");
+  await page
+    .getByLabel("Confirmar nova senha", { exact: true })
+    .fill("MinhaSenhaPessoal123");
+  await page
+    .getByRole("button", { name: "Salvar nova senha e entrar novamente" })
+    .click();
+  await expect(
+    page.getByLabel("Nome de usuário", { exact: true }),
+  ).toBeVisible();
+  await login(page, "ana.oliveira");
+});
+test("foto é comprimida antes do envio e aparece no cadastro e na chamada", async ({
+  page,
+}) => {
+  const data = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1600;
+    canvas.height = 1200;
+    const context = canvas.getContext("2d")!;
+    const gradient = context.createLinearGradient(0, 0, 1600, 1200);
+    gradient.addColorStop(0, "#12458a");
+    gradient.addColorStop(1, "#ed3548");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 1600, 1200);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nome completo").fill("Aluno Com Foto");
+  await dialog.getByLabel("Turma *").selectOption("c1");
+  await dialog.getByLabel("WhatsApp do responsável").fill("5511999999999");
+  await dialog
+    .getByLabel("Foto do aluno", { exact: true })
+    .setInputFiles({
+      name: "foto.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(data, "base64"),
+    });
+  await expect(dialog.getByText(/Foto pronta:/)).toBeVisible();
+  await dialog.getByRole("button", { name: "Salvar registro" }).click();
+  await expect(dialog).toHaveCount(0);
+  const student = schoolApi.store.students.find(
+    (s) => s.name === "Aluno Com Foto",
+  )!;
+  expect(student.photo_path).toMatch(/u1\/.+\/.+\.(webp|jpg)$/);
+  const object = schoolApi.objects.get(student.photo_path!)!;
+  expect(object.body.length).toBeLessThanOrEqual(102400);
+  expect(["image/webp", "image/jpeg"]).toContain(object.type);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  await page
+    .getByPlaceholder("Buscar aluno ou responsável…")
+    .fill("Aluno Com Foto");
+  await expect(page.locator("tbody .student-avatar img")).toBeVisible();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Chamada", exact: true })
+    .click();
+  await expect(
+    page
+      .locator(".attendance-row")
+      .filter({ hasText: "Aluno Com Foto" })
+      .locator("img"),
+  ).toBeVisible();
+});
+test("saída retorna ao login e não há dados ou seletor de demonstração", async ({
+  page,
+}) => {
+  await expect(
+    page.getByText(/DEMONSTRAÇÃO|Restaurar demonstração|Testar um perfil/),
+  ).toHaveCount(0);
+  await page.getByTitle("Sair", { exact: true }).click();
+  await expect(
+    page.getByLabel("Nome de usuário", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Gabriel Almeida", { exact: true })).toHaveCount(
+    0,
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Entre no seu espaço" }),
+  ).toBeVisible();
 });

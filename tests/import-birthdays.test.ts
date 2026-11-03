@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import writeXlsxFile from "write-excel-file/node";
 import { readSheet } from "read-excel-file/node";
-import { demoStore } from "../lib/demo";
+import { schoolFixture } from "./fixtures/school";
 import {
   previewStudents,
   parseBirthDate,
@@ -11,7 +11,7 @@ import {
 } from "../lib/student-import";
 import { birthdaysThisWeek } from "../lib/birthdays";
 test("importação por nome e turma cria cadastro incompleto sem telefone fictício", () => {
-  const s = demoStore();
+  const s = schoolFixture();
   const rows = previewStudents(
     [
       ["Nome", "Turma"],
@@ -30,7 +30,7 @@ test("importação por nome e turma cria cadastro incompleto sem telefone fictí
   assert.equal(student.unit_id, "u1");
 });
 test("importação sinaliza repetidos, turma externa e data inválida sem salvar", () => {
-  const s = demoStore();
+  const s = schoolFixture();
   const rows = previewStudents(
     [
       ["Nome", "Turma", "Nascimento"],
@@ -51,7 +51,7 @@ test("importação sinaliza repetidos, turma externa e data inválida sem salvar
   );
 });
 test("importação considera as vagas do lote e rejeita unidade sem acesso", () => {
-  const s = demoStore();
+  const s = schoolFixture();
   s.classes[0].capacity = 8;
   const data: ImportCell[][] = [
     ["Nome", "Turma"],
@@ -84,7 +84,7 @@ test("planilha .xlsx real preserva datas e cabeçalhos na leitura", async () => 
     ],
   ]).toBuffer();
   const sheet = await readSheet(file);
-  const s = demoStore();
+  const s = schoolFixture();
   const data = sheet.map((row) =>
     row.map((value) =>
       value instanceof Date ||
@@ -112,7 +112,7 @@ test("datas inválidas e futuras não viram aniversário; serial Excel é aceito
   assert.throws(() => parseBirthDate("2099-01-01"));
 });
 test("aniversários respeitam semana segunda-domingo e virada do ano", () => {
-  const s = demoStore();
+  const s = schoolFixture();
   const students = [
     { ...s.students[0], birth_date: "2009-12-31" },
     { ...s.students[1], birth_date: "2009-01-01" },
@@ -127,7 +127,7 @@ test("aniversários respeitam semana segunda-domingo e virada do ano", () => {
   assert.equal(rows[2].date, "2026-01-04");
 });
 test("29 de fevereiro não é convertido automaticamente em outra data", () => {
-  const s = demoStore();
+  const s = schoolFixture();
   const student = { ...s.students[0], birth_date: "2008-02-29" };
   assert.equal(birthdaysThisWeek([student], "2026-02-28").length, 0);
   assert.equal(birthdaysThisWeek([student], "2028-02-29")[0].isToday, true);

@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import type { ReportPhoto } from "./photos";
+import type { Student } from "./domain";
 import { displayDate, today } from "./domain";
 const clean = (text: string) =>
   text
@@ -48,11 +50,15 @@ export async function createInstitutionalPdf({
   lines,
   unit,
   author,
+  photos = [],
+  featuredStudent,
 }: {
   title: string;
   lines: string[];
   unit: string;
   author: string;
+  photos?: ReportPhoto[];
+  featuredStudent?: Student;
 }) {
   const logo = await logoData();
   const doc = new jsPDF({
@@ -110,6 +116,27 @@ export async function createInstitutionalPdf({
     doc.text(`Responsável pela emissão: ${author}`, 16, 56);
   };
   let y = 64;
+  const photoMap = new Map<string, ReportPhoto>();
+  for (const photo of photos) {
+    if (photos.filter((p) => p.name === photo.name).length === 1)
+      photoMap.set(photo.name, photo);
+  }
+  if (featuredStudent) {
+    const photo = photos.find((p) => p.id === featuredStudent.id);
+    if (photo) {
+      doc.addImage(photo.data, "JPEG", 16, y, 19, 19, `student-${photo.id}`);
+      doc.setFont("Wisdom", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(41, 75, 118);
+      doc.text(featuredStudent.name, 40, y + 8);
+      doc.setFont("Wisdom", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(119, 140, 167);
+      doc.text("Identificação do aluno", 40, y + 14);
+      y += 27;
+    }
+  }
+
   const segments: { table: boolean; lines: string[] }[] = [];
   for (const line of lines.filter(Boolean)) {
     const isTable = line.includes(" | "),
@@ -190,6 +217,32 @@ export async function createInstitutionalPdf({
       columnStyles: segment.table
         ? { 0: { fontStyle: "bold", textColor: [31, 62, 101] } }
         : {},
+      didParseCell: (cell) => {
+        if (cell.section === "body" && photoMap.has(String(cell.cell.raw))) {
+          cell.cell.styles.cellPadding = {
+            top: 2,
+            bottom: 2,
+            left: 13,
+            right: 3,
+          };
+          cell.cell.styles.minCellHeight = 11;
+          cell.cell.styles.valign = "middle";
+        }
+      },
+      didDrawCell: (cell) => {
+        if (cell.section !== "body") return;
+        const photo = photoMap.get(String(cell.cell.raw));
+        if (photo)
+          doc.addImage(
+            photo.data,
+            "JPEG",
+            cell.cell.x + 3,
+            cell.cell.y + (cell.cell.height - 7) / 2,
+            7,
+            7,
+            `student-${photo.id}`,
+          );
+      },
       willDrawPage: header,
     });
     y =
