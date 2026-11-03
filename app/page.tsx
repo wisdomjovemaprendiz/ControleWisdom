@@ -14,25 +14,22 @@ import {
   Plus,
   ArrowUpRight,
   ArrowRight,
-  ChevronDown,
   X,
   Check,
-  Clock,
   MessageCircle,
   Download,
   LogOut,
   Menu,
-  Phone,
   Archive,
-  AlertTriangle,
-  CalendarDays,
-  Sparkles,
   CheckCircle2,
   Filter,
   Pencil,
   Loader2,
   RefreshCw,
 } from "lucide-react";
+import { OperationsBoard } from "@/components/operations-board";
+import { FollowUpCenter } from "@/components/follow-up-center";
+import { StudentDossier } from "@/components/student-dossier";
 import { demoStore } from "@/lib/demo";
 import { supabase } from "@/lib/supabase";
 import {
@@ -58,7 +55,7 @@ import {
   validateStudent,
 } from "@/lib/domain";
 const nav = [
-  ["overview", "Visão geral", LayoutDashboard],
+  ["overview", "Operação", LayoutDashboard],
   ["students", "Alunos", Users],
   ["classes", "Turmas", GraduationCap],
   ["offerings", "Cursos e pacotes", BookOpen],
@@ -123,6 +120,10 @@ export default function App() {
     } | null>(null),
     [login, setLogin] = useState({ email: "", password: "" }),
     [sessionReady, setSessionReady] = useState(false);
+  const [reportClass, setReportClass] = useState("all");
+  const [dossierId, setDossierId] = useState<string | null>(null);
+  const [studentStatus, setStudentStatus] = useState("all"),
+    [studentClass, setStudentClass] = useState("all");
   const [classId, setClassId] = useState(""),
     [lessonDate, setLessonDate] = useState(today()),
     [topic, setTopic] = useState(""),
@@ -216,8 +217,11 @@ export default function App() {
     classes = store?.classes.filter((c) => scoped(c.unit_id)) || [],
     active = students.filter((s) => s.status === "ativo"),
     alerts = active.filter((s) => absenceCount(store!, s.id) >= 3),
-    filtered = students.filter((s) =>
-      `${s.name} ${s.guardian}`.toLowerCase().includes(query.toLowerCase()),
+    filtered = students.filter(
+      (s) =>
+        `${s.name} ${s.guardian}`.toLowerCase().includes(query.toLowerCase()) &&
+        (studentStatus === "all" || s.status === studentStatus) &&
+        (studentClass === "all" || s.class_id === studentClass),
     );
   const writableClasses = classes.filter(
     (c) => profile?.role !== "professor" || c.teacher_id === profile.id,
@@ -564,11 +568,14 @@ export default function App() {
             className="brand-symbol"
           />
           <h1>
-            Uma visão completa.
+            Wisdom Cursos.
             <br />
-            Mais possibilidades.
+            Controle acadêmico.
           </h1>
-          <p>A gestão que aproxima sua equipe de cada aluno.</p>
+          <p>
+            Matrículas, diário de classe e acompanhamento dos alunos da sua
+            unidade.
+          </p>
           <span>WISDOM / GESTÃO EDUCACIONAL</span>
         </div>
         <form onSubmit={loginSubmit} className="login-form">
@@ -629,114 +636,109 @@ export default function App() {
     (l) =>
       scoped(l.unit_id) &&
       (!reportFrom || l.date >= reportFrom) &&
-      l.date <= reportTo,
+      l.date <= reportTo &&
+      (reportClass === "all" || l.class_id === reportClass),
   );
   const reportAttendance = store.attendance.filter((a) =>
     reportLessons.some((l) => l.id === a.lesson_id),
   );
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${mobile ? "open" : ""}`}>
+      <header className="institutional-header">
         <a
-          className="brand"
+          className="institutional-brand"
           href="#"
           onClick={(e) => {
             e.preventDefault();
             goto("overview");
           }}
         >
-          <img src="/wisdom-symbol.svg" alt="" className="brand-symbol" />
+          <img src="/wisdom-symbol.svg" alt="" />
           <div>
-            WISDOM<span>CURSOS / GESTÃO EDUCACIONAL</span>
+            <strong>
+              WISDOM<span>CURSOS</span>
+            </strong>
+            <small>CONTROLE ACADÊMICO</small>
           </div>
         </a>
-        <div className="workspace-label">SEU ESPAÇO DE GESTÃO</div>
-        <nav>
-          {nav
-            .filter(
-              (n) =>
-                !["units", "settings"].includes(n[0]) ||
-                profile.role === "coordenacao",
-            )
-            .map(([key, label, Icon]) => (
-              <button
-                key={key}
-                className={page === key ? "active" : ""}
-                onClick={() => goto(key)}
-              >
-                <Icon size={19} />
-                <span>{label}</span>
-                {key === "alerts" && alerts.length > 0 && (
-                  <b>{alerts.length}</b>
-                )}
-              </button>
-            ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="help-card">
-            <Sparkles size={19} />
-            <strong>Cada aluno importa.</strong>
-            <p>Transforme informação em cuidado e novas oportunidades.</p>
-          </div>
-          <div className="user">
-            <div className="avatar">{initials(profile.name)}</div>
-            <div>
-              <strong>{profile.name}</strong>
+        <div className="header-divider" />
+        <span className="header-purpose">Formação para o próximo passo.</span>
+        <div className="institutional-tools">
+          <span className="system-label">
+            {isDemo ? "DEMONSTRAÇÃO" : "ÁREA DA EQUIPE"}
+          </span>
+          {!isDemo && (
+            <button
+              className="icon-button"
+              title="Atualizar dados"
+              disabled={busy}
+              onClick={() => void load()}
+            >
+              <RefreshCw size={18} />
+            </button>
+          )}
+          <button
+            className="header-notification"
+            title="Central de atenção"
+            onClick={() => goto("alerts")}
+          >
+            <Bell size={19} />
+            {alerts.length > 0 && <b>{alerts.length}</b>}
+          </button>
+          <div className="header-user">
+            <span>
+              {profile.name}
               <small>{labels[profile.role]}</small>
-            </div>
-            {!isDemo && (
-              <button title="Sair" onClick={() => supabase!.auth.signOut()}>
-                <LogOut size={17} />
-              </button>
-            )}
-          </div>
-        </div>
-      </aside>
-      <div className="main-shell">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <button
-              className="mobile-menu icon-button"
-              aria-label="Abrir menu"
-              onClick={() => setMobile(!mobile)}
-            >
-              <Menu size={20} />
-            </button>
-            <span>Workspace</span>
-            <span>/</span>
-            <strong>{currentNav[1]}</strong>
-          </div>
-          <div className="topbar-actions">
-            <span className="live-dot" />{" "}
-            <span className="desktop">
-              {isDemo ? "Ambiente de demonstração" : "Conectado ao Supabase"}
             </span>
-            <span className="separator" />
-            {!isDemo && (
-              <button
-                className="icon-button"
-                title="Atualizar dados"
-                disabled={busy}
-                onClick={() => void load()}
-              >
-                <RefreshCw size={17} />
-              </button>
-            )}
-            <button
-              className="notification icon-button"
-              title="Central de atenção"
-              onClick={() => goto("alerts")}
-            >
-              <Bell size={20} />
-              {alerts.length > 0 && <i />}
-            </button>
-            <div className="avatar small">{initials(profile.name)}</div>
+            <div className="avatar">{initials(profile.name)}</div>
           </div>
-        </header>
+          {!isDemo && (
+            <button
+              className="icon-button"
+              title="Sair"
+              onClick={() => supabase!.auth.signOut()}
+            >
+              <LogOut size={18} />
+            </button>
+          )}
+          <button
+            className="mobile-menu icon-button"
+            aria-label="Abrir menu"
+            aria-expanded={mobile}
+            onClick={() => setMobile(!mobile)}
+          >
+            <Menu size={22} />
+          </button>
+        </div>
+      </header>
+      <nav
+        className={`module-navigation ${mobile ? "open" : ""}`}
+        aria-label="Módulos do sistema"
+      >
+        {nav
+          .filter(
+            (n) =>
+              !["units", "settings"].includes(n[0]) ||
+              profile.role === "coordenacao",
+          )
+          .map(([key, label, Icon], index) => (
+            <button
+              key={key}
+              className={page === key ? "active" : ""}
+              onClick={() => goto(key)}
+            >
+              <Icon size={17} />
+              <span>{label}</span>
+              {key === "alerts" && alerts.length > 0 && <b>{alerts.length}</b>}
+            </button>
+          ))}
+      </nav>
+      <div className="main-shell">
         <main className="content">
           {isDemo && (
             <div className="demo-strip">
-              <span>DEMONSTRAÇÃO</span> Dados fictícios salvos neste navegador.{" "}
+              <span>DEMONSTRAÇÃO</span> Dados fictícios para avaliação dos
+              fluxos. As alterações ficam neste navegador.{" "}
               <button onClick={() => goto("settings")}>
                 Configurar acesso <ArrowUpRight size={13} />
               </button>
@@ -746,34 +748,42 @@ export default function App() {
             <div>
               <div className="eyebrow">
                 {page === "overview"
-                  ? "ACOMPANHE. ENTENDA. TRANSFORME."
+                  ? "CONTROLE ACADÊMICO / " + labels[profile.role].toUpperCase()
                   : "WISDOM / " + currentNav[1].toUpperCase()}
               </div>
               <h1>
                 {page === "overview"
-                  ? "Sua gestão, em perspectiva"
+                  ? profile.role === "professor"
+                    ? "Meu diário de classe"
+                    : profile.role === "secretaria"
+                      ? "Mesa da secretaria"
+                      : "Operação das unidades"
                   : currentNav[1]}
-                <span className="heading-dot">.</span>
               </h1>
               <p>
                 {
                   (
                     {
                       overview:
-                        "Tudo o que importa para acompanhar sua escola de perto.",
+                        "Turmas, frequência e encaminhamentos da equipe no mesmo contexto.",
                       offerings:
                         "Formações para o primeiro emprego e para toda a trajetória.",
-                      students: "Cada trajetória começa com uma oportunidade.",
+                      students:
+                        "Consulte matrículas e abra a ficha para acompanhar o histórico do aluno.",
                       classes:
-                        "Organize seus encontros e encontre espaço para crescer.",
+                        "Distribuição de alunos, professores e vagas por turma.",
                       attendance:
-                        "Presença registrada. Aprendizagem acompanhada.",
-                      pedagogy: "Dê visibilidade à evolução de cada aluno.",
-                      alerts: "Um olhar atento faz toda a diferença.",
+                        "Selecione a turma e a data. Registre todos os alunos antes de finalizar.",
+                      pedagogy:
+                        "Diagnósticos, intervenções e retornos por aluno ou turma.",
+                      alerts:
+                        "Faltas e contatos com responsáveis, com histórico de encaminhamentos.",
                       reports:
-                        "Informações claras para decisões bem fundamentadas.",
-                      units: "Uma rede conectada, respeitando cada unidade.",
-                      settings: "As pessoas certas, com o acesso certo.",
+                        "Relatórios de frequência, matrículas e atividade da equipe.",
+                      units:
+                        "Cadastro e acompanhamento das unidades da Wisdom Cursos.",
+                      settings:
+                        "Perfis da equipe e permissões de acesso por unidade.",
                     } as Record<string, string>
                   )[page]
                 }
@@ -786,7 +796,12 @@ export default function App() {
                   aria-label="Filtrar unidade"
                   value={currentUnit}
                   disabled={profile.role !== "coordenacao"}
-                  onChange={(e) => setUnit(e.target.value)}
+                  onChange={(e) => {
+                    setUnit(e.target.value);
+                    setStudentClass("all");
+                    setReportClass("all");
+                    setDossierId(null);
+                  }}
                 >
                   {profile.role === "coordenacao" && (
                     <option value="all">Todas as unidades</option>
@@ -843,245 +858,74 @@ export default function App() {
             </div>
           )}
           {page === "overview" && (
-            <>
-              <div className="summary-row">
-                <span>
-                  <CalendarDays size={16} />
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    dateStyle: "full",
-                    timeZone: "America/Sao_Paulo",
-                  }).format(new Date())}
-                </span>
-                <Badge tone="neutral">
-                  Visão{" "}
-                  {profile.role === "coordenacao"
-                    ? "da coordenação"
-                    : labels[profile.role].toLowerCase()}
-                </Badge>
-              </div>
-              <div className="stat-grid">
-                <Stat
-                  label="Alunos ativos"
-                  value={active.length}
-                  icon={<Users size={20} />}
-                  detail={`${students.length} matrículas no total`}
-                  color="green"
-                />
-                <Stat
-                  label="Turmas em andamento"
-                  value={classes.length}
-                  icon={<GraduationCap size={20} />}
-                  detail={`${classes.reduce((n, c) => n + Math.max(0, c.capacity - active.filter((s) => s.class_id === c.id).length), 0)} vagas disponíveis`}
-                  color="blue"
-                />
-                <Stat
-                  label="Frequência geral"
-                  value={
-                    overallFrequency === null ? "—" : overallFrequency + "%"
-                  }
-                  icon={<ClipboardCheck size={20} />}
-                  detail="Presenças e atrasos nas aulas registradas"
-                  color="purple"
-                />
-                <Stat
-                  label="Precisam de atenção"
-                  value={alerts.length}
-                  icon={<Bell size={20} />}
-                  detail="Alunos com 3 ou mais faltas"
-                  color="orange"
-                />
-              </div>
-              <div className="lifecycle-row">
-                {(
-                  [
-                    "conclusao",
-                    "cancelamento",
-                    "abandono",
-                    "inadimplencia",
-                  ] as const
-                ).map((status) => (
-                  <div key={status}>
-                    <span>{labels[status]}</span>
-                    <strong>
-                      {students.filter((s) => s.status === status).length}
-                    </strong>
-                    <small>matrículas no cadastro atual</small>
-                  </div>
-                ))}
-              </div>
-              <div className="dashboard-grid">
-                <section className="panel enrollment-panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>Movimento de matrículas</h2>
-                      <p>Novos começos, mês a mês</p>
-                    </div>
-                    <Badge tone="neutral">Últimos 6 meses</Badge>
-                  </div>
-                  <EnrollmentChart students={students} />
-                  <div className="chart-legend">
-                    <span>
-                      <i /> Matrículas
-                    </span>
-                    <span>
-                      <i /> Saídas e conclusões atuais
-                    </span>
-                  </div>
-                </section>
-                <section className="panel attention-panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>Vamos cuidar de perto</h2>
-                      <p>O próximo contato pode fazer a diferença</p>
-                    </div>
-                    <span className="circle-icon orange">
-                      <Bell size={19} />
-                    </span>
-                  </div>
-                  {alerts.length ? (
-                    alerts.slice(0, 3).map((s) => (
-                      <div className="attention-item" key={s.id}>
-                        <div className="avatar peach">{initials(s.name)}</div>
-                        <div>
-                          <strong>{s.name}</strong>
-                          <small>{className(s.class_id)}</small>
-                        </div>
-                        <Badge tone="orange">
-                          {absenceCount(store, s.id)} faltas
-                        </Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <Empty text="Nenhum alerta de faltas no momento." />
-                  )}
-                  <button className="text-link" onClick={() => goto("alerts")}>
-                    Ver central de atenção <ArrowRight size={16} />
-                  </button>
-                </section>
-              </div>
-              <div className="dashboard-grid lower">
-                <section className="panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>Turmas em foco</h2>
-                      <p>Encontros que fazem o aprendizado acontecer</p>
-                    </div>
-                    <button
-                      className="text-link"
-                      onClick={() => goto("classes")}
-                    >
-                      Todas as turmas <ArrowUpRight size={16} />
-                    </button>
-                  </div>
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>TURMA / CURSO</th>
-                          <th>PROFESSOR</th>
-                          <th>OCUPAÇÃO</th>
-                          <th>SITUAÇÃO</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {classes.slice(0, 4).map((c) => {
-                          const count = active.filter(
-                            (s) => s.class_id === c.id,
-                          ).length;
-                          return (
-                            <tr key={c.id}>
-                              <td>
-                                <strong>{c.name}</strong>
-                                <small>{c.schedule}</small>
-                              </td>
-                              <td>{c.teacher}</td>
-                              <td>
-                                <div className="occupancy">
-                                  <span>
-                                    {count}
-                                    <em> / {c.capacity}</em>
-                                  </span>
-                                  <div className="progress">
-                                    <i
-                                      style={{
-                                        width:
-                                          Math.min(
-                                            100,
-                                            (count / c.capacity) * 100,
-                                          ) + "%",
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </td>
-                              <td>
-                                <Badge
-                                  tone={
-                                    count / c.capacity < 0.4
-                                      ? "orange"
-                                      : "green"
-                                  }
-                                >
-                                  {count / c.capacity < 0.4
-                                    ? "Vagas em aberto"
-                                    : "Em andamento"}
-                                </Badge>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  {!classes.length && (
-                    <Empty text="Cadastre sua primeira turma." />
-                  )}
-                </section>
-                <section className="insight-card">
-                  <span className="eyebrow">OLHAR PEDAGÓGICO</span>
-                  <div className="insight-art">
-                    <BookOpen size={44} />
-                    <span>+</span>
-                    <i />
-                    <b />
-                  </div>
-                  <h2>
-                    Além da presença,
-                    <br />a evolução.
-                  </h2>
-                  <p>
-                    Registre conquistas, identifique desafios e acompanhe o
-                    desenvolvimento dos seus alunos.
-                  </p>
-                  <button onClick={() => goto("pedagogy")}>
-                    Acompanhar evolução <ArrowUpRight size={17} />
-                  </button>
-                </section>
-              </div>
-              <section className="quick-actions">
-                <span>Seu próximo passo</span>
-                <button onClick={() => goto("attendance")}>
-                  <ClipboardCheck size={18} /> Fazer chamada{" "}
-                  <ArrowRight size={15} />
-                </button>
-                <button onClick={() => setModal({ kind: "student" })}>
-                  <Plus size={18} /> Matrícula expressa <ArrowRight size={15} />
-                </button>
-                <button onClick={() => goto("reports")}>
-                  <Download size={18} /> Gerar relatório{" "}
-                  <ArrowRight size={15} />
-                </button>
-              </section>
-            </>
+            <OperationsBoard
+              store={store}
+              profile={profile}
+              unit={currentUnit}
+              classes={classes}
+              onClass={(id, date) => {
+                setClassId(id);
+                if (date) setLessonDate(date);
+                if (profile.role === "secretaria") {
+                  setReportClass(id);
+                  setReportFrom(date || "");
+                  setReportTo(date || today());
+                }
+                goto(profile.role === "secretaria" ? "reports" : "attendance");
+              }}
+              onStudent={(s) => setDossierId(s.id)}
+              onAction={(kind, data) => setModal({ kind, data })}
+              onPage={goto}
+              onMessage={(lesson) =>
+                setMessage({
+                  title: "Resumo da aula",
+                  text: attendanceMessage(store, lesson),
+                  phone: "",
+                })
+              }
+            />
           )}
           {page === "students" && (
             <section className="panel">
               <div className="list-toolbar">
-                <div className="tabs">
-                  <span className="selected">
-                    Todos os alunos <b>{students.length}</b>
-                  </span>
-                  <span>{active.length} ativos</span>
+                <div className="registry-label">
+                  <span className="index-label">CADASTRO DE ALUNOS</span>
+                  <strong>
+                    {filtered.length} encontrados{" "}
+                    <small>/ {students.length} matrículas</small>
+                  </strong>
+                </div>
+                <div className="student-filters">
+                  <select
+                    aria-label="Filtrar situação da matrícula"
+                    value={studentStatus}
+                    onChange={(e) => setStudentStatus(e.target.value)}
+                  >
+                    <option value="all">Todas as situações</option>
+                    {[
+                      "ativo",
+                      "conclusao",
+                      "cancelamento",
+                      "abandono",
+                      "inadimplencia",
+                    ].map((status) => (
+                      <option key={status} value={status}>
+                        {labels[status]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Filtrar turma dos alunos"
+                    value={studentClass}
+                    onChange={(e) => setStudentClass(e.target.value)}
+                  >
+                    <option value="all">Todas as turmas</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <label className="search">
                   <Search size={17} />
@@ -1111,7 +955,12 @@ export default function App() {
                           <div className="person">
                             <div className="avatar">{initials(s.name)}</div>
                             <div>
-                              <strong>{s.name}</strong>
+                              <button
+                                className="student-link"
+                                onClick={() => setDossierId(s.id)}
+                              >
+                                {s.name}
+                              </button>
                               <small>
                                 Desde {displayDate(s.enrollment_date)}
                               </small>
@@ -1215,72 +1064,109 @@ export default function App() {
             </section>
           )}
           {page === "classes" && (
-            <div className="class-grid">
-              {classes.map((c) => {
-                const list = active.filter((s) => s.class_id === c.id);
-                const occupancy = Math.round((list.length / c.capacity) * 100);
-                return (
-                  <section className="panel class-card" key={c.id}>
-                    <div className="class-card-top">
-                      <span className="circle-icon green">
-                        <GraduationCap size={23} />
-                      </span>
-                      <Badge tone={occupancy < 40 ? "orange" : "green"}>
-                        {occupancy < 40 ? "Baixa ocupação" : "Em andamento"}
-                      </Badge>
-                    </div>
-                    <h2>{c.name}</h2>
-                    <p>{c.course}</p>
-                    <div className="class-meta">
-                      <span>
-                        <Users size={16} />
-                        {c.teacher}
-                      </span>
-                      <span>
-                        <Clock size={16} />
-                        {c.schedule}
-                      </span>
-                      <span>
-                        <Building2 size={16} />
-                        {store.units.find((u) => u.id === c.unit_id)?.name}
-                      </span>
-                    </div>
-                    <div className="occupancy-label">
-                      <span>Ocupação da turma</span>
-                      <strong>
-                        {list.length} / {c.capacity}
-                      </strong>
-                    </div>
-                    <div className="progress">
-                      <i style={{ width: Math.min(100, occupancy) + "%" }} />
-                    </div>
-                    <footer>
-                      <button
-                        className="text-link"
-                        onClick={() => {
-                          setClassId(c.id);
-                          goto("attendance");
-                        }}
-                      >
-                        Abrir chamada <ArrowRight size={16} />
-                      </button>
-                      {profile.role !== "professor" && (
-                        <button
-                          className="icon-button"
-                          title="Editar turma"
-                          onClick={() => setModal({ kind: "class", data: c })}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                      )}
-                    </footer>
-                  </section>
-                );
-              })}
+            <section className="panel class-directory">
+              <div className="panel-header">
+                <div>
+                  <span className="index-label">DISTRIBUIÇÃO DAS TURMAS</span>
+                  <h2>{classes.length} turmas cadastradas</h2>
+                </div>
+                <span className="directory-note">
+                  Baixa ocupação: menos de 40% das vagas
+                </span>
+              </div>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>TURMA / FORMAÇÃO</th>
+                      <th>PROFESSOR / UNIDADE</th>
+                      <th>DIAS E HORÁRIO</th>
+                      <th>OCUPAÇÃO</th>
+                      <th>AÇÕES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classes.map((c) => {
+                      const count = active.filter(
+                        (s) => s.class_id === c.id,
+                      ).length;
+                      return (
+                        <tr key={c.id}>
+                          <td>
+                            <strong>{c.name}</strong>
+                            <small>{c.course}</small>
+                          </td>
+                          <td>
+                            {c.teacher}
+                            <small>
+                              {
+                                store.units.find((u) => u.id === c.unit_id)
+                                  ?.name
+                              }
+                            </small>
+                          </td>
+                          <td>{c.schedule}</td>
+                          <td>
+                            <span className="roster-count">
+                              {count}
+                              <small> / {c.capacity}</small>
+                            </span>
+                            <span className="capacity-line">
+                              <i
+                                style={{
+                                  width:
+                                    Math.min(100, (count / c.capacity) * 100) +
+                                    "%",
+                                }}
+                              />
+                            </span>
+                            <small>
+                              {count / c.capacity < 0.4
+                                ? "Baixa ocupação"
+                                : `${c.capacity - count} vagas disponíveis`}
+                            </small>
+                          </td>
+                          <td>
+                            <div className="row-actions">
+                              <button
+                                className="secondary"
+                                onClick={() => {
+                                  setClassId(c.id);
+                                  goto(
+                                    profile.role === "secretaria"
+                                      ? "reports"
+                                      : "attendance",
+                                  );
+                                }}
+                              >
+                                {profile.role === "secretaria"
+                                  ? "Ver frequência"
+                                  : "Abrir diário"}{" "}
+                                <ArrowRight size={15} />
+                              </button>
+                              {profile.role !== "professor" && (
+                                <button
+                                  className="icon-button"
+                                  title="Editar turma"
+                                  onClick={() =>
+                                    setModal({ kind: "class", data: c })
+                                  }
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
               {!classes.length && (
                 <Empty text="Nenhuma turma cadastrada nesta unidade." />
               )}
-            </div>
+            </section>
           )}
           {page === "offerings" && (
             <div className="class-grid">
@@ -1357,6 +1243,7 @@ export default function App() {
                 <label>
                   Turma
                   <select
+                    aria-label="Turma"
                     value={selectedClass?.id || ""}
                     onChange={(e) => setClassId(e.target.value)}
                     required
@@ -1391,6 +1278,36 @@ export default function App() {
                   />
                 </label>
               </section>
+              <div
+                className="attendance-totals"
+                aria-label="Resumo das marcações"
+              >
+                {(
+                  [
+                    "presente",
+                    "falta",
+                    "atrasado",
+                    "justificado",
+                  ] as AttendanceStatus[]
+                ).map((status) => (
+                  <div key={status} className={status}>
+                    <span>{labels[status]}</span>
+                    <strong>
+                      {Object.values(marks).filter((v) => v === status).length}
+                    </strong>
+                  </div>
+                ))}
+                <div>
+                  <span>Sem marcação</span>
+                  <strong>
+                    {
+                      active.filter(
+                        (s) => s.class_id === selectedClass?.id && !marks[s.id],
+                      ).length
+                    }
+                  </strong>
+                </div>
+              </div>
               <section className="panel">
                 <div className="panel-header">
                   <div>
@@ -1423,7 +1340,12 @@ export default function App() {
                     <div className="attendance-row" key={s.id}>
                       <div className="person">
                         <div className="avatar">{initials(s.name)}</div>
-                        <strong>{s.name}</strong>
+                        <button
+                          className="student-link"
+                          onClick={() => setDossierId(s.id)}
+                        >
+                          {s.name}
+                        </button>
                       </div>
                       <div className="attendance-options">
                         {(
@@ -1550,66 +1472,14 @@ export default function App() {
           )}
           {page === "alerts" && (
             <>
-              <div className="info-banner warning">
-                <AlertTriangle size={23} />
-                <div>
-                  <strong>{alerts.length} alunos com 3 ou mais faltas</strong>
-                  <p>
-                    Faltas acumuladas nas aulas registradas. Registre o motivo e
-                    combine o próximo acompanhamento.
-                  </p>
-                </div>
-              </div>
-              <section className="panel">
-                {alerts.map((s) => (
-                  <div className="alert-row" key={s.id}>
-                    <div className="person">
-                      <div className="avatar peach">{initials(s.name)}</div>
-                      <div>
-                        <strong>{s.name}</strong>
-                        <small>
-                          {className(s.class_id)} •{" "}
-                          {s.guardian || "Responsável não informado"}
-                        </small>
-                      </div>
-                    </div>
-                    <Badge tone="orange">
-                      {absenceCount(store, s.id)} faltas
-                    </Badge>
-                    <div className="row-actions">
-                      {s.guardian_phone && (
-                        <a
-                          className="secondary"
-                          href={`tel:${s.guardian_phone.replace(/[^+\d]/g, "")}`}
-                        >
-                          <Phone size={16} /> Ligar
-                        </a>
-                      )}
-                      <button
-                        className="secondary"
-                        onClick={() =>
-                          setMessage({
-                            title: "Contato por faltas",
-                            phone: s.guardian_phone,
-                            text: `Olá, ${s.guardian || "responsável"}! Aqui é da Wisdom. Sentimos falta de ${s.name} nas últimas aulas. Gostaríamos de entender o que aconteceu e ajudar no retorno. Podemos conversar?`,
-                          })
-                        }
-                      >
-                        <MessageCircle size={16} /> WhatsApp
-                      </button>
-                      <button
-                        className="primary"
-                        onClick={() => setModal({ kind: "contact", data: s })}
-                      >
-                        Registrar contato
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {!alerts.length && (
-                  <Empty text="Tudo acompanhado. Nenhum aluno com alerta de faltas." />
-                )}
-              </section>
+              <FollowUpCenter
+                store={store}
+                profile={profile}
+                unit={currentUnit}
+                onStudent={(s) => setDossierId(s.id)}
+                onAction={(kind, data) => setModal({ kind, data })}
+                onPedagogy={() => goto("pedagogy")}
+              />
               <section className="panel contact-history">
                 <div className="panel-header">
                   <div>
@@ -1646,6 +1516,21 @@ export default function App() {
               <section className="panel report-filters">
                 <Filter size={19} />
                 <strong>Período dos relatórios</strong>
+                <label>
+                  Turma dos registros
+                  <select
+                    aria-label="Turma dos registros"
+                    value={reportClass}
+                    onChange={(e) => setReportClass(e.target.value)}
+                  >
+                    <option value="all">Todas as turmas</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label>
                   De
                   <input
@@ -1968,10 +1853,10 @@ export default function App() {
           )}
           <footer className="page-footer">
             <span>
-              <span className="footer-mark">w</span> WISDOM <em> / </em> Gestão
-              que transforma.
+              <span className="footer-mark">w</span> WISDOM <em> / </em>{" "}
+              Controle acadêmico.
             </span>
-            <span>Feito para acompanhar pessoas.</span>
+            <span>Wisdom Cursos / Uso da equipe</span>
           </footer>
         </main>
       </div>
@@ -1983,6 +1868,38 @@ export default function App() {
             <X size={16} />
           </button>
         </div>
+      )}
+      {dossierId && students.some((s) => s.id === dossierId) && (
+        <StudentDossier
+          key={dossierId}
+          student={students.find((s) => s.id === dossierId)!}
+          store={store}
+          onClose={() => setDossierId(null)}
+          onEdit={() => {
+            setModal({
+              kind: "student",
+              data: students.find((s) => s.id === dossierId)!,
+            });
+            setDossierId(null);
+          }}
+          onMessage={() => {
+            const student = students.find((s) => s.id === dossierId)!;
+            setMessage({
+              title: "Evolução do aluno",
+              text: evolutionMessage(store, student),
+              phone: student.guardian_phone,
+            });
+            setDossierId(null);
+          }}
+          onPdf={() => {
+            const student = students.find((s) => s.id === dossierId)!;
+            void pdf("Ficha do aluno", [
+              evolutionMessage(store, student),
+              `Matrícula: ${displayDate(student.enrollment_date)}`,
+              `Situação: ${labels[student.status]}`,
+            ]);
+          }}
+        />
       )}
       {modal && (
         <div
@@ -1999,7 +1916,7 @@ export default function App() {
           >
             <div className="modal-header">
               <div>
-                <span className="eyebrow">CUIDADO EM CADA DETALHE</span>
+                <span className="eyebrow">REGISTRO ACADÊMICO</span>
                 <h2 id="modal-title">
                   {
                     (
@@ -2499,7 +2416,7 @@ export default function App() {
           >
             <div className="modal-header">
               <div>
-                <span className="eyebrow">COMUNICAÇÃO COM CUIDADO</span>
+                <span className="eyebrow">REVISÃO DA MENSAGEM</span>
                 <h2 id="message-title">{message.title}</h2>
               </div>
               <button
@@ -2573,92 +2490,6 @@ export default function App() {
           </section>
         </div>
       )}
-    </div>
-  );
-}
-function Stat({
-  label,
-  value,
-  icon,
-  detail,
-  color,
-}: {
-  label: string;
-  value: number | string;
-  icon: ReactNode;
-  detail: string;
-  color: string;
-}) {
-  return (
-    <section className="stat-card">
-      <div className="stat-top">
-        <span>{label}</span>
-        <span className={`stat-icon ${color}`}>{icon}</span>
-      </div>
-      <strong>{value}</strong>
-      <p>{detail}</p>
-    </section>
-  );
-}
-function EnrollmentChart({ students }: { students: Student[] }) {
-  const date = new Date();
-  const months = Array.from(
-    { length: 6 },
-    (_, i) => new Date(date.getFullYear(), date.getMonth() - 5 + i, 1),
-  );
-  const rows = months.map((d) => {
-    const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return {
-      label: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
-      total: students.filter((s) => s.enrollment_date.startsWith(prefix))
-        .length,
-      exits: students.filter(
-        (s) => s.enrollment_date.startsWith(prefix) && s.status !== "ativo",
-      ).length,
-    };
-  });
-  const max = Math.max(4, ...rows.map((r) => r.total));
-  return (
-    <div className="chart">
-      <div className="y-axis">
-        {[
-          max,
-          Math.round(max * 0.75),
-          Math.round(max * 0.5),
-          Math.round(max * 0.25),
-          0,
-        ].map((n, i) => (
-          <span key={i}>{n}</span>
-        ))}
-      </div>
-      <div className="chart-plot">
-        <div className="grid-lines">
-          {[0, 1, 2, 3, 4].map((n) => (
-            <i key={n} />
-          ))}
-        </div>
-        <div className="bars">
-          {rows.map((r) => (
-            <div className="bar-group" key={r.label}>
-              <div className="bar-pair">
-                <div
-                  title={`${r.total} matrículas`}
-                  className="bar main-bar"
-                  style={{ height: (r.total / max) * 100 + "%" }}
-                >
-                  <span>{r.total}</span>
-                </div>
-                <div
-                  title={`${r.exits} saídas atuais na coorte`}
-                  className="bar exit-bar"
-                  style={{ height: (r.exits / max) * 100 + "%" }}
-                />
-              </div>
-              <span className="x-label">{r.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Sua gestão, em perspectiva." }),
+    page.getByRole("heading", { name: "Operação das unidades" }),
   ).toBeVisible();
 });
 test("matrícula expressa persiste e busca encontra aluno", async ({ page }) => {
@@ -117,7 +117,7 @@ test("gera PDF e registra acompanhamento pedagógico", async ({ page }) => {
 test("layout funciona em celular sem rolagem horizontal", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.getByRole("heading", { name: "Sua gestão, em perspectiva." }),
+    page.getByRole("heading", { name: "Operação das unidades" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -130,6 +130,101 @@ test("layout funciona em celular sem rolagem horizontal", async ({ page }) => {
     .getByRole("button", { name: "Turmas", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Turmas.", exact: true }),
+    page.getByRole("heading", { name: "Turmas", exact: true }),
   ).toBeVisible();
+});
+
+test("quadro filtra chamadas e abre a turma e data corretas", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Sem chamada" }).click();
+  await expect(page.locator(".board-table tbody tr")).toHaveCount(3);
+  await page
+    .getByRole("button", { name: "Todas", exact: false })
+    .filter({ hasText: "Todas" })
+    .first()
+    .click();
+  await page.getByLabel("Buscar turma no quadro").fill("Inglês");
+  await expect(page.locator(".board-table tbody tr")).toHaveCount(1);
+  await expect(page.locator(".journal-heading h3")).toHaveText(
+    "Inglês • Turma 02",
+  );
+  await page
+    .getByRole("button", { name: "Fazer chamada", exact: true })
+    .click();
+  await expect(page.getByLabel("Turma", { exact: true })).toHaveValue("c2");
+});
+test("ficha reúne cadastro, chamadas, pedagógico e edição do aluno", async ({
+  page,
+}) => {
+  await page
+    .locator(".journal-table")
+    .getByRole("button", { name: "Gabriel Almeida", exact: true })
+    .click();
+  const dossier = page.getByRole("dialog", { name: "Gabriel Almeida" });
+  await expect(
+    dossier.getByText("Patrícia Almeida", { exact: true }),
+  ).toBeVisible();
+  await dossier.getByRole("tab", { name: "Frequência", exact: true }).click();
+  await expect(
+    dossier.getByRole("heading", {
+      name: "Planilhas: fórmulas e organização de dados",
+    }),
+  ).toBeVisible();
+  await dossier.getByRole("tab", { name: "Pedagógico", exact: true }).click();
+  await expect(
+    dossier.getByText(/Resolve fórmulas com autonomia/),
+  ).toBeVisible();
+  await dossier.getByRole("button", { name: "Editar matrícula" }).click();
+  await expect(page.getByLabel("Nome completo")).toHaveValue("Gabriel Almeida");
+});
+test("central separa pendências cadastrais e alertas de faltas", async ({
+  page,
+}) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Central de atenção/ })
+    .click();
+  await page.getByRole("button", { name: /^Cadastro/ }).click();
+  await expect(page.locator(".followup-list article").first()).toContainText(
+    "Completar matrícula",
+  );
+  await page.getByRole("button", { name: /^Faltas/ }).click();
+  await expect(page.locator(".followup-list article")).toHaveCount(1);
+  await expect(page.locator(".followup-list article")).toContainText(
+    "Lucas Ferreira",
+  );
+  await page
+    .locator(".followup-list")
+    .getByRole("button", { name: "Registrar contato" })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Lucas Ferreira");
+});
+test("filtros do cadastro combinam situação e turma", async ({ page }) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  await page.getByLabel("Filtrar situação da matrícula").selectOption("ativo");
+  await page.getByLabel("Filtrar turma dos alunos").selectOption("c1");
+  await expect(page.locator(".table-scroll tbody tr")).toHaveCount(7);
+  await page
+    .getByLabel("Filtrar situação da matrícula")
+    .selectOption("conclusao");
+  await expect(page.getByText("Nenhum aluno encontrado.")).toBeVisible();
+  await page.getByLabel("Filtrar turma dos alunos").selectOption("all");
+  await expect(page.locator(".table-scroll tbody tr")).toHaveCount(1);
+});
+
+test("ficha fecha por Escape e devolve o foco ao aluno", async ({ page }) => {
+  const source = page
+    .locator(".journal-table")
+    .getByRole("button", { name: "Gabriel Almeida", exact: true });
+  await source.click();
+  await expect(
+    page.getByRole("button", { name: "Fechar ficha" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(source).toBeFocused();
 });

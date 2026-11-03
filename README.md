@@ -84,3 +84,15 @@ Frequência = (presenças + atrasos) / (presenças + atrasos + faltas); justific
 O repositório é `wisdomjovemaprendiz/ControleWisdom`. Na Vercel, importe esse repositório, escolha Next.js e configure Node.js 24, instalação `npm ci`, build `npm run build` e as duas variáveis públicas do Supabase para os ambientes desejados. A raiz do projeto é a raiz do repositório. A aplicação não exige servidor Express ou banco local na Vercel. Aplique a migração antes de disponibilizar o login aos usuários. Para ativar uma alteração de variável pública, faça novo deploy.
 
 Este checkout e o build local não comprovam publicação no GitHub ou na Vercel. Consulte o resumo de entrega para o estado real das integrações.
+
+## Interface operacional
+
+O redesenho substitui o painel inicial por um quadro de turmas com data e diário de frequência. Há entradas específicas para professor, secretaria e coordenação, ficha individual com histórico, filtros combináveis no cadastro e central de acompanhamento de faltas, cadastros e retornos. As referências e decisões estão em [docs/redesenho-operacional.md](docs/redesenho-operacional.md).
+
+Para executar os testes de navegador em uma instância de demonstração separada quando o ambiente já possui Supabase configurado, use variáveis vazias **somente no processo de teste**, sem apagar ou sobrescrever as configurações reais:
+
+```sh
+NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= npm run dev -- --port 3001
+# Em outro terminal:
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 npm run test:e2e
+```
