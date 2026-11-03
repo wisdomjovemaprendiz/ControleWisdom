@@ -6,6 +6,7 @@ import {
   type Store,
   type Profile,
   type Student,
+  type Pedagogy,
   displayDate,
 } from "@/lib/domain";
 import { followUps } from "@/lib/operations";
@@ -22,7 +23,7 @@ export function FollowUpCenter({
   unit: string;
   onStudent: (s: Student) => void;
   onAction: (kind: string, s: Student) => void;
-  onPedagogy: () => void;
+  onPedagogy: (record?: Pedagogy) => void;
 }) {
   const [filter, setFilter] = useState("all"),
     [search, setSearch] = useState("");
@@ -112,7 +113,9 @@ export function FollowUpCenter({
               className="secondary"
               onClick={() =>
                 task.kind === "pedagogy"
-                  ? onPedagogy()
+                  ? onPedagogy(
+                      store.pedagogy.find((p) => p.id === task.pedagogy_id),
+                    )
                   : onAction(
                       task.kind === "registration" ? "student" : "contact",
                       task.student,
@@ -122,7 +125,7 @@ export function FollowUpCenter({
               {task.kind === "registration"
                 ? "Completar cadastro"
                 : task.kind === "pedagogy"
-                  ? "Ver pedagógico"
+                  ? "Registrar evolução"
                   : "Registrar contato"}
               <ArrowRight size={15} />
             </button>

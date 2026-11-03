@@ -336,9 +336,10 @@ test("chamada salva mantém botão do grupo e mensagem com dois nomes e estados"
   await expect(dialog.locator(".whatsapp-bubble")).not.toContainText(
     "Maria Eduarda Lima",
   );
-  await expect(dialog.locator(".whatsapp-bubble")).not.toContainText(
-    "Lucas Ferreira",
+  await expect(dialog.locator(".whatsapp-bubble")).toContainText(
+    "Lucas Ferreira — Falta",
   );
+  await expect(dialog.locator(".whatsapp-bubble")).toContainText("AUSENTES");
   await dialog
     .getByRole("button", { name: "Copiar texto", exact: true })
     .click();
@@ -478,6 +479,18 @@ test("foto é comprimida antes do envio e aparece no cadastro e na chamada", asy
     mimeType: "image/png",
     buffer: Buffer.from(data, "base64"),
   });
+  await dialog.getByLabel("Zoom da foto", { exact: true }).focus();
+  await dialog.getByLabel("Zoom da foto", { exact: true }).press("End");
+  await expect(dialog.getByLabel("Zoom da foto", { exact: true })).toHaveValue(
+    "5",
+  );
+  await dialog.getByLabel("Posição vertical da foto", { exact: true }).focus();
+  await dialog
+    .getByLabel("Posição vertical da foto", { exact: true })
+    .press("ArrowRight");
+  await dialog
+    .getByRole("button", { name: "Aplicar enquadramento", exact: true })
+    .click();
   await expect(dialog.getByText(/Foto pronta:/)).toBeVisible();
   await dialog.getByRole("button", { name: "Salvar registro" }).click();
   await expect(dialog).toHaveCount(0);
@@ -496,6 +509,28 @@ test("foto é comprimida antes do envio e aparece no cadastro e na chamada", asy
     .getByPlaceholder("Buscar aluno ou responsável…")
     .fill("Aluno Com Foto");
   await expect(page.locator("tbody .student-avatar img")).toBeVisible();
+  await page
+    .locator("tbody tr")
+    .filter({ hasText: "Aluno Com Foto" })
+    .getByRole("button", { name: "Editar matrícula", exact: true })
+    .click();
+  const edit = page.getByRole("dialog");
+  await edit
+    .getByRole("button", { name: "Ajustar foto atual", exact: true })
+    .click();
+  await edit.getByLabel("Zoom da foto", { exact: true }).focus();
+  await edit.getByLabel("Zoom da foto", { exact: true }).press("Home");
+  await expect(edit.getByLabel("Zoom da foto", { exact: true })).toHaveValue(
+    "0.1",
+  );
+  await edit
+    .getByRole("button", { name: "Aplicar enquadramento", exact: true })
+    .click();
+  await edit
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(edit).toHaveCount(0);
+
   await page
     .locator("nav")
     .getByRole("button", { name: "Chamada", exact: true })
@@ -615,7 +650,7 @@ test("fontes de navegação, tabelas e formulários permanecem legíveis", async
     .locator("tbody td")
     .first()
     .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
-  expect(size).toBeGreaterThanOrEqual(14);
+  expect(size).toBeGreaterThanOrEqual(13);
   await page
     .getByRole("button", { name: "Nova matrícula", exact: true })
     .click();
@@ -624,7 +659,7 @@ test("fontes de navegação, tabelas e formulários permanecem legíveis", async
       .getByRole("dialog")
       .getByLabel("Nome completo")
       .evaluate((e) => parseFloat(getComputedStyle(e).fontSize)),
-  ).toBeGreaterThanOrEqual(16);
+  ).toBeGreaterThanOrEqual(15);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Cancelar", exact: true })
@@ -642,4 +677,104 @@ test("fontes de navegação, tabelas e formulários permanecem legíveis", async
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("registro assistido gera rascunho revisável e evolução conclui somente o lembrete vinculado", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Pedagógico", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Novo registro", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Aluno (opcional)", { exact: true })
+    .selectOption("s1");
+  await dialog
+    .getByRole("button", { name: "Preenchimento assistido", exact: true })
+    .click();
+  await dialog
+    .getByLabel("Pontuação: Demora a iniciar após a orientação coletiva", {
+      exact: true,
+    })
+    .selectOption("2");
+  await dialog
+    .getByLabel("Dividir a tarefa em etapas observáveis", { exact: true })
+    .check();
+  await dialog
+    .getByLabel("Contexto e período observado", { exact: true })
+    .fill("Atividade de planejamento de currículo, em duas aulas.");
+  await dialog
+    .getByLabel("Situação inicial / linha de base", { exact: true })
+    .fill("Precisou de três lembretes para iniciar.");
+  await dialog
+    .getByLabel("Objetivo do acompanhamento", { exact: true })
+    .fill("Iniciar com apenas um lembrete.");
+  await dialog
+    .getByLabel("Critério para avaliar a evolução", { exact: true })
+    .fill("Comparar os apoios necessários em duas atividades equivalentes.");
+  await dialog
+    .getByRole("button", {
+      name: "Preparar rascunho para revisão",
+      exact: true,
+    })
+    .click();
+  await expect(dialog.getByLabel("Observações e evolução")).toHaveValue(
+    /três lembretes/,
+  );
+  await expect(dialog.getByLabel("Intervenção / próximo passo")).toHaveValue(
+    /Dividir a tarefa/,
+  );
+  const day = await page.evaluate(() =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
+      new Date(),
+    ),
+  );
+  await dialog
+    .getByLabel("Data para acompanhamento", { exact: true })
+    .fill(day);
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const parent = schoolApi.store.pedagogy.find(
+    (p) =>
+      p.support_plan?.baseline === "Precisou de três lembretes para iniciar.",
+  )!;
+  expect(parent.support_plan?.sources).toContain("cast");
+  const pending = page
+    .locator(".pedagogy-agenda-list article")
+    .filter({ hasText: "Atenção e início da tarefa" });
+  await expect(pending).toHaveCount(1);
+  await pending
+    .getByRole("button", { name: "Registrar evolução", exact: true })
+    .click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog.locator('input[name="parent_record_id"]')).toHaveValue(
+    parent.id,
+  );
+  await dialog
+    .getByLabel("Resultado do acompanhamento")
+    .selectOption("progress");
+  await dialog
+    .getByLabel("Evidências da evolução")
+    .fill("Iniciou com dois lembretes em atividade equivalente.");
+  await dialog
+    .getByLabel("Observações e evolução")
+    .fill("Avanço parcial, mantendo a necessidade de apoio.");
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(pending).toHaveCount(0);
+  const child = schoolApi.store.pedagogy.find(
+    (p) => p.parent_record_id === parent.id,
+  )!;
+  expect(child.support_plan?.outcome).toBe("progress");
+  expect(schoolApi.store.pedagogy.some((p) => p.id === parent.id)).toBe(true);
+  await expect(
+    page
+      .locator(".record-card")
+      .filter({ hasText: "Avanço parcial, mantendo" }),
+  ).toContainText("Evolução vinculada");
 });

@@ -7,8 +7,47 @@ export interface CompressedPhoto {
   width: number;
   height: number;
 }
+export interface PhotoCrop {
+  zoom: number;
+  x: number;
+  y: number;
+}
+export const defaultPhotoCrop: PhotoCrop = { zoom: 1, x: 0, y: 0 };
+export function photoCropGeometry(
+  width: number,
+  height: number,
+  size: number,
+  crop: PhotoCrop,
+) {
+  const zoom = Math.max(0.1, Math.min(5, crop.zoom));
+  const scale = (size / Math.min(width, height)) * zoom;
+  const w = width * scale,
+    h = height * scale;
+  return {
+    x:
+      (size - w) / 2 +
+      Math.max(-1, Math.min(1, crop.x)) * Math.max(size / 2, (w - size) / 2),
+    y:
+      (size - h) / 2 +
+      Math.max(-1, Math.min(1, crop.y)) * Math.max(size / 2, (h - size) / 2),
+    width: w,
+    height: h,
+  };
+}
+export function drawStudentPhoto(
+  context: CanvasRenderingContext2D,
+  source: ImageBitmap,
+  size: number,
+  crop: PhotoCrop,
+) {
+  const rect = photoCropGeometry(source.width, source.height, size, crop);
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, size, size);
+  context.drawImage(source, rect.x, rect.y, rect.width, rect.height);
+}
 export async function compressStudentPhoto(
   file: File,
+  crop: PhotoCrop = defaultPhotoCrop,
 ): Promise<CompressedPhoto> {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
     throw new Error("Escolha uma foto JPG, PNG ou WebP.");
@@ -28,20 +67,7 @@ export async function compressStudentPhoto(
       const context = canvas.getContext("2d");
       if (!context)
         throw new Error("Seu navegador não conseguiu processar a foto.");
-      context.fillStyle = "#fff";
-      context.fillRect(0, 0, size, size);
-      const side = Math.min(bitmap.width, bitmap.height);
-      context.drawImage(
-        bitmap,
-        (bitmap.width - side) / 2,
-        (bitmap.height - side) / 2,
-        side,
-        side,
-        0,
-        0,
-        size,
-        size,
-      );
+      drawStudentPhoto(context, bitmap, size, crop);
       for (const quality of [0.8, 0.65, 0.5, 0.35]) {
         let blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, "image/webp", quality),

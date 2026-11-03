@@ -49,6 +49,12 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       readFileSync(new URL("../supabase/" + file, import.meta.url), "utf8"),
     );
   await db.exec(
+    readFileSync(
+      new URL("../supabase/008_pedagogical_support.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await db.exec(
     `insert into auth.users(id) values('${id(1)}'),('${id(2)}'),('${id(3)}'),('${id(4)}'),('${id(5)}'),('${id(6)}');insert into public.units(id,name) values('${id(11)}','Centro'),('${id(12)}','Vila Nova');insert into public.profiles(id,name,username,role,unit_id) values('${id(2)}','Ana','ana','professor','${id(11)}'),('${id(3)}','Secretaria','secretaria','secretaria','${id(11)}'),('${id(4)}','Pedro','pedro','professor','${id(12)}'),('${id(5)}','Coordenação','coordenacao','coordenacao','${id(12)}');insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values('${id(21)}','${id(11)}','Turma A','Informática','${id(2)}','Ana','Segunda',4),('${id(22)}','${id(12)}','Turma B','Informática','${id(4)}','Pedro','Terça',4),('${id(23)}','${id(11)}','Turma vazia','Informática','${id(2)}','Ana','Quarta',4);insert into public.students(id,unit_id,class_id,name,guardian_phone) values('${id(31)}','${id(11)}','${id(21)}','Aluno Centro',''),('${id(32)}','${id(12)}','${id(22)}','Aluno Vila','');`,
   );
   const as = async (n: number) =>
@@ -494,6 +500,104 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
             [id(91)],
           )
         ).rows[0].archived_at,
+      );
+    },
+  );
+  await t.test(
+    "registro assistido e evolução preservam origem, permissões e evidências",
+    async () => {
+      await service();
+      await db.query("update public.profiles set active=true where id=$1", [
+        id(2),
+      ]);
+      await db.query("update public.students set class_id=$1 where id=$2", [
+        id(21),
+        id(31),
+      ]);
+      await as(2);
+      const day = (
+        await db.query<{ day: string }>("select current_date::text as day")
+      ).rows[0].day;
+      const base = {
+        id: id(101),
+        unit_id: id(11),
+        class_id: id(21),
+        student_id: id(31),
+        author_id: id(2),
+        date: day,
+        kind: "Intervenção",
+        skill: "Organização",
+        level: 2,
+        notes: "Precisa de três lembretes para concluir a tarefa.",
+        intervention: "Lista de etapas com apoio graduado",
+        follow_up: day,
+        parent_record_id: null,
+        support_plan: {
+          mode: "assisted",
+          observation_scores: { task_planning: 2 },
+          strategy_ids: ["plan_checklist"],
+          goal: "Concluir com menos lembretes",
+          criteria: "Comparar a mesma tarefa",
+          sources: ["cast"],
+          catalogue_version: "v1",
+        },
+      };
+      const save = (row: object) =>
+        db.query("select public.save_pedagogical_record($1::jsonb)", [
+          JSON.stringify(row),
+        ]);
+      await save(base);
+      const child = {
+        ...base,
+        id: id(102),
+        kind: "Evolução",
+        parent_record_id: id(101),
+        follow_up: "",
+        support_plan: {
+          ...base.support_plan,
+          outcome: "progress",
+          evidence: "Concluiu com dois lembretes na tarefa comparada.",
+        },
+      };
+      await assert.rejects(
+        save({ ...child, id: id(104), student_id: null }),
+        /manter a turma/,
+      );
+      await assert.rejects(
+        save({ ...child, id: id(104), support_plan: {} }),
+        /resultado observado/,
+      );
+      await assert.rejects(
+        save({ ...child, id: id(104), author_id: id(1) }),
+        /Sem permissão/,
+      );
+      await save(child);
+      await assert.rejects(
+        save({ ...child, id: id(103) }),
+        /unique constraint/,
+      );
+      assert.equal(
+        (
+          await db.query<{ parent_record_id: string }>(
+            "select parent_record_id from public.pedagogy where id=$1",
+            [id(102)],
+          )
+        ).rows[0].parent_record_id,
+        id(101),
+      );
+      await as(3);
+      await assert.rejects(
+        save({ ...base, id: id(105), author_id: id(3) }),
+        /Sem permissão/,
+      );
+      await as(4);
+      assert.equal(
+        (
+          await db.query("select id from public.pedagogy where id=$1", [
+            id(101),
+          ])
+        ).rows.length,
+        0,
       );
     },
   );

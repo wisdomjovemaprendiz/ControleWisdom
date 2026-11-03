@@ -24,9 +24,9 @@ npm run admin:bootstrap
 npm run dev
 ```
 
-`db:provision` aplica as migrações 001 a 007, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
+`db:provision` aplica as migrações 001 a 008, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
 
-Como alternativa ao provisionador, em um projeto vazio execute os sete arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
+Como alternativa ao provisionador, em um projeto vazio execute os oito arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
 
 `admin:bootstrap` cria o login **admin**, na **Unidade Principal**, com troca obrigatória da senha no primeiro acesso. Não cria outro administrador se já existir um. É possível definir previamente `WISDOM_BOOTSTRAP_ADMIN_LOGIN` e `WISDOM_BOOTSTRAP_UNIT_NAME`. A senha vem exclusivamente do campo seguro; `1710` não é aceita porque o Supabase exige pelo menos seis caracteres. Não existe senha padrão embutida no código.
 
@@ -59,7 +59,7 @@ Nascimento alimenta alertas de hoje e da semana (segunda a domingo, São Paulo),
 
 ## Chamada, WhatsApp e PDFs
 
-A chamada registra presentes, faltosos, atrasados e justificativas, conteúdo, data e professor de forma atômica. Ao finalizar, **Compartilhar chamada no grupo** prepara mensagem revisável com os dois primeiros nomes de presentes e atrasados, cabeçalho e sintaxe de formatação do WhatsApp. Alterações pendentes devem ser salvas antes de compartilhar. A equipe copia o texto ou abre o WhatsApp e escolhe o grupo. Não há envio automático.
+A chamada registra presentes, faltosos, atrasados e justificativas, conteúdo, data e professor de forma atômica. Ao finalizar, **Compartilhar chamada no grupo** prepara mensagem revisável com os dois primeiros nomes de presentes, atrasados, ausentes e faltas justificadas, cabeçalho e sintaxe de formatação do WhatsApp. Alterações pendentes devem ser salvas antes de compartilhar. A equipe copia o texto ou abre o WhatsApp e escolhe o grupo. Não há envio automático.
 
 Os PDFs institucionais incluem logo, fontes com acentos, cabeçalhos, tabelas, fotos disponíveis e paginação. Relatórios internos mantêm nomes completos e todas as situações da chamada. Fotos são incorporadas ao arquivo, sem expor suas URLs temporárias. Homônimos não recebem fotos por correspondência de nome ambígua. A evolução individual pode ser compartilhada manualmente com o responsável.
 
@@ -102,3 +102,13 @@ Arquivados ficam fora da operação e continuam disponíveis na gestão. Arquiva
 Exclusão definitiva preserva a integridade do histórico: registros com vínculos exigem primeiro transferir ou excluir os dependentes. A interface apresenta vínculos encontrados; o banco verifica novamente durante a operação. Usuários sem vínculos são removidos também do Supabase Auth; históricos de auditoria preservam os identificadores, sem impedir a remoção da conta. A exclusão de unidade remove seus snapshots derivados de análise diária quando a unidade não tiver outros vínculos. Alunos sem histórico podem ser excluídos; a foto é removida do armazenamento. Falha de limpeza da foto é informada separadamente. Todas as ações administrativas são auditadas.
 
 As migrações `005_record_management.sql` , `006_archive_permissions.sql` e `007_historical_record_edits.sql` são necessárias para essa área. `npm run db:provision` aplica apenas as versões pendentes. Não reexecute o esquema inicial. As fontes de toda a interface foram ampliadas, com mínimo de 14 px nas regras de tamanho e 16 px nos campos, mantendo layout responsivo e as cores da instituição.
+
+## Enquadramento de fotos e acompanhamento pedagógico assistido
+
+Na matrícula, escolha a foto e ajuste zoom, posição horizontal/vertical ou arraste a imagem. **Aplicar enquadramento** comprime a versão enquadrada antes do envio (até 512 × 512 e 100 KB). **Mostrar foto inteira** reduz o zoom com fundo branco. Fotos já salvas podem ser reenquadradas; para recuperar áreas cortadas anteriormente, selecione novamente o original. A matrícula aguarda aplicar ou cancelar o ajuste.
+
+O resumo do WhatsApp agora inclui **presentes, atrasados, ausentes e faltas justificadas**, com dois nomes por aluno. O PDF mantém nomes completos. O relatório de frequência inclui todos os alunos do recorte, inclusive sem presença no período e matrículas com registros históricos. Não converte uma chamada não registrada em falta.
+
+O pedagógico oferece modo manual ou assistido, catálogo de observações e estratégias com fontes, rascunho revisável, metas e critérios. A data de acompanhamento gera lembretes no sistema. Registrar evolução exige resultado e evidência e preserva o vínculo com a intervenção anterior. A migração `008_pedagogical_support.sql` adiciona esses dados e a RPC protegida. O provisionador aplica apenas migrações pendentes.
+
+Consulte [fundamentos e referências do apoio pedagógico](docs/fundamentos-pedagogicos.md). O catálogo é fundamentado em CAST, IES/WWC e CASEL; não é avaliação clínica nem um serviço externo de IA. A fonte da interface foi reduzida em 1 px em relação à versão anterior, incluindo os campos (agora 15 px).

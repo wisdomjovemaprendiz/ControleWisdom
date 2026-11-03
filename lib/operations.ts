@@ -1,3 +1,4 @@
+import { pendingPedagogy } from "./pedagogy";
 import { isManager } from "@/lib/accounts";
 import {
   absenceCount,
@@ -15,6 +16,7 @@ export interface FollowUp {
   title: string;
   detail: string;
   date?: string;
+  pedagogy_id?: string;
 }
 export function followUps(
   store: Store,
@@ -73,25 +75,22 @@ export function followUps(
         detail: contact.outcome,
         date: contact.next_contact,
       });
-    // Na mesma data, mantém o prazo mais próximo: o cadastro não registra horário.
-    const record = store.pedagogy
-      .filter((p) => p.student_id === s.id)
-      .sort(
-        (a, b) =>
-          b.date.localeCompare(a.date) ||
-          (a.follow_up || "9999").localeCompare(b.follow_up || "9999"),
-      )[0];
-    if (record?.follow_up && record.follow_up <= today())
-      items.push({
-        id: `pedagogy-${record.id}`,
-        student: s,
-        kind: "pedagogy",
-        priority: 2,
-        title: "Revisar intervenção",
-        detail: record.intervention || record.notes,
-        date: record.follow_up,
-      });
   }
+  for (const { record, state } of pendingPedagogy(store, profile, unit)) {
+    const student = students.find((s) => s.id === record.student_id);
+    if (!student || state === "upcoming") continue;
+    items.push({
+      id: `pedagogy-${record.id}`,
+      student,
+      kind: "pedagogy",
+      pedagogy_id: record.id,
+      priority: state === "overdue" ? 0 : 2,
+      title: "Revisar intervenção",
+      detail: record.intervention || record.notes,
+      date: record.follow_up,
+    });
+  }
+
   return items.sort(
     (a, b) =>
       a.priority - b.priority ||

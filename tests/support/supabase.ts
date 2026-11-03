@@ -118,6 +118,18 @@ export async function installSchoolApi(page: Page) {
       return json(route, []);
     }
     if (path === "/rest/v1/daily_analytics") return json(route, []);
+    if (path === "/rest/v1/rpc/save_pedagogical_record") {
+      const record = req.postDataJSON().record_data;
+      if (
+        record.parent_record_id &&
+        store.pedagogy.some(
+          (p) => p.parent_record_id === record.parent_record_id,
+        )
+      )
+        return json(route, { message: "Evolução já registrada" }, 409);
+      store.pedagogy.push(record);
+      return json(route, record);
+    }
     if (path === "/rest/v1/rpc/save_lesson_attendance") {
       const body = req.postDataJSON(),
         lesson = body.lesson_data;

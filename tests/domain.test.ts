@@ -15,11 +15,15 @@ test("professor e secretaria só acessam a própria unidade; coordenação acess
   for (const profile of store.profiles) {
     assert.equal(
       canAccess(profile, "u1"),
-      (profile.role === "coordenacao" || profile.role === "admin") || profile.unit_id === "u1",
+      profile.role === "coordenacao" ||
+        profile.role === "admin" ||
+        profile.unit_id === "u1",
     );
     assert.equal(
       canAccess(profile, "u2"),
-      (profile.role === "coordenacao" || profile.role === "admin") || profile.unit_id === "u2",
+      profile.role === "coordenacao" ||
+        profile.role === "admin" ||
+        profile.unit_id === "u2",
     );
   }
 });
@@ -43,7 +47,7 @@ test("resumo inclui conteúdo, professor e situações da chamada correta", () =
     message = attendanceMessage(s, s.lessons[0]);
   assert.match(message, /Planilhas/);
   assert.match(message, /Ana Oliveira/);
-  assert.doesNotMatch(message, /Lucas Ferreira/);
+  assert.match(message, /Lucas Ferreira — Falta/);
   assert.match(message, /Pedro Henrique — Atrasado/);
   assert.match(message, /Maria Eduarda — Presente/);
   assert.doesNotMatch(message, /Maria Eduarda Lima/);

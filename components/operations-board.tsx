@@ -469,7 +469,10 @@ export function OperationsBoard({
                       task.kind === "registration"
                         ? onAction("student", task.student)
                         : task.kind === "pedagogy"
-                          ? onPage("pedagogy")
+                          ? onAction(
+                              `followup:${task.pedagogy_id}`,
+                              task.student,
+                            )
                           : onAction("contact", task.student)
                     }
                   >

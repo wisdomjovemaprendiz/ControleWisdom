@@ -1,4 +1,6 @@
 "use client";
+import { comparePedagogy } from "@/lib/domain";
+import { outcomeLabels } from "@/lib/pedagogy";
 import { StudentAvatar } from "./student-avatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Download, MessageCircle, Pencil, X } from "lucide-react";
@@ -73,7 +75,7 @@ export function StudentDossier({
     .sort((a, b) => b.date.localeCompare(a.date));
   const records = store.pedagogy
     .filter((p) => p.student_id === s.id)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort(comparePedagogy);
   const contacts = store.contacts
     .filter((c) => c.student_id === s.id)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -218,6 +220,32 @@ export function StudentDossier({
                     {p.skill} <small>Nível {p.level}/5</small>
                   </h3>
                   <p>{p.notes}</p>
+                  {p.parent_record_id && (
+                    <small>Evolução vinculada ao registro anterior</small>
+                  )}
+                  {p.support_plan?.goal && (
+                    <p>
+                      <strong>Objetivo:</strong> {p.support_plan.goal}
+                    </p>
+                  )}
+                  {p.support_plan?.criteria && (
+                    <p>
+                      <strong>Critério:</strong> {p.support_plan.criteria}
+                    </p>
+                  )}
+                  {p.support_plan?.outcome && (
+                    <p>
+                      <strong>Resultado:</strong>{" "}
+                      {outcomeLabels[p.support_plan.outcome] ||
+                        p.support_plan.outcome}
+                    </p>
+                  )}
+                  {p.support_plan?.evidence && (
+                    <p>
+                      <strong>Evidência:</strong> {p.support_plan.evidence}
+                    </p>
+                  )}
+
                   {p.intervention && (
                     <div className="dossier-note">
                       <strong>Intervenção</strong>

@@ -85,7 +85,23 @@ export interface Attendance {
   student_id: string;
   status: AttendanceStatus;
 }
+export interface SupportPlan {
+  mode: "manual" | "assisted";
+  observation_scores: Record<string, number>;
+  strategy_ids: string[];
+  context: string;
+  baseline: string;
+  goal: string;
+  criteria: string;
+  outcome: string;
+  evidence: string;
+  sources: string[];
+  catalogue_version: string;
+}
 export interface Pedagogy {
+  created_at?: string;
+  parent_record_id?: string | null;
+  support_plan?: SupportPlan;
   archived_at?: string | null;
   record_archive_reason?: string;
   id: string;
@@ -179,16 +195,8 @@ export function shortStudentName(name: string) {
 }
 export function attendanceMessage(store: Store, lesson: Lesson) {
   const group = store.classes.find((c) => c.id === lesson.class_id);
-  const rows = store.attendance.filter(
-    (a) =>
-      a.lesson_id === lesson.id &&
-      (a.status === "presente" || a.status === "atrasado"),
-  );
-  const section = (
-    status: "presente" | "atrasado",
-    title: string,
-    icon: string,
-  ) => {
+  const rows = store.attendance.filter((a) => a.lesson_id === lesson.id);
+  const section = (status: AttendanceStatus, title: string, icon: string) => {
     const selected = rows.filter((a) => a.status === status);
     return (
       `*${icon} ${title} (${selected.length})*\n` +
@@ -202,7 +210,32 @@ export function attendanceMessage(store: Store, lesson: Lesson) {
         : "• Nenhum registro")
     );
   };
-  return `*WISDOM CURSOS*\n_Acompanhamento da aula_\n━━━━━━━━━━━━━━━━━━\n*Turma:* ${group?.name || ""}\n*Data:* ${displayDate(lesson.date)}\n*Professor(a):* ${lesson.teacher}\n\n*Conteúdo trabalhado*\n${lesson.topic}\n\n${section("presente", "PRESENTES", "✅")}\n\n${section("atrasado", "ATRASADOS", "🕒")}\n━━━━━━━━━━━━━━━━━━\n_Equipe Wisdom • Aprender transforma o futuro._`;
+  return `*WISDOM CURSOS*\n_Acompanhamento da aula_\n━━━━━━━━━━━━━━━━━━\n*Turma:* ${group?.name || ""}\n*Data:* ${displayDate(lesson.date)}\n*Professor(a):* ${lesson.teacher}\n\n*Conteúdo trabalhado*\n${lesson.topic}\n\n${section("presente", "PRESENTES", "✅")}\n\n${section("atrasado", "ATRASADOS", "🕒")}\n\n${section("falta", "AUSENTES", "❌")}\n\n${section("justificado", "FALTAS JUSTIFICADAS", "📋")}\n━━━━━━━━━━━━━━━━━━\n_Equipe Wisdom • Aprender transforma o futuro._`;
+}
+export function frequencyReportLines(
+  store: Store,
+  lessons: Lesson[],
+  unitId: string,
+  classId = "all",
+) {
+  const ids = new Set(lessons.map((l) => l.id));
+  const attendance = store.attendance.filter((a) => ids.has(a.lesson_id));
+  return store.students
+    .filter(
+      (s) =>
+        (unitId === "all" || s.unit_id === unitId) &&
+        (classId === "all" ||
+          s.class_id === classId ||
+          attendance.some((a) => a.student_id === s.id)),
+    )
+    .map((s) => {
+      const rows = attendance.filter((a) => a.student_id === s.id);
+      const label =
+        store.classes.find(
+          (c) => c.id === (classId === "all" ? s.class_id : classId),
+        )?.name || "Turma não localizada";
+      return `${s.name} | ${label} | Presenças: ${rows.filter((a) => a.status === "presente").length} | Faltas: ${rows.filter((a) => a.status === "falta").length} | Atrasos: ${rows.filter((a) => a.status === "atrasado").length} | Justificadas: ${rows.filter((a) => a.status === "justificado").length}`;
+    });
 }
 export function attendanceReportLines(store: Store, lesson: Lesson) {
   return [
@@ -218,10 +251,17 @@ export function attendanceReportLines(store: Store, lesson: Lesson) {
       ),
   ];
 }
+export function comparePedagogy(a: Pedagogy, b: Pedagogy) {
+  return (
+    b.date.localeCompare(a.date) ||
+    (b.created_at || "").localeCompare(a.created_at || "") ||
+    (a.parent_record_id === b.id ? -1 : b.parent_record_id === a.id ? 1 : 0)
+  );
+}
 export function evolutionMessage(store: Store, student: Student) {
   const records = store.pedagogy
     .filter((p) => p.student_id === student.id)
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort(comparePedagogy);
   const latest = records[0];
   const f = frequency(store, student.id);
   return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${student.name}\nTurma: ${store.classes.find((c) => c.id === student.class_id)?.name || "—"}\nFrequência: ${f === null ? "Sem registros" : f + "%"}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}\n\nEquipe Wisdom`;

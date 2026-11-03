@@ -42,6 +42,13 @@ import { birthdaysThisWeek } from "@/lib/birthdays";
 import { OperationsBoard } from "@/components/operations-board";
 import { FollowUpCenter } from "@/components/follow-up-center";
 import { StudentDossier } from "@/components/student-dossier";
+import { PedagogyFields } from "@/components/pedagogy-fields";
+import { PedagogyAgenda } from "@/components/pedagogy-agenda";
+import {
+  pendingPedagogy,
+  pedagogicalReportLines,
+  outcomeLabels,
+} from "@/lib/pedagogy";
 import { RecordManager } from "@/components/record-manager";
 import { operationalStore, type RecordTable } from "@/lib/records";
 import { TeamManager } from "@/components/team-manager";
@@ -75,7 +82,9 @@ import {
   frequency,
   attendanceMessage,
   attendanceReportLines,
+  frequencyReportLines,
   evolutionMessage,
+  comparePedagogy,
   whatsappUrl,
   validateStudent,
 } from "@/lib/domain";
@@ -103,7 +112,11 @@ const tables: (keyof Store)[] = [
   "pedagogy",
   "contacts",
 ];
-type Modal = { kind: string; data?: Student | CourseClass | Offering } | null;
+type Modal = {
+  kind: string;
+  data?: Student | CourseClass | Offering;
+  parentRecord?: Pedagogy;
+} | null;
 function initials(name: string) {
   return name
     .split(" ")
@@ -152,6 +165,16 @@ export default function App() {
   );
   const [managementTable, setManagementTable] =
     useState<RecordTable>("students");
+  const [calendarDay, setCalendarDay] = useState(today());
+  useEffect(() => {
+    const tick = () => setCalendarDay(today());
+    const timer = setInterval(tick, 60000);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", tick);
+    };
+  }, []);
   const [importOpen, setImportOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
@@ -308,19 +331,28 @@ export default function App() {
     setError("");
     try {
       if (!supabase) throw new Error("Acesso não configurado.");
+      let persisted = record;
       {
-        const { error } = await (table === "pedagogy" || table === "contacts"
-          ? supabase.from(table).insert(record)
-          : supabase.from(table).upsert(record));
-        if (error) throw error;
+        const { data, error } = await (table === "pedagogy"
+          ? supabase.rpc("save_pedagogical_record", { record_data: record })
+          : table === "contacts"
+            ? supabase.from(table).insert(record)
+            : supabase.from(table).upsert(record));
+        if (error)
+          throw new Error(
+            error.code === "23505"
+              ? "Este acompanhamento já foi registrado. Atualize os dados para consultar a evolução."
+              : error.message,
+          );
+        if (table === "pedagogy" && data) persisted = data as Store[K][number];
       }
       setStore((prev) =>
         prev
           ? {
               ...prev,
               [table]: [
-                ...prev[table].filter((r) => r.id !== record.id),
-                record,
+                ...prev[table].filter((r) => r.id !== persisted.id),
+                persisted,
               ],
             }
           : prev,
@@ -377,8 +409,11 @@ export default function App() {
         "Evolução do aluno",
         "Evolução pedagógica",
       ].includes(title)
-        ? students.filter(
-            (s) => s.photo_path && lines.some((line) => line.includes(s.name)),
+        ? (allRecords?.students || students).filter(
+            (s) =>
+              scoped(s.unit_id) &&
+              s.photo_path &&
+              lines.some((line) => line.includes(s.name)),
           )
         : [];
       for (let i = 0; i < reportStudents.length; i += 4) {
@@ -686,7 +721,7 @@ export default function App() {
       const c = store.classes.find((c) => c.id === v("class_id"));
       if (!c) return;
       const st = store.students.find((s) => s.id === v("student_id"));
-      if (st && st.class_id !== c.id) {
+      if (st && st.class_id !== c.id && !modal.parentRecord) {
         setError("O aluno deve pertencer à turma selecionada.");
         return;
       }
@@ -703,6 +738,8 @@ export default function App() {
         notes: v("notes"),
         intervention: v("intervention"),
         follow_up: v("follow_up"),
+        parent_record_id: v("parent_record_id") || null,
+        support_plan: JSON.parse(v("support_plan") || "{}"),
       } as Pedagogy);
     }
     if (modal.kind === "contact") {
@@ -810,22 +847,27 @@ export default function App() {
   };
   const overallFrequency = frequency(scopedStore);
   const className = (id: string) =>
-    store.classes.find((c) => c.id === id)?.name || "—";
+    allRecords?.classes.find((c) => c.id === id)?.name || "—";
   const studentName = (id: string | null) =>
-    store.students.find((s) => s.id === id)?.name || "Toda a turma";
+    allRecords?.students.find((s) => s.id === id)?.name || "Toda a turma";
   const currentUnit = isManager(profile.role) ? unit : profile.unit_id;
   const unitOptions = store.units.filter(
     (u) => isManager(profile.role) || u.id === profile.unit_id,
   );
-  const reportLessons = store.lessons.filter(
+  const interventionDueCount = pendingPedagogy(
+    store,
+    profile,
+    currentUnit,
+    calendarDay,
+  ).filter((item) => item.state !== "upcoming").length;
+  const attentionCount = alerts.length + interventionDueCount;
+  const reportSource = allRecords!;
+  const reportLessons = reportSource.lessons.filter(
     (l) =>
       scoped(l.unit_id) &&
       (!reportFrom || l.date >= reportFrom) &&
       l.date <= reportTo &&
       (reportClass === "all" || l.class_id === reportClass),
-  );
-  const reportAttendance = store.attendance.filter((a) =>
-    reportLessons.some((l) => l.id === a.lesson_id),
   );
   return (
     <div className="app-shell">
@@ -907,7 +949,7 @@ export default function App() {
             onClick={() => goto("alerts")}
           >
             <Bell size={19} />
-            {alerts.length > 0 && <b>{alerts.length}</b>}
+            {attentionCount > 0 && <b>{attentionCount}</b>}
           </button>
           <div className="header-user">
             <span>
@@ -955,7 +997,9 @@ export default function App() {
             >
               <Icon size={17} />
               <span>{label}</span>
-              {key === "alerts" && alerts.length > 0 && <b>{alerts.length}</b>}
+              {key === "alerts" && attentionCount > 0 && (
+                <b>{attentionCount}</b>
+              )}
             </button>
           ))}
       </nav>
@@ -1125,12 +1169,20 @@ export default function App() {
                 goto(profile.role === "secretaria" ? "reports" : "attendance");
               }}
               onStudent={(s) => setDossierId(s.id)}
-              onAction={(kind, data) => setModal({ kind, data })}
+              onAction={(kind, data) => {
+                if (kind.startsWith("followup:")) {
+                  const record = store.pedagogy.find(
+                    (p) => p.id === kind.slice(9),
+                  );
+                  if (record)
+                    setModal({ kind: "pedagogy", parentRecord: record });
+                } else setModal({ kind, data });
+              }}
               onPage={goto}
               onMessage={(lesson) =>
                 setMessage({
                   title: "Resumo da aula",
-                  text: attendanceMessage(store, lesson),
+                  text: attendanceMessage(allRecords!, lesson),
                   phone: "",
                 })
               }
@@ -1647,7 +1699,10 @@ export default function App() {
                         onClick={() =>
                           setMessage({
                             title: "Compartilhar chamada no grupo",
-                            text: attendanceMessage(store, selectedLesson),
+                            text: attendanceMessage(
+                              allRecords!,
+                              selectedLesson,
+                            ),
                             phone: "",
                           })
                         }
@@ -1670,6 +1725,14 @@ export default function App() {
           )}
           {page === "pedagogy" && (
             <>
+              <PedagogyAgenda
+                store={store}
+                profile={profile}
+                unit={currentUnit}
+                onFollowUp={(record) =>
+                  setModal({ kind: "pedagogy", parentRecord: record })
+                }
+              />
               <div className="info-banner">
                 <BookOpen size={22} />
                 <div>
@@ -1683,7 +1746,7 @@ export default function App() {
               <div className="records-grid">
                 {store.pedagogy
                   .filter((p) => scoped(p.unit_id))
-                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .sort(comparePedagogy)
                   .map((p) => (
                     <section className="panel record-card" key={p.id}>
                       <div className="record-top">
@@ -1718,6 +1781,24 @@ export default function App() {
                         </span>
                       </div>
                       <p className="record-notes">{p.notes}</p>
+                      {p.parent_record_id && (
+                        <Badge tone="neutral">
+                          Evolução vinculada à intervenção
+                        </Badge>
+                      )}
+                      {p.support_plan?.outcome && (
+                        <p>
+                          <strong>Resultado:</strong>{" "}
+                          {outcomeLabels[p.support_plan.outcome] ||
+                            p.support_plan.outcome}
+                        </p>
+                      )}
+                      {p.follow_up &&
+                        store.pedagogy.some(
+                          (child) => child.parent_record_id === p.id,
+                        ) && (
+                          <Badge tone="green">Acompanhamento registrado</Badge>
+                        )}
                       {p.intervention && (
                         <div className="intervention">
                           <strong>Próximo passo</strong>
@@ -1761,13 +1842,33 @@ export default function App() {
           )}
           {page === "alerts" && (
             <>
+              <PedagogyAgenda
+                store={store}
+                profile={profile}
+                unit={currentUnit}
+                onFollowUp={(record) =>
+                  setModal({ kind: "pedagogy", parentRecord: record })
+                }
+              />
               <FollowUpCenter
                 store={store}
                 profile={profile}
                 unit={currentUnit}
                 onStudent={(s) => setDossierId(s.id)}
-                onAction={(kind, data) => setModal({ kind, data })}
-                onPedagogy={() => goto("pedagogy")}
+                onAction={(kind, data) => {
+                  if (kind.startsWith("followup:")) {
+                    const record = store.pedagogy.find(
+                      (p) => p.id === kind.slice(9),
+                    );
+                    if (record)
+                      setModal({ kind: "pedagogy", parentRecord: record });
+                  } else setModal({ kind, data });
+                }}
+                onPedagogy={(record) =>
+                  record && profile.role !== "secretaria"
+                    ? setModal({ kind: "pedagogy", parentRecord: record })
+                    : goto("pedagogy")
+                }
               />
               <section className="panel contact-history">
                 <div className="panel-header">
@@ -1881,12 +1982,12 @@ export default function App() {
                       pdf("Frequência e faltas", [
                         `Período: ${reportFrom ? displayDate(reportFrom) : "início"} a ${displayDate(reportTo)}`,
                         `Aulas registradas: ${reportLessons.length}`,
-                        ...students.map((s) => {
-                          const rows = reportAttendance.filter(
-                            (a) => a.student_id === s.id,
-                          );
-                          return `${s.name} | ${className(s.class_id)} | Presenças: ${rows.filter((a) => a.status === "presente").length} | Faltas: ${rows.filter((a) => a.status === "falta").length} | Atrasos: ${rows.filter((a) => a.status === "atrasado").length} | Justificadas: ${rows.filter((a) => a.status === "justificado").length}`;
-                        }),
+                        ...frequencyReportLines(
+                          reportSource,
+                          reportLessons,
+                          currentUnit,
+                          reportClass,
+                        ),
                       ]),
                   },
                   {
@@ -1922,8 +2023,7 @@ export default function App() {
                           )
                           .flatMap((p) => [
                             `${displayDate(p.date)} | ${studentName(p.student_id)} | ${className(p.class_id)} | ${p.kind}`,
-                            `${p.skill} - Nível ${p.level}/5: ${p.notes}`,
-                            `Intervenção: ${p.intervention || "—"}`,
+                            ...pedagogicalReportLines(p),
                           ]),
                       ),
                   },
@@ -1966,7 +2066,7 @@ export default function App() {
                           onClick={() =>
                             pdf(
                               "Resumo da aula",
-                              attendanceReportLines(store, l),
+                              attendanceReportLines(allRecords!, l),
                             )
                           }
                         >
@@ -1977,7 +2077,7 @@ export default function App() {
                           onClick={() =>
                             setMessage({
                               title: "Resumo da aula",
-                              text: attendanceMessage(store, l),
+                              text: attendanceMessage(allRecords!, l),
                               phone: "",
                             })
                           }
@@ -2105,6 +2205,14 @@ export default function App() {
               evolutionMessage(store, student),
               `Matrícula: ${displayDate(student.enrollment_date)}`,
               `Situação: ${labels[student.status]}`,
+              "Histórico pedagógico completo",
+              ...reportSource.pedagogy
+                .filter((p) => p.student_id === student.id)
+                .sort(comparePedagogy)
+                .flatMap((p) => [
+                  p.archived_at ? "Registro arquivado" : "Registro pedagógico",
+                  ...pedagogicalReportLines(p),
+                ]),
             ]);
           }}
         />
@@ -2492,73 +2600,11 @@ export default function App() {
                 </>
               )}
               {modal.kind === "pedagogy" && (
-                <>
-                  <label>
-                    Turma *
-                    <select name="class_id" required>
-                      {writableClasses.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Aluno (opcional)
-                    <select name="student_id">
-                      <option value="">Registro de toda a turma</option>
-                      {active
-                        .filter((s) =>
-                          writableClasses.some((c) => c.id === s.class_id),
-                        )
-                        .map((s) => (
-                          <option value={s.id} key={s.id}>
-                            {s.name} • {className(s.class_id)}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <div className="form-grid">
-                    <label>
-                      Tipo
-                      <select name="kind">
-                        <option>Diagnóstico</option>
-                        <option>Evolução</option>
-                        <option>Intervenção</option>
-                      </select>
-                    </label>
-                    <label>
-                      Nível atual (1 a 5)
-                      <input
-                        type="number"
-                        name="level"
-                        min="1"
-                        max="5"
-                        required
-                        defaultValue="3"
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    Habilidade observada *
-                    <input
-                      name="skill"
-                      required
-                      placeholder="Ex.: raciocínio lógico, comunicação…"
-                    />
-                  </label>
-                  <label>
-                    Observações e evolução *<textarea name="notes" required />
-                  </label>
-                  <label>
-                    Intervenção / próximo passo
-                    <textarea name="intervention" />
-                  </label>
-                  <label>
-                    Data para acompanhamento
-                    <input type="date" name="follow_up" min={today()} />
-                  </label>
-                </>
+                <PedagogyFields
+                  store={store}
+                  classes={writableClasses}
+                  parent={modal.parentRecord}
+                />
               )}
               {modal.kind === "contact" && (
                 <>
