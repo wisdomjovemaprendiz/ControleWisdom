@@ -1,11 +1,6 @@
 import { serviceClient } from "@/lib/server/client";
-import {
-  authorizedProfile,
-  ApiError,
-  apiFailure,
-  jsonInput,
-} from "@/lib/server/team";
-import { validPassword } from "@/lib/accounts";
+import { authorizedProfile, apiFailure, jsonInput } from "@/lib/server/team";
+import { changeOwnPassword } from "@/lib/server/password";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
@@ -18,30 +13,7 @@ export async function POST(request: Request) {
       true,
     );
     const input = await jsonInput(request);
-    if (!validPassword(input.password))
-      throw new ApiError(400, "A senha deve ter pelo menos 6 caracteres.");
-    const changed = await client.auth.admin.updateUserById(profile.id, {
-      password: input.password,
-    });
-    if (changed.error)
-      throw new ApiError(
-        400,
-        "Não foi possível alterar a senha. Escolha outra senha válida.",
-      );
-    const revoke = await client.auth.admin.signOut(token, "global");
-    if (revoke.error)
-      throw new ApiError(
-        503,
-        "Entre novamente para concluir a alteração da senha.",
-      );
-    const { error } = await client.rpc("complete_password_change", {
-      p_id: profile.id,
-    });
-    if (error)
-      throw new ApiError(
-        503,
-        "Entre novamente para concluir a alteração da senha.",
-      );
+    await changeOwnPassword(client, profile.id, token, input.password);
     return Response.json(
       { ok: true, login_required: true },
       { headers: { "Cache-Control": "no-store" } },
