@@ -601,5 +601,135 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       );
     },
   );
+  await t.test(
+    "cadastro sem campos e detalhes opcionais de frequência preservam RLS e transação",
+    async () => {
+      await db.exec("reset role");
+      await db.exec(
+        readFileSync(
+          new URL(
+            "../supabase/009_camera_attendance_optional_students.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      await as(2);
+      await db.query("insert into public.students(id,unit_id) values($1,$2)", [
+        id(110),
+        id(11),
+      ]);
+      const empty = (
+        await db.query<{
+          name: string;
+          class_id: null;
+          guardian_phone: string;
+        }>(
+          "select name,class_id,guardian_phone from public.students where id=$1",
+          [id(110)],
+        )
+      ).rows[0];
+      assert.equal(empty.name, "");
+      assert.equal(empty.class_id, null);
+      assert.equal(empty.guardian_phone, "");
+      await assert.rejects(
+        db.query("insert into public.students(id,unit_id) values($1,$2)", [
+          id(111),
+          id(12),
+        ]),
+        /row-level security/,
+      );
+      const day = (
+        await db.query<{ day: string }>("select current_date::text as day")
+      ).rows[0].day;
+      const lesson = {
+        id: id(112),
+        unit_id: id(11),
+        class_id: id(21),
+        teacher_id: id(2),
+        teacher: "Ana",
+        date: day,
+        topic: "Aula com horários",
+        closed: true,
+      };
+      // Reuse the existing same-day lesson so the attendance transaction updates it.
+      const existing = (
+        await db.query<{ id: string }>(
+          "select id from public.lessons where class_id=$1 and date=$2",
+          [id(21), day],
+        )
+      ).rows[0];
+      if (existing) lesson.id = existing.id;
+      const students = (
+        await db.query<{ id: string }>(
+          "select id from public.students where class_id=$1 and status='ativo'",
+          [id(21)],
+        )
+      ).rows;
+      const rows = students.map((s, i) => ({
+        id: id(113 + i),
+        unit_id: id(11),
+        lesson_id: lesson.id,
+        student_id: s.id,
+        status: "atrasado",
+        arrival_time: "14:25",
+        justification: "",
+      }));
+      await db.query(
+        "select public.save_lesson_attendance($1::jsonb,$2::jsonb)",
+        [JSON.stringify(lesson), JSON.stringify(rows)],
+      );
+      assert.equal(
+        (
+          await db.query<{ arrival_time: string }>(
+            "select arrival_time from public.attendance where lesson_id=$1 and student_id=$2",
+            [lesson.id, students[0].id],
+          )
+        ).rows[0].arrival_time,
+        "14:25",
+      );
+      const justified = rows.map((r) => ({
+        ...r,
+        status: "justificado",
+        arrival_time: "",
+        justification: "Consulta médica",
+      }));
+      await db.query(
+        "select public.save_lesson_attendance($1::jsonb,$2::jsonb)",
+        [JSON.stringify(lesson), JSON.stringify(justified)],
+      );
+      const saved = (
+        await db.query<{ justification: string; arrival_time: string }>(
+          "select justification,arrival_time from public.attendance where lesson_id=$1 and student_id=$2",
+          [lesson.id, students[0].id],
+        )
+      ).rows[0];
+      assert.equal(saved.justification, "Consulta médica");
+      assert.equal(saved.arrival_time, "");
+      await db.query(
+        "select public.save_lesson_attendance($1::jsonb,$2::jsonb)",
+        [
+          JSON.stringify(lesson),
+          JSON.stringify(rows.map(({ arrival_time, ...r }) => r)),
+        ],
+      );
+      await assert.rejects(
+        db.query("select public.save_lesson_attendance($1::jsonb,$2::jsonb)", [
+          JSON.stringify({ ...lesson, topic: "Não deve ser salvo" }),
+          JSON.stringify(rows.map((r) => ({ ...r, arrival_time: "29:99" }))),
+        ]),
+        /arrival_time_check/,
+      );
+      assert.equal(
+        (
+          await db.query<{ topic: string }>(
+            "select topic from public.lessons where id=$1",
+            [lesson.id],
+          )
+        ).rows[0].topic,
+        "Aula com horários",
+      );
+    },
+  );
   await db.close();
 });

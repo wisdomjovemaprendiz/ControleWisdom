@@ -1,4 +1,5 @@
 "use client";
+import { studentDisplayName, attendanceDescription } from "@/lib/domain";
 import { comparePedagogy } from "@/lib/domain";
 import { outcomeLabels } from "@/lib/pedagogy";
 import { StudentAvatar } from "./student-avatar";
@@ -110,7 +111,7 @@ export function StudentDossier({
           >
             {labels[s.status]}
           </span>
-          <h2 id="dossier-title">{s.name}</h2>
+          <h2 id="dossier-title">{studentDisplayName(s)}</h2>
           <p>
             {store.classes.find((c) => c.id === s.class_id)?.name} /{" "}
             {store.units.find((u) => u.id === s.unit_id)?.name}
@@ -188,14 +189,15 @@ export function StudentDossier({
           {tab === "attendance" && (
             <div className="dossier-timeline">
               {lessons.map((l) => {
-                const status = store.attendance.find(
+                const attendance = store.attendance.find(
                   (a) => a.student_id === s.id && a.lesson_id === l.id,
-                )!.status;
+                )!;
+                const status = attendance.status;
                 return (
                   <article key={l.id}>
                     <time>{displayDate(l.date)}</time>
                     <span className={`register-mark ${status}`}>
-                      {labels[status]}
+                      {attendanceDescription(attendance)}
                     </span>
                     <h3>{l.topic}</h3>
                     <p>{l.teacher}</p>

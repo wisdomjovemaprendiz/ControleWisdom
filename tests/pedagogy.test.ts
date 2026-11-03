@@ -153,3 +153,21 @@ test("relatórios incluem ausentes, justificadas e alunos sem presença no perí
   assert.ok(filtered.every((row) => !row.includes("Unidade Vila")));
   assert.ok(filtered.some((row) => row.includes("Faltas: 3")));
 });
+
+test("horário e justificativa opcionais aparecem nos resumos sem inventar dados", () => {
+  const store = schoolFixture(),
+    lesson = store.lessons[0],
+    rows = store.attendance.filter((a) => a.lesson_id === lesson.id);
+  rows[0].status = "atrasado";
+  rows[0].arrival_time = "14:25";
+  rows[1].status = "justificado";
+  rows[1].justification = "Consulta médica";
+  let message = attendanceMessage(store, lesson);
+  assert.match(message, /Chegada: 14:25/);
+  assert.match(message, /Motivo: Consulta médica/);
+  rows[0].arrival_time = "";
+  rows[1].justification = "";
+  message = attendanceMessage(store, lesson);
+  assert.doesNotMatch(message, /Chegada:/);
+  assert.doesNotMatch(message, /Motivo:/);
+});

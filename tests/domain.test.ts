@@ -60,9 +60,10 @@ test("evolução individual não mistura registros de outros alunos", () => {
   assert.match(message, /Resolve fórmulas/);
   assert.doesNotMatch(message, /As faltas estão/);
 });
-test("matrícula expressa exige aluno, turma e contato do responsável", () => {
-  assert.ok(validateStudent({}));
-  assert.ok(validateStudent({ name: "Ana", class_id: "c1" }));
+test("cadastro permite campos vazios e valida telefone somente quando informado", () => {
+  assert.equal(validateStudent({}), null);
+  assert.equal(validateStudent({ name: "Ana", class_id: "c1" }), null);
+  assert.ok(validateStudent({ guardian_phone: "123" }));
   assert.equal(
     validateStudent({
       name: "Ana",

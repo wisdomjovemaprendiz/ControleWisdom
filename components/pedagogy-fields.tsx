@@ -1,4 +1,5 @@
 "use client";
+import { studentDisplayName } from "@/lib/domain";
 import { useState } from "react";
 import { Sparkles, BookOpen, Check } from "lucide-react";
 import type { Store, CourseClass, Pedagogy, SupportPlan } from "@/lib/domain";
@@ -136,7 +137,7 @@ export function PedagogyFields({
             )
             .map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {studentDisplayName(s)}
               </option>
             ))}
         </select>

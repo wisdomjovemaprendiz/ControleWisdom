@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Store, Student } from "@/lib/domain";
-import { labels } from "@/lib/domain";
+import { labels, studentDisplayName } from "@/lib/domain";
 import { StudentAvatar } from "./student-avatar";
 import {
   recordTables,
@@ -41,6 +41,7 @@ export function RecordManager({
     [notice, setNotice] = useState("");
   const rows = store[table] as unknown as ManagedRecord[];
   function title(row: ManagedRecord, t: RecordTable = table): string {
+    if (t === "students") return studentDisplayName(row as unknown as Student);
     if (row.name) return String(row.name);
     const student = store.students.find((s) => s.id === row.student_id),
       lesson = store.lessons.find((l) => l.id === row.lesson_id),
@@ -48,9 +49,9 @@ export function RecordManager({
         (c) => c.id === (row.class_id || lesson?.class_id),
       );
     if (t === "attendance")
-      return `${student?.name || "Aluno"} · ${lesson?.date || ""}`;
+      return `${student ? studentDisplayName(student) : "Aluno"} · ${lesson?.date || ""}`;
     if (t === "contacts")
-      return `${student?.name || "Aluno"} · ${row.reason || "Contato"}`;
+      return `${student ? studentDisplayName(student) : "Aluno"} · ${row.reason || "Contato"}`;
     return `${course?.name || student?.name || recordLabels[t]} · ${row.topic || row.skill || row.date || ""}`;
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -65,7 +66,9 @@ export function RecordManager({
         let value: unknown = String(data.get(field.key) || "");
         if (field.type === "number") value = Number(value);
         if (field.key === "active") value = value === "true";
-        if (field.key === "offering_id" && value === "") value = null;
+        if (["offering_id", "class_id"].includes(field.key) && value === "")
+          value = null;
+        if (field.key === "enrollment_date" && value === "") continue;
         changes[field.key] = value;
       }
     try {
@@ -128,7 +131,7 @@ export function RecordManager({
               s.unit_id === selection.row.id ||
               s.created_by === selection.row.id,
           )
-          .map((s) => "Matrícula: " + s.name),
+          .map((s) => "Matrícula: " + studentDisplayName(s)),
         ...store.classes
           .filter(
             (c) =>

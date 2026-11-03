@@ -11,6 +11,7 @@ import {
   type CompressedPhoto,
   type PhotoCrop,
 } from "@/lib/photos";
+import { CameraCapture } from "./camera-capture";
 import { StudentAvatar } from "./student-avatar";
 export function StudentPhotoEditor({
   student,
@@ -29,7 +30,8 @@ export function StudentPhotoEditor({
     [source, setSource] = useState<{ file: File; bitmap: ImageBitmap } | null>(
       null,
     ),
-    [crop, setCrop] = useState<PhotoCrop>(defaultPhotoCrop);
+    [crop, setCrop] = useState<PhotoCrop>(defaultPhotoCrop),
+    [cameraOpen, setCameraOpen] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null),
     drag = useRef<{ x: number; y: number; crop: PhotoCrop } | null>(null);
   useEffect(
@@ -131,13 +133,26 @@ export function StudentPhotoEditor({
               type="file"
               aria-label="Foto do aluno"
               accept="image/jpeg,image/png,image/webp"
-              disabled={busy || !!source}
+              disabled={busy || !!source || cameraOpen}
               onChange={(e) => {
                 void select(e.target.files?.[0]);
                 e.target.value = "";
               }}
             />
           </label>
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy || !!source || cameraOpen}
+            onClick={() => {
+              setError("");
+              setCameraOpen(true);
+              onBusy(true);
+            }}
+          >
+            <Camera size={16} />
+            Usar câmera
+          </button>
           {student?.photo_path && !source && (
             <button
               type="button"
@@ -176,6 +191,18 @@ export function StudentPhotoEditor({
           </p>
         )}
       </div>
+      {cameraOpen && (
+        <CameraCapture
+          onClose={() => {
+            setCameraOpen(false);
+            onBusy(false);
+          }}
+          onPhoto={(file) => {
+            setCameraOpen(false);
+            void select(file);
+          }}
+        />
+      )}
       {source && (
         <div className="photo-crop-workspace">
           <div className="photo-crop-heading">

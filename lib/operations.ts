@@ -44,6 +44,8 @@ export function followUps(
           : "Nenhum contato registrado com o responsável.",
       });
     const missing = [
+      !s.name.trim() && "nome",
+      !s.class_id && "turma",
       !s.guardian && "responsável",
       !s.guardian_phone && "WhatsApp",
       !s.birth_date && "nascimento",

@@ -12,7 +12,7 @@ test("matrícula expressa persiste e busca encontra aluno", async ({ page }) => 
     .click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nome completo").fill("Teste Matrícula");
-  await dialog.getByLabel("Turma *").selectOption("c1");
+  await dialog.getByLabel("Turma", { exact: true }).selectOption("c1");
   await dialog.getByLabel("WhatsApp do responsável").fill("5511999999999");
   await dialog.getByRole("button", { name: "Salvar registro" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -472,7 +472,7 @@ test("foto é comprimida antes do envio e aparece no cadastro e na chamada", asy
     .click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nome completo").fill("Aluno Com Foto");
-  await dialog.getByLabel("Turma *").selectOption("c1");
+  await dialog.getByLabel("Turma", { exact: true }).selectOption("c1");
   await dialog.getByLabel("WhatsApp do responsável").fill("5511999999999");
   await dialog.getByLabel("Foto do aluno", { exact: true }).setInputFiles({
     name: "foto.png",
@@ -777,4 +777,205 @@ test("registro assistido gera rascunho revisável e evolução conclui somente o
       .locator(".record-card")
       .filter({ hasText: "Avanço parcial, mantendo" }),
   ).toContainText("Evolução vinculada");
+});
+
+test("cadastro aceita todos os campos vazios e permite completar a turma depois", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.locator("input[required],select[required],textarea[required]"),
+  ).toHaveCount(0);
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const student = schoolApi.store.students.find((s) => !s.name && !s.class_id)!;
+  expect(student).toBeTruthy();
+  expect(student.unit_id).toBe("u1");
+  expect(student.guardian_phone).toBe("");
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  const row = page
+    .locator("tbody tr")
+    .filter({ hasText: `Cadastro ${student.id.slice(0, 6).toUpperCase()}` });
+  await expect(row).toContainText("Sem turma");
+  await row
+    .getByRole("button", { name: "Editar matrícula", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Nome completo")
+    .fill("Cadastro completado");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Turma", { exact: true })
+    .selectOption("c1");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("tbody")).toContainText("Cadastro completado");
+});
+
+test("chamada grava horário e motivo opcionais e inclui os detalhes no WhatsApp", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Todos presentes", exact: true })
+    .click();
+  const first = page.locator(".attendance-row").first(),
+    second = page.locator(".attendance-row").nth(1);
+  await first.getByRole("button", { name: "Atrasado", exact: true }).click();
+  await first.getByLabel(/Horário de chegada de/).fill("14:25");
+  await second
+    .getByRole("button", { name: "Justificado", exact: true })
+    .click();
+  await second.getByLabel(/Justificativa de/).fill("Consulta médica");
+  await page
+    .getByRole("button", { name: "Finalizar chamada", exact: false })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator(".whatsapp-bubble")).toContainText(
+    "Chegada: 14:25",
+  );
+  await expect(dialog.locator(".whatsapp-bubble")).toContainText(
+    "Motivo: Consulta médica",
+  );
+  await dialog
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Operação das unidades", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await expect(
+    page
+      .locator(".attendance-row")
+      .first()
+      .getByLabel(/Horário de chegada de/),
+  ).toHaveValue("14:25");
+  await page
+    .locator(".attendance-row")
+    .first()
+    .getByLabel(/Horário de chegada de/)
+    .fill("");
+  await page
+    .locator(".attendance-row")
+    .nth(1)
+    .getByLabel(/Justificativa de/)
+    .fill("");
+  await page
+    .getByRole("button", { name: "Finalizar chamada", exact: false })
+    .click();
+  await expect(
+    page.getByRole("dialog").locator(".whatsapp-bubble"),
+  ).not.toContainText("Chegada:");
+});
+
+test("webcam captura foto e encerra a câmera antes do enquadramento", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const state = window as any;
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      configurable: true,
+      value: async (constraints: any) => {
+        state.cameraConstraints = constraints;
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#2364a0";
+        ctx.fillRect(0, 0, 640, 480);
+        const stream = canvas.captureStream(20);
+        for (const track of stream.getTracks()) {
+          const stop = track.stop.bind(track);
+          track.stop = () => {
+            state.cameraStopped = true;
+            stop();
+          };
+        }
+        return stream;
+      },
+    });
+    Object.defineProperty(navigator.mediaDevices, "enumerateDevices", {
+      configurable: true,
+      value: async () => [],
+    });
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Operação das unidades", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Usar câmera", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Tirar foto", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(() => (window as any).cameraConstraints.audio),
+  ).toBe(false);
+  await dialog.getByRole("button", { name: "Tirar foto", exact: true }).click();
+  await expect(
+    dialog.getByLabel("Zoom da foto", { exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => (window as any).cameraStopped))
+    .toBe(true);
+  await dialog
+    .getByRole("button", { name: "Aplicar enquadramento", exact: true })
+    .click();
+  await expect(dialog.getByText(/Foto pronta:/)).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(schoolApi.store.students.some((s) => s.photo_path && !s.name)).toBe(
+    true,
+  );
+});
+
+test("câmera negada informa como continuar e não impede cadastro sem foto", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      configurable: true,
+      value: async () => {
+        throw new DOMException("Denied", "NotAllowedError");
+      },
+    }),
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Operação das unidades", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Usar câmera", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "não permitiu a câmera",
+  );
+  await dialog
+    .getByRole("button", { name: "Cancelar câmera", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
 });

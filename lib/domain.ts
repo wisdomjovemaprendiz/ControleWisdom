@@ -50,7 +50,7 @@ export interface Student {
   photo_path?: string | null;
   id: string;
   unit_id: string;
-  class_id: string;
+  class_id: string | null;
   offering_id: string | null;
   name: string;
   birth_date: string;
@@ -77,6 +77,8 @@ export interface Lesson {
   closed: boolean;
 }
 export interface Attendance {
+  arrival_time?: string;
+  justification?: string;
   archived_at?: string | null;
   record_archive_reason?: string;
   id: string;
@@ -193,6 +195,21 @@ export function displayDate(value: string) {
 export function shortStudentName(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).join(" ");
 }
+export function studentDisplayName(student: Pick<Student, "id" | "name">) {
+  return (
+    student.name.trim() || `Cadastro ${student.id.slice(0, 6).toUpperCase()}`
+  );
+}
+export function attendanceDescription(row: Attendance) {
+  return (
+    labels[row.status] +
+    (row.status === "atrasado" && row.arrival_time
+      ? ` — Chegada: ${row.arrival_time.slice(0, 5)}`
+      : row.status === "justificado" && row.justification?.trim()
+        ? ` — Motivo: ${row.justification.trim().replace(/\s+/g, " ")}`
+        : "")
+  );
+}
 export function attendanceMessage(store: Store, lesson: Lesson) {
   const group = store.classes.find((c) => c.id === lesson.class_id);
   const rows = store.attendance.filter((a) => a.lesson_id === lesson.id);
@@ -204,7 +221,7 @@ export function attendanceMessage(store: Store, lesson: Lesson) {
         ? selected
             .map(
               (a) =>
-                `• ${shortStudentName(store.students.find((s) => s.id === a.student_id)?.name || "Aluno")} — ${labels[status]}`,
+                `• ${shortStudentName(studentDisplayName(store.students.find((s) => s.id === a.student_id) || { id: a.student_id, name: "" }))} — ${attendanceDescription(a)}`,
             )
             .join("\n")
         : "• Nenhum registro")
@@ -233,8 +250,8 @@ export function frequencyReportLines(
       const label =
         store.classes.find(
           (c) => c.id === (classId === "all" ? s.class_id : classId),
-        )?.name || "Turma não localizada";
-      return `${s.name} | ${label} | Presenças: ${rows.filter((a) => a.status === "presente").length} | Faltas: ${rows.filter((a) => a.status === "falta").length} | Atrasos: ${rows.filter((a) => a.status === "atrasado").length} | Justificadas: ${rows.filter((a) => a.status === "justificado").length}`;
+        )?.name || (s.class_id ? "Turma não localizada" : "Sem turma");
+      return `${studentDisplayName(s)} | ${label} | Presenças: ${rows.filter((a) => a.status === "presente").length} | Faltas: ${rows.filter((a) => a.status === "falta").length} | Atrasos: ${rows.filter((a) => a.status === "atrasado").length} | Justificadas: ${rows.filter((a) => a.status === "justificado").length}`;
     });
 }
 export function attendanceReportLines(store: Store, lesson: Lesson) {
@@ -247,7 +264,7 @@ export function attendanceReportLines(store: Store, lesson: Lesson) {
       .filter((a) => a.lesson_id === lesson.id)
       .map(
         (a) =>
-          `${store.students.find((s) => s.id === a.student_id)?.name || "Aluno"} | ${labels[a.status]}`,
+          `${studentDisplayName(store.students.find((s) => s.id === a.student_id) || { id: a.student_id, name: "" })} | ${attendanceDescription(a)}`,
       ),
   ];
 }
@@ -264,16 +281,17 @@ export function evolutionMessage(store: Store, student: Student) {
     .sort(comparePedagogy);
   const latest = records[0];
   const f = frequency(store, student.id);
-  return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${student.name}\nTurma: ${store.classes.find((c) => c.id === student.class_id)?.name || "—"}\nFrequência: ${f === null ? "Sem registros" : f + "%"}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}\n\nEquipe Wisdom`;
+  return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${studentDisplayName(student)}\nTurma: ${store.classes.find((c) => c.id === student.class_id)?.name || "—"}\nFrequência: ${f === null ? "Sem registros" : f + "%"}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}\n\nEquipe Wisdom`;
 }
 export function whatsappUrl(phone: string, message: string) {
   const number = phone.replace(/\D/g, "");
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 export function validateStudent(student: Partial<Student>) {
-  if (!student.name?.trim()) return "Informe o nome do aluno.";
-  if (!student.class_id) return "Selecione uma turma.";
-  if (!student.guardian_phone?.replace(/\D/g, ""))
-    return "Informe o WhatsApp do responsável com DDI e DDD.";
+  if (
+    student.guardian_phone?.trim() &&
+    student.guardian_phone.replace(/\D/g, "").length < 10
+  )
+    return "Confira o WhatsApp informado ou deixe-o vazio para completar depois.";
   return null;
 }

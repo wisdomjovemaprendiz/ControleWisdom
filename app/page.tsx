@@ -87,6 +87,7 @@ import {
   comparePedagogy,
   whatsappUrl,
   validateStudent,
+  studentDisplayName,
 } from "@/lib/domain";
 const nav = [
   ["overview", "Operação", LayoutDashboard],
@@ -185,6 +186,9 @@ export default function App() {
     [lessonDate, setLessonDate] = useState(today()),
     [topic, setTopic] = useState(""),
     [marks, setMarks] = useState<Record<string, AttendanceStatus>>({}),
+    [attendanceDetails, setAttendanceDetails] = useState<
+      Record<string, { arrival_time: string; justification: string }>
+    >({}),
     [reportFrom, setReportFrom] = useState(""),
     [reportTo, setReportTo] = useState(today());
   const [photoDraft, setPhotoDraft] = useState<CompressedPhoto | null>(null),
@@ -286,7 +290,9 @@ export default function App() {
     alerts = active.filter((s) => absenceCount(store!, s.id) >= 3),
     filtered = students.filter(
       (s) =>
-        `${s.name} ${s.guardian}`.toLowerCase().includes(query.toLowerCase()) &&
+        `${studentDisplayName(s)} ${s.guardian}`
+          .toLowerCase()
+          .includes(query.toLowerCase()) &&
         (studentStatus === "all" || s.status === studentStatus) &&
         (studentClass === "all" || s.class_id === studentClass),
     );
@@ -306,9 +312,20 @@ export default function App() {
         .some(
           (s) =>
             marks[s.id] !==
-            store?.attendance.find(
-              (a) => a.lesson_id === selectedLesson.id && a.student_id === s.id,
-            )?.status,
+              store?.attendance.find(
+                (a) =>
+                  a.lesson_id === selectedLesson.id && a.student_id === s.id,
+              )?.status ||
+            (attendanceDetails[s.id]?.arrival_time || "") !==
+              (store?.attendance.find(
+                (a) =>
+                  a.lesson_id === selectedLesson.id && a.student_id === s.id,
+              )?.arrival_time || "") ||
+            (attendanceDetails[s.id]?.justification || "") !==
+              (store?.attendance.find(
+                (a) =>
+                  a.lesson_id === selectedLesson.id && a.student_id === s.id,
+              )?.justification || ""),
         )),
   );
   useEffect(() => {
@@ -322,6 +339,19 @@ export default function App() {
       .filter((a) => a.lesson_id === l?.id)
       .forEach((a) => (next[a.student_id] = a.status));
     setMarks(next);
+    setAttendanceDetails(
+      Object.fromEntries(
+        store.attendance
+          .filter((a) => a.lesson_id === l?.id)
+          .map((a) => [
+            a.student_id,
+            {
+              arrival_time: a.arrival_time || "",
+              justification: a.justification || "",
+            },
+          ]),
+      ),
+    );
   }, [selectedClass?.id, lessonDate, store?.lessons, store?.attendance]);
   async function save<K extends keyof Store>(
     table: K,
@@ -413,7 +443,7 @@ export default function App() {
             (s) =>
               scoped(s.unit_id) &&
               s.photo_path &&
-              lines.some((line) => line.includes(s.name)),
+              lines.some((line) => line.includes(studentDisplayName(s))),
           )
         : [];
       for (let i = 0; i < reportStudents.length; i += 4) {
@@ -518,6 +548,14 @@ export default function App() {
       lesson_id: lesson.id,
       student_id: s.id,
       status: marks[s.id],
+      arrival_time:
+        marks[s.id] === "atrasado"
+          ? attendanceDetails[s.id]?.arrival_time || ""
+          : "",
+      justification:
+        marks[s.id] === "justificado"
+          ? attendanceDetails[s.id]?.justification.trim() || ""
+          : "",
     }));
     setBusy(true);
     setError("");
@@ -561,11 +599,16 @@ export default function App() {
     if (modal.kind === "student") {
       const c = store.classes.find((c) => c.id === v("class_id"));
       const previous = modal.data as Student | undefined;
+      const offering = store.offerings.find((o) => o.id === v("offering_id"));
       const record: Student = {
         id,
-        unit_id: c?.unit_id || "",
+        unit_id:
+          c?.unit_id ||
+          offering?.unit_id ||
+          previous?.unit_id ||
+          (unit !== "all" ? unit : profile.unit_id),
         photo_path: previous?.photo_path || null,
-        class_id: v("class_id"),
+        class_id: v("class_id") || null,
         offering_id: v("offering_id") || null,
         name: v("name"),
         birth_date: v("birth_date"),
@@ -584,26 +627,27 @@ export default function App() {
         setError(invalid);
         return;
       }
-      if (!c) {
+      if (!c && v("class_id")) {
         setError("Turma não encontrada.");
         return;
       }
       if (
         record.offering_id &&
         !store.offerings.some(
-          (o) => o.id === record.offering_id && o.unit_id === c.unit_id,
+          (o) => o.id === record.offering_id && o.unit_id === record.unit_id,
         )
       ) {
         setError("O curso ou pacote deve pertencer à unidade da turma.");
         return;
       }
-      if (c.unit_id !== previous?.unit_id && previous) {
+      if (record.unit_id !== previous?.unit_id && previous) {
         setError(
           "A transferência entre unidades exige um novo vínculo de matrícula.",
         );
         return;
       }
       if (
+        c &&
         record.status === "ativo" &&
         store.students.filter(
           (s) => s.class_id === c.id && s.status === "ativo" && s.id !== id,
@@ -846,10 +890,13 @@ export default function App() {
     attendance: store.attendance.filter((a) => scoped(a.unit_id)),
   };
   const overallFrequency = frequency(scopedStore);
-  const className = (id: string) =>
-    allRecords?.classes.find((c) => c.id === id)?.name || "—";
-  const studentName = (id: string | null) =>
-    allRecords?.students.find((s) => s.id === id)?.name || "Toda a turma";
+  const className = (id: string | null) =>
+    allRecords?.classes.find((c) => c.id === id)?.name || "Sem turma";
+  const studentName = (id: string | null) => {
+    if (!id) return "Toda a turma";
+    const student = allRecords?.students.find((s) => s.id === id);
+    return student ? studentDisplayName(student) : "Aluno";
+  };
   const currentUnit = isManager(profile.role) ? unit : profile.unit_id;
   const unitOptions = store.units.filter(
     (u) => isManager(profile.role) || u.id === profile.unit_id,
@@ -1262,7 +1309,7 @@ export default function App() {
                                 className="student-link"
                                 onClick={() => setDossierId(s.id)}
                               >
-                                {s.name}
+                                {studentDisplayName(s)}
                               </button>
                               <small>
                                 Desde {displayDate(s.enrollment_date)}
@@ -1624,15 +1671,16 @@ export default function App() {
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() =>
+                    onClick={() => {
+                      setAttendanceDetails({});
                       setMarks(
                         Object.fromEntries(
                           active
                             .filter((s) => s.class_id === selectedClass?.id)
                             .map((s) => [s.id, "presente"]),
                         ),
-                      )
-                    }
+                      );
+                    }}
                   >
                     <Check size={16} /> Todos presentes
                   </button>
@@ -1648,7 +1696,7 @@ export default function App() {
                           type="button"
                           onClick={() => setDossierId(s.id)}
                         >
-                          {s.name}
+                          {studentDisplayName(s)}
                         </button>
                       </div>
                       <div className="attendance-options">
@@ -1667,15 +1715,66 @@ export default function App() {
                             className={
                               marks[s.id] === status ? `chosen ${status}` : ""
                             }
-                            onClick={() =>
-                              setMarks({ ...marks, [s.id]: status })
-                            }
+                            onClick={() => {
+                              setMarks({ ...marks, [s.id]: status });
+                              setAttendanceDetails((prev) => ({
+                                ...prev,
+                                [s.id]: {
+                                  arrival_time:
+                                    status === "atrasado"
+                                      ? prev[s.id]?.arrival_time || ""
+                                      : "",
+                                  justification:
+                                    status === "justificado"
+                                      ? prev[s.id]?.justification || ""
+                                      : "",
+                                },
+                              }));
+                            }}
                           >
                             {marks[s.id] === status && <Check size={14} />}{" "}
                             {labels[status]}
                           </button>
                         ))}
                       </div>
+                      {marks[s.id] === "atrasado" && (
+                        <label className="attendance-detail">
+                          Horário de chegada (opcional)
+                          <input
+                            type="time"
+                            aria-label={`Horário de chegada de ${studentDisplayName(s)}`}
+                            value={attendanceDetails[s.id]?.arrival_time || ""}
+                            onChange={(e) =>
+                              setAttendanceDetails((prev) => ({
+                                ...prev,
+                                [s.id]: {
+                                  arrival_time: e.target.value,
+                                  justification: "",
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
+                      {marks[s.id] === "justificado" && (
+                        <label className="attendance-detail">
+                          Motivo da justificativa (opcional)
+                          <textarea
+                            maxLength={2000}
+                            aria-label={`Justificativa de ${studentDisplayName(s)}`}
+                            value={attendanceDetails[s.id]?.justification || ""}
+                            onChange={(e) =>
+                              setAttendanceDetails((prev) => ({
+                                ...prev,
+                                [s.id]: {
+                                  arrival_time: "",
+                                  justification: e.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
                     </div>
                   ))}
                 {!active.some((s) => s.class_id === selectedClass?.id) && (
@@ -2292,10 +2391,9 @@ export default function App() {
                   />
                   <div className="form-section-label">DADOS DO ALUNO</div>
                   <label>
-                    Nome completo *
+                    Nome completo
                     <input
                       name="name"
-                      required
                       defaultValue={(modal.data as Student)?.name}
                     />
                   </label>
@@ -2322,15 +2420,13 @@ export default function App() {
                     </label>
                   </div>
                   <label>
-                    Turma *
+                    Turma
                     <select
                       name="class_id"
-                      required
+                      aria-label="Turma"
                       defaultValue={(modal.data as Student)?.class_id || ""}
                     >
-                      <option value="" disabled>
-                        Selecione a turma
-                      </option>
+                      <option value="">Selecionar turma depois</option>
                       {classes
                         .filter(
                           (c) =>
@@ -2372,11 +2468,10 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    WhatsApp do responsável *
+                    WhatsApp do responsável
                     <input
                       type="tel"
                       name="guardian_phone"
-                      required
                       placeholder="55 + DDD + número"
                       pattern="[+0-9 ()-]{10,20}"
                       defaultValue={(modal.data as Student)?.guardian_phone}
@@ -2400,8 +2495,9 @@ export default function App() {
                     </label>
                   </div>
                   <small>
-                    Para matrícula expressa, preencha os campos com *. A
-                    secretaria pode completar o cadastro depois.
+                    Todos os campos são opcionais. O cadastro recebe um
+                    identificador e fica vinculado à unidade selecionada ou à
+                    sua unidade. Complete os dados e vincule a turma depois.
                   </small>
                 </>
               )}

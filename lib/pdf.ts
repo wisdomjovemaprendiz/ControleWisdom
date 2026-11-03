@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ReportPhoto } from "./photos";
-import type { Student } from "./domain";
+import { studentDisplayName, type Student } from "./domain";
 import { displayDate, today } from "./domain";
 const clean = (text: string) =>
   text
@@ -128,7 +128,7 @@ export async function createInstitutionalPdf({
       doc.setFont("Wisdom", "bold");
       doc.setFontSize(12);
       doc.setTextColor(41, 75, 118);
-      doc.text(featuredStudent.name, 40, y + 8);
+      doc.text(studentDisplayName(featuredStudent), 40, y + 8);
       doc.setFont("Wisdom", "normal");
       doc.setFontSize(8);
       doc.setTextColor(119, 140, 167);

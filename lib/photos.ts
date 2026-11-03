@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Student } from "./domain";
+import { studentDisplayName, type Student } from "./domain";
 export const PHOTO_LIMIT = 100 * 1024;
 export interface CompressedPhoto {
   blob: Blob;
@@ -150,7 +150,7 @@ export async function photoForReport(
       return blob
         ? {
             id: student.id,
-            name: student.name,
+            name: studentDisplayName(student),
             data: new Uint8Array(await blob.arrayBuffer()),
           }
         : null;

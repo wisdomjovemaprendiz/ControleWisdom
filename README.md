@@ -24,9 +24,9 @@ npm run admin:bootstrap
 npm run dev
 ```
 
-`db:provision` aplica as migrações 001 a 008, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
+`db:provision` aplica as migrações 001 a 009, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
 
-Como alternativa ao provisionador, em um projeto vazio execute os oito arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
+Como alternativa ao provisionador, em um projeto vazio execute os nove arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
 
 `admin:bootstrap` cria o login **admin**, na **Unidade Principal**, com troca obrigatória da senha no primeiro acesso. Não cria outro administrador se já existir um. É possível definir previamente `WISDOM_BOOTSTRAP_ADMIN_LOGIN` e `WISDOM_BOOTSTRAP_UNIT_NAME`. A senha vem exclusivamente do campo seguro; `1710` não é aceita porque o Supabase exige pelo menos seis caracteres. Não existe senha padrão embutida no código.
 
@@ -112,3 +112,11 @@ O resumo do WhatsApp agora inclui **presentes, atrasados, ausentes e faltas just
 O pedagógico oferece modo manual ou assistido, catálogo de observações e estratégias com fontes, rascunho revisável, metas e critérios. A data de acompanhamento gera lembretes no sistema. Registrar evolução exige resultado e evidência e preserva o vínculo com a intervenção anterior. A migração `008_pedagogical_support.sql` adiciona esses dados e a RPC protegida. O provisionador aplica apenas migrações pendentes.
 
 Consulte [fundamentos e referências do apoio pedagógico](docs/fundamentos-pedagogicos.md). O catálogo é fundamentado em CAST, IES/WWC e CASEL; não é avaliação clínica nem um serviço externo de IA. A fonte da interface foi reduzida em 1 px em relação à versão anterior, incluindo os campos (agora 15 px).
+
+## Câmera e dados opcionais
+
+Em matrícula e edição do aluno, **Usar câmera** abre a câmera do celular ou webcam do computador, mediante permissão do navegador. É possível alternar câmera, selecionar outro dispositivo e tirar a foto. A câmera é desligada ao capturar, cancelar ou sair; não é solicitado áudio. A foto segue para o enquadramento e compressão existentes. Em navegadores móveis, **Abrir câmera do celular** também oferece a captura nativa. A captura ao vivo exige HTTPS ou localhost; se o acesso for negado ou não houver dispositivo, o sistema informa e mantém a seleção de arquivo disponível.
+
+Nenhum campo preenchido pelo usuário é obrigatório no cadastro do aluno. Pode salvar nome, turma, curso e contatos vazios e completar depois. O banco mantém unidade, identificador, autoria e data de cadastro gerados pelo sistema. Sem nome, a interface mostra `Cadastro ABC123`, usando parte do identificador; esse texto não é gravado como nome. Sem turma, o aluno aparece no cadastro e nas pendências, mas não entra em uma chamada até ser vinculado. Formatos de dados efetivamente informados, vagas e isolamento por unidade continuam validados.
+
+Na chamada, marcar **Atrasado** mostra horário de chegada opcional; **Justificado** mostra motivo opcional. Esses dados são salvos com a chamada e aparecem no resumo de WhatsApp, PDF da aula e histórico do aluno. Alterar apenas o horário ou motivo exige salvar novamente antes de compartilhar. Trocar de situação limpa a informação que não se aplica. Chamadas antigas sem esses campos continuam funcionando. A migração `009_camera_attendance_optional_students.sql` aplica essas mudanças preservando os registros existentes.

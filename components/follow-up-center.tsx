@@ -1,4 +1,5 @@
 "use client";
+import { studentDisplayName } from "@/lib/domain";
 import { StudentAvatar } from "./student-avatar";
 import { useState } from "react";
 import { ArrowRight, Check, ClipboardList, Search } from "lucide-react";
@@ -31,7 +32,7 @@ export function FollowUpCenter({
   const filtered = tasks.filter(
     (t) =>
       (filter === "all" || t.kind === filter) &&
-      `${t.student.name} ${t.title}`
+      `${studentDisplayName(t.student)} ${t.title}`
         .toLocaleLowerCase("pt-BR")
         .includes(search.toLocaleLowerCase("pt-BR")),
   );
@@ -101,7 +102,7 @@ export function FollowUpCenter({
                 onClick={() => onStudent(task.student)}
               >
                 <StudentAvatar student={task.student} size={29} />
-                <span>{task.student.name}</span>
+                <span>{studentDisplayName(task.student)}</span>
               </button>
               <h3>{task.title}</h3>
               <p>{task.detail}</p>

@@ -25,7 +25,7 @@ export const recordLabels: Record<RecordTable, string> = {
 export type RecordField = {
   key: string;
   label: string;
-  type?: "text" | "date" | "number" | "textarea";
+  type?: "text" | "date" | "number" | "textarea" | "time";
   options?: string[];
   relation?: RecordTable;
   required?: boolean;
@@ -53,9 +53,9 @@ export const recordFields: Record<RecordTable, RecordField[]> = {
     { key: "whatsapp", label: "WhatsApp da turma" },
   ],
   students: [
-    name,
+    { key: "name", label: "Nome" },
     { key: "birth_date", label: "Nascimento", type: "date" },
-    { key: "class_id", label: "Turma", relation: "classes", required: true },
+    { key: "class_id", label: "Turma", relation: "classes" },
     { key: "offering_id", label: "Curso ou pacote", relation: "offerings" },
     { key: "phone", label: "Telefone" },
     { key: "guardian", label: "Responsável" },
@@ -96,6 +96,12 @@ export const recordFields: Record<RecordTable, RecordField[]> = {
     { key: "date", label: "Data", type: "date", required: true },
   ],
   attendance: [
+    { key: "arrival_time", label: "Horário de chegada (atraso)", type: "time" },
+    {
+      key: "justification",
+      label: "Motivo da justificativa",
+      type: "textarea",
+    },
     {
       key: "status",
       label: "Situação",
@@ -142,7 +148,9 @@ export function operationalStore(source: Store): Store {
     classIds = visible(classes);
   const students = source.students.filter(
       (r) =>
-        !r.archived_at && classIds.has(r.class_id) && unitIds.has(r.unit_id),
+        !r.archived_at &&
+        (!r.class_id || classIds.has(r.class_id)) &&
+        unitIds.has(r.unit_id),
     ),
     studentIds = visible(students);
   const lessons = source.lessons.filter(

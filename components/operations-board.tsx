@@ -1,4 +1,5 @@
 "use client";
+import { studentDisplayName } from "@/lib/domain";
 import { StudentAvatar } from "./student-avatar";
 import { BirthdaysPanel } from "./birthdays-panel";
 import { useState } from "react";
@@ -360,7 +361,7 @@ export function OperationsBoard({
                             onClick={() => onStudent(s)}
                           >
                             <StudentAvatar student={s} size={25} />
-                            <span>{s.name}</span>
+                            <span>{studentDisplayName(s)}</span>
                           </button>
                         </td>
                         {lessons.map((l) => {
@@ -372,7 +373,7 @@ export function OperationsBoard({
                             <td key={l.id}>
                               <span
                                 className={`register-mark ${status || "none"}`}
-                                aria-label={`${s.name}, ${displayDate(l.date)}: ${status ? labels[status] : "Sem registro"}`}
+                                aria-label={`${studentDisplayName(s)}, ${displayDate(l.date)}: ${status ? labels[status] : "Sem registro"}`}
                                 title={status ? labels[status] : "Sem registro"}
                               >
                                 {status
@@ -460,7 +461,7 @@ export function OperationsBoard({
                     onClick={() => onStudent(task.student)}
                   >
                     <StudentAvatar student={task.student} size={25} />
-                    <span>{task.student.name}</span>
+                    <span>{studentDisplayName(task.student)}</span>
                   </button>
                   <p>{task.detail}</p>
                   <button

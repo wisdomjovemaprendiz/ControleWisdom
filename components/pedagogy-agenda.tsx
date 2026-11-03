@@ -1,7 +1,7 @@
 "use client";
 import { CalendarClock, ArrowRight } from "lucide-react";
 import type { Store, Profile, Pedagogy } from "@/lib/domain";
-import { displayDate } from "@/lib/domain";
+import { displayDate, studentDisplayName } from "@/lib/domain";
 import { pendingPedagogy } from "@/lib/pedagogy";
 export function PedagogyAgenda({
   store,
@@ -46,8 +46,11 @@ export function PedagogyAgenda({
               </span>
               <strong>
                 {record.student_id
-                  ? store.students.find((s) => s.id === record.student_id)
-                      ?.name || "Aluno"
+                  ? studentDisplayName(
+                      store.students.find(
+                        (s) => s.id === record.student_id,
+                      ) || { id: record.student_id, name: "" },
+                    )
                   : store.classes.find((c) => c.id === record.class_id)?.name ||
                     "Turma"}
               </strong>
