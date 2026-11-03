@@ -24,9 +24,9 @@ npm run admin:bootstrap
 npm run dev
 ```
 
-`db:provision` aplica as migrações 001 a 004, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
+`db:provision` aplica as migrações 001 a 006, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
 
-Como alternativa ao provisionador, em um projeto vazio execute os quatro arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
+Como alternativa ao provisionador, em um projeto vazio execute os seis arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
 
 `admin:bootstrap` cria o login **admin**, na **Unidade Principal**, com troca obrigatória da senha no primeiro acesso. Não cria outro administrador se já existir um. É possível definir previamente `WISDOM_BOOTSTRAP_ADMIN_LOGIN` e `WISDOM_BOOTSTRAP_UNIT_NAME`. A senha vem exclusivamente do campo seguro; `1710` não é aceita porque o Supabase exige pelo menos seis caracteres. Não existe senha padrão embutida no código.
 
@@ -92,3 +92,13 @@ PLAYWRIGHT_BASE_URL=http://127.0.0.1:3002 npm run test:e2e
 ```
 
 O Chromium deste ambiente fica em `/usr/bin/chromium`; ajuste `playwright.config.ts` em outra máquina. Fixtures de alunos existem somente em `tests/`, fora do aplicativo. A referência visual e decisões anteriores estão em [docs/redesenho-operacional.md](docs/redesenho-operacional.md). Marca e fontes estão em `public/`, com licenças em `public/licenses/`.
+
+## Gestão de registros e leitura ampliada
+
+O administrador acessa **Gestão de registros** no menu ou pelo botão **Gerenciar registros** nos cadastros. A área reúne alunos, unidades, cursos/pacotes, turmas, usuários, aulas, presenças, registros pedagógicos e contatos com responsáveis. Permite editar campos, arquivar com motivo, filtrar arquivados, restaurar e excluir definitivamente com confirmação digitada `EXCLUIR`.
+
+Arquivados ficam fora da operação e continuam disponíveis na gestão. Arquivar unidade ou turma também oculta seus dados dependentes na operação, preservando-os para restauração. Restaurar uma matrícula não a reativa automaticamente: confira a situação e as vagas. Arquivar usuário desativa seu acesso. A última conta administrativa ativa e o próprio acesso administrativo são protegidos.
+
+Exclusão definitiva preserva a integridade do histórico: registros com vínculos exigem primeiro transferir ou excluir os dependentes. A interface apresenta vínculos encontrados; o banco verifica novamente durante a operação. Usuários sem vínculos são removidos também do Supabase Auth; históricos de auditoria preservam os identificadores, sem impedir a remoção da conta. A exclusão de unidade remove seus snapshots derivados de análise diária quando a unidade não tiver outros vínculos. Alunos sem histórico podem ser excluídos; a foto é removida do armazenamento. Falha de limpeza da foto é informada separadamente. Todas as ações administrativas são auditadas.
+
+As migrações `005_record_management.sql` e `006_archive_permissions.sql` são necessárias para essa área. `npm run db:provision` aplica apenas as versões pendentes. Não reexecute o esquema inicial. As fontes de toda a interface foram ampliadas, com mínimo de 14 px nas regras de tamanho e 16 px nos campos, mantendo layout responsivo e as cores da instituição.

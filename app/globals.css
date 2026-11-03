@@ -18,7 +18,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "DM Sans", Arial, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
 }
 button,
 input,
@@ -80,7 +80,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 h1,
@@ -95,25 +95,25 @@ h3 {
   font-family: "Manrope", Arial, sans-serif;
 }
 h1 {
-  font-size: 36px;
+  font-size: 41px;
   letter-spacing: -1.4px;
   font-weight: 800;
   line-height: 1.25;
 }
 h2 {
-  font-size: 20px;
+  font-size: 23px;
   letter-spacing: -0.6px;
   font-weight: 800;
 }
 h3 {
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.5;
 }
 p {
   line-height: 1.6;
 }
 small {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
 }
 .sr-only {
@@ -158,13 +158,13 @@ small {
   display: flex;
   align-items: baseline;
   gap: 7px;
-  font-size: 25px;
+  font-size: 29px;
   line-height: 1.1;
   letter-spacing: -0.5px;
   font-weight: 800;
 }
 .institutional-brand strong span {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 1px;
   color: #c8d6e8;
@@ -172,7 +172,7 @@ small {
 .institutional-brand small {
   display: block;
   color: #91abc9;
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 2px;
   margin-top: 8px;
 }
@@ -182,7 +182,7 @@ small {
   width: 1px;
 }
 .header-purpose {
-  font-size: 12px;
+  font-size: 14px;
   color: #a8bbd3;
 }
 .institutional-tools {
@@ -198,7 +198,7 @@ small {
   background: #254365;
 }
 .system-label {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 1.4px;
   color: #b1c7e1;
@@ -212,7 +212,7 @@ small {
   color: #bacde5;
 }
 .header-notification b {
-  font-size: 10px;
+  font-size: 14px;
   color: white;
   background: #bb2937;
   padding: 2px 5px;
@@ -225,11 +225,11 @@ small {
   padding-left: 23px;
 }
 .header-user > span {
-  font-size: 12px;
+  font-size: 14px;
   text-align: right;
 }
 .header-user small {
-  font-size: 10px;
+  font-size: 14px;
   display: block;
   color: #9ab1ce;
   margin-top: 5px;
@@ -244,7 +244,7 @@ small {
   background: #e8ecf1;
   color: #30496c;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 14px;
   border-radius: 50%;
 }
 .header-user .avatar {
@@ -268,7 +268,7 @@ small {
   gap: 8px;
   padding: 0 13px;
   color: #617084;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   border-bottom: 3px solid transparent;
   border-top: 3px solid transparent;
@@ -290,7 +290,7 @@ small {
   color: var(--blue);
 }
 .module-navigation b {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -320,7 +320,7 @@ small {
 }
 .eyebrow,
 .index-label {
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 1.35px;
   font-weight: 700;
   color: #677789;
@@ -338,7 +338,7 @@ small {
   background: var(--red);
 }
 .page-heading p {
-  font-size: 13px;
+  font-size: 15px;
   color: #737d89;
   margin-top: 10px;
 }
@@ -356,7 +356,7 @@ small {
   gap: 9px;
   padding: 12px 16px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: 3px;
   white-space: nowrap;
   line-height: 1.2;
@@ -396,7 +396,7 @@ small {
   padding: 0 10px 0 0;
   width: auto;
   max-width: 180px;
-  font-size: 12px;
+  font-size: 14px;
   background: transparent;
 }
 .icon-button {
@@ -440,14 +440,14 @@ small {
   background: #e7e6df;
 }
 .register-metrics span {
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.9px;
   font-weight: 600;
   color: #7d858b;
 }
 .register-metrics strong {
   font-family: "Manrope", sans-serif;
-  font-size: 34px;
+  font-size: 39px;
   font-weight: 800;
   display: flex;
   gap: 13px;
@@ -458,7 +458,7 @@ small {
 }
 .register-metrics small {
   font-family: "DM Sans", sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   color: #7a8591;
   letter-spacing: 0;
   font-weight: 400;
@@ -490,7 +490,7 @@ small {
   background: var(--navy);
   color: white;
   border-top: 3px solid #244b79;
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 1.2px;
 }
 .section-caption .index-label {
@@ -504,10 +504,10 @@ small {
   justify-content: space-between;
 }
 .register-title h2 {
-  font-size: 23px;
+  font-size: 26px;
 }
 .register-title p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7b8591;
   margin-top: 6px;
   max-width: 370px;
@@ -516,12 +516,12 @@ small {
   gap: 5px;
 }
 .board-date > span {
-  font-size: 10px;
+  font-size: 14px;
   color: #778495;
   font-weight: 400;
 }
 .board-date input {
-  font-size: 12px;
+  font-size: 14px;
   padding: 9px 10px;
   max-width: 155px;
 }
@@ -544,7 +544,7 @@ small {
   gap: 7px;
   align-items: center;
   padding: 14px 0;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   color: #7e8896;
   border-bottom: 2px solid transparent;
@@ -556,7 +556,7 @@ small {
   font-weight: 700;
 }
 .board-tabs b {
-  font-size: 9px;
+  font-size: 14px;
   color: #526f94;
   background: #e4eaf1;
   min-width: 17px;
@@ -569,7 +569,7 @@ small {
   align-items: center;
   gap: 6px;
   color: #8997a8;
-  font-size: 11px;
+  font-size: 14px;
   max-width: 170px;
 }
 .board-search input {
@@ -577,7 +577,7 @@ small {
   box-shadow: none;
   background: transparent;
   padding: 8px 0;
-  font-size: 11px;
+  font-size: 14px;
 }
 .board-table-wrap,
 .journal-table-wrap,
@@ -592,7 +592,7 @@ table {
   width: 100%;
 }
 th {
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0.65px;
   font-weight: 600;
   background: #f6f8fa;
@@ -602,7 +602,7 @@ th {
   white-space: nowrap;
 }
 td {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
   border-bottom: 1px solid #e6eaee;
   padding: 19px 20px;
@@ -610,14 +610,14 @@ td {
 }
 td strong {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #22354e;
 }
 td small {
   display: block;
   margin-top: 4px;
-  font-size: 10px;
+  font-size: 14px;
   color: #8693a3;
 }
 tr:last-child td {
@@ -625,7 +625,7 @@ tr:last-child td {
 }
 .board-table th {
   padding: 13px 17px;
-  font-size: 8px;
+  font-size: 14px;
   background: #fff;
 }
 .board-table td {
@@ -652,17 +652,17 @@ tr:last-child td {
   padding: 0 0 0 17px;
 }
 .class-selector strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 }
 .class-selector small {
-  font-size: 10px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .row-number {
   font-family: "Manrope", sans-serif;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   color: #9aa7b6;
 }
@@ -671,7 +671,7 @@ tr:last-child td {
 }
 .roster-count {
   font-family: "Manrope", sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   color: #2b435e;
   white-space: nowrap;
@@ -679,7 +679,7 @@ tr:last-child td {
 .roster-count small {
   display: inline;
   font-family: "DM Sans", sans-serif;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 400;
   color: #8793a2;
 }
@@ -699,7 +699,7 @@ tr:last-child td {
   display: inline-flex;
   gap: 5px;
   align-items: center;
-  font-size: 10px;
+  font-size: 14px;
   white-space: nowrap;
   font-weight: 500;
 }
@@ -728,17 +728,17 @@ tr:last-child td {
   background: #f8fafc;
 }
 .journal-heading .index-label {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.15px;
 }
 .journal-heading h3 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
   margin-top: 7px;
   letter-spacing: -0.5px;
 }
 .journal-heading p {
-  font-size: 11px;
+  font-size: 14px;
   color: #8692a1;
   margin-top: 7px;
   max-width: 350px;
@@ -749,22 +749,22 @@ tr:last-child td {
   gap: 7px;
 }
 .journal-actions button {
-  font-size: 10px;
+  font-size: 14px;
   padding: 10px 12px;
   min-height: 35px;
 }
 .journal-table th {
-  font-size: 9px;
+  font-size: 14px;
   padding: 12px 15px;
 }
 .journal-table th:not(:first-child) {
   text-align: center;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0;
 }
 .journal-table td {
   padding: 11px 15px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .journal-table td:first-child {
   width: 40%;
@@ -780,7 +780,7 @@ tr:last-child td {
   padding: 0;
   text-align: left;
   color: #264d7c;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.5;
 }
@@ -792,7 +792,7 @@ tr:last-child td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   min-width: 23px;
   min-height: 23px;
@@ -829,7 +829,7 @@ tr:last-child td {
   border-top: 1px solid #e6eaee;
   padding: 12px 22px;
   color: #8190a1;
-  font-size: 9px;
+  font-size: 14px;
 }
 .journal-legend > span {
   display: flex;
@@ -839,14 +839,14 @@ tr:last-child td {
 .journal-legend .register-mark {
   min-width: 17px;
   min-height: 17px;
-  font-size: 8px;
+  font-size: 14px;
 }
 .journal-legend > small {
-  font-size: 9px;
+  font-size: 14px;
   margin-left: auto;
 }
 .journal-empty {
-  font-size: 12px;
+  font-size: 14px;
   color: #8090a4;
   text-align: center;
   padding: 25px;
@@ -867,18 +867,18 @@ tr:last-child td {
   color: #65717c;
 }
 .queue-count {
-  font-size: 10px;
+  font-size: 14px;
   border: 1px solid #c5c9c8;
   min-width: 21px;
   text-align: center;
   padding: 2px;
 }
 .work-queue > h2 {
-  font-size: 21px;
+  font-size: 24px;
   padding: 10px 20px 0;
 }
 .queue-intro {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.8;
   color: #7c8589;
   padding: 8px 20px 19px;
@@ -897,13 +897,13 @@ tr:last-child td {
   gap: 8px;
 }
 .task-top > span {
-  font-size: 8px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 1px;
   color: #858b85;
 }
 .task-top time {
-  font-size: 9px;
+  font-size: 14px;
   color: #828e96;
 }
 .queue-task.absence .task-top > span {
@@ -911,16 +911,16 @@ tr:last-child td {
 }
 .queue-task h3 {
   margin-top: 9px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.25px;
 }
 .queue-task .student-link {
-  font-size: 11px;
+  font-size: 14px;
   margin-top: 4px;
 }
 .queue-task p {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.7;
   color: #7d8789;
   margin-top: 8px;
@@ -931,7 +931,7 @@ tr:last-child td {
   justify-content: space-between;
   width: 100%;
   padding: 12px 0 0;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   color: #3d5a7b;
 }
@@ -943,7 +943,7 @@ tr:last-child td {
   align-items: center;
   justify-content: space-between;
   text-align: left;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   width: 100%;
   padding: 17px 20px;
@@ -959,7 +959,7 @@ tr:last-child td {
   border-top: 1px solid #d3d6ce;
 }
 .movement-summary .index-label {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
   margin-bottom: 13px;
 }
@@ -968,13 +968,13 @@ tr:last-child td {
   justify-content: space-between;
   align-items: center;
   padding: 7px 0;
-  font-size: 11px;
+  font-size: 14px;
   color: #7b8587;
 }
 .movement-summary strong {
   font-family: Manrope, sans-serif;
   color: #455c73;
-  font-size: 14px;
+  font-size: 16px;
 }
 .operational-shortcuts {
   display: flex;
@@ -986,7 +986,7 @@ tr:last-child td {
   border-bottom: 1px solid #cdd2d3;
 }
 .operational-shortcuts > span {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.2px;
   font-weight: 600;
   color: #939a9d;
@@ -996,7 +996,7 @@ tr:last-child td {
   display: flex;
   align-items: center;
   gap: 11px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   color: #48627f;
   flex: 1;
@@ -1025,10 +1025,10 @@ tr:last-child td {
   gap: 20px;
 }
 .panel-header h2 {
-  font-size: 17px;
+  font-size: 20px;
 }
 .panel-header p {
-  font-size: 12px;
+  font-size: 14px;
   color: #8390a0;
   margin-top: 6px;
 }
@@ -1036,7 +1036,7 @@ tr:last-child td {
   margin-bottom: 9px;
 }
 .directory-note {
-  font-size: 11px;
+  font-size: 14px;
   color: #8a95a3;
 }
 .list-toolbar {
@@ -1053,16 +1053,16 @@ tr:last-child td {
   min-width: 180px;
 }
 .registry-label .index-label {
-  font-size: 8px;
+  font-size: 14px;
 }
 .registry-label > strong {
   display: block;
   font-family: Manrope, sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   margin-top: 6px;
 }
 .registry-label small {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 400;
 }
 .student-filters {
@@ -1071,7 +1071,7 @@ tr:last-child td {
   max-width: 450px;
 }
 .student-filters select {
-  font-size: 11px;
+  font-size: 14px;
   padding: 9px 10px;
 }
 .search {
@@ -1087,7 +1087,7 @@ tr:last-child td {
   max-width: 240px;
 }
 .search input {
-  font-size: 11px;
+  font-size: 14px;
   border: 0;
   box-shadow: none;
   padding: 10px 0;
@@ -1099,7 +1099,7 @@ tr:last-child td {
   align-items: center;
 }
 .person strong {
-  font-size: 12px;
+  font-size: 14px;
 }
 .person small {
   display: block;
@@ -1107,7 +1107,7 @@ tr:last-child td {
 }
 .package-label {
   display: block;
-  font-size: 10px;
+  font-size: 14px;
   color: #8391a2;
   margin-top: 5px;
 }
@@ -1126,7 +1126,7 @@ tr:last-child td {
 .badge {
   display: inline-flex;
   align-items: center;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
   padding: 4px 7px;
   border: 1px solid transparent;
@@ -1176,12 +1176,12 @@ tr:last-child td {
   border-radius: 2px;
 }
 .class-card h2 {
-  font-size: 19px;
+  font-size: 22px;
   line-height: 1.5;
   margin-top: 13px;
 }
 .class-card > p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7f8ea0;
   margin-top: 8px;
 }
@@ -1197,7 +1197,7 @@ tr:last-child td {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: #42638c;
   padding: 0;
@@ -1212,11 +1212,11 @@ tr:last-child td {
   margin-top: 22px;
 }
 .intervention strong {
-  font-size: 11px;
+  font-size: 14px;
   color: #486582;
 }
 .intervention p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7c8c9f;
   margin-top: 8px;
   line-height: 1.8;
@@ -1241,7 +1241,7 @@ tr:last-child td {
 }
 .lesson-config input,
 .lesson-config select {
-  font-size: 13px;
+  font-size: 15px;
 }
 .attendance-totals {
   display: grid;
@@ -1263,11 +1263,11 @@ tr:last-child td {
   border: 0;
 }
 .attendance-totals span {
-  font-size: 11px;
+  font-size: 14px;
   color: #7e8a8e;
 }
 .attendance-totals strong {
-  font-size: 21px;
+  font-size: 24px;
   font-family: Manrope, sans-serif;
   color: #48647d;
 }
@@ -1286,7 +1286,7 @@ tr:last-child td {
   border-top: 1px solid #e1e6ec;
 }
 .attendance-row .student-link {
-  font-size: 13px;
+  font-size: 15px;
 }
 .attendance-options {
   display: flex;
@@ -1300,7 +1300,7 @@ tr:last-child td {
   min-width: 95px;
   min-height: 38px;
   padding: 9px 12px;
-  font-size: 11px;
+  font-size: 14px;
   border: 1px solid #d1d9e2;
   border-radius: 3px;
   color: #8493a6;
@@ -1333,7 +1333,7 @@ tr:last-child td {
   gap: 20px;
   border-top: 1px solid var(--line);
   background: #f5f7f9;
-  font-size: 12px;
+  font-size: 14px;
   color: #7f8ea0;
 }
 .info-banner {
@@ -1350,10 +1350,10 @@ tr:last-child td {
   flex-shrink: 0;
 }
 .info-banner strong {
-  font-size: 13px;
+  font-size: 15px;
 }
 .info-banner p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7d8d9e;
   margin-top: 5px;
 }
@@ -1384,10 +1384,10 @@ tr:last-child td {
   margin-bottom: 20px;
 }
 .record-card h2 {
-  font-size: 20px;
+  font-size: 23px;
 }
 .record-card > p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7f8fa1;
   margin-top: 8px;
 }
@@ -1397,7 +1397,7 @@ tr:last-child td {
   align-items: center;
   gap: 15px;
   padding: 20px 0;
-  font-size: 12px;
+  font-size: 14px;
   color: #637d9a;
 }
 .skill-level > span:last-child {
@@ -1414,7 +1414,7 @@ tr:last-child td {
   background: #6584a6;
 }
 .record-card .record-notes {
-  font-size: 13px;
+  font-size: 15px;
   color: #4e657e;
   line-height: 1.8;
   margin: 0;
@@ -1425,7 +1425,7 @@ tr:last-child td {
   align-items: center;
   margin-top: 18px;
   color: #8a97a7;
-  font-size: 11px;
+  font-size: 14px;
 }
 .alert-row {
   display: flex;
@@ -1452,14 +1452,14 @@ tr:last-child td {
   border-top: 1px solid var(--line);
 }
 .history-item strong {
-  font-size: 13px;
+  font-size: 15px;
 }
 .history-item small {
   font-weight: 400;
   margin-left: 12px;
 }
 .history-item p {
-  font-size: 12px;
+  font-size: 14px;
   color: #788da5;
   margin: 10px 0;
 }
@@ -1472,14 +1472,14 @@ tr:last-child td {
   border-top: 3px solid #607e9f;
 }
 .report-filters > strong {
-  font-size: 13px;
+  font-size: 15px;
   margin-right: auto;
 }
 .report-filters label {
-  font-size: 11px;
+  font-size: 14px;
 }
 .report-filters input {
-  font-size: 12px;
+  font-size: 14px;
   padding: 9px;
 }
 .report-card {
@@ -1487,11 +1487,11 @@ tr:last-child td {
   border-top: 3px solid #8fa0b2;
 }
 .report-card h2 {
-  font-size: 18px;
+  font-size: 21px;
   margin-top: 23px;
 }
 .report-card p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7f8fa1;
   margin: 12px 0 25px;
   min-height: 40px;
@@ -1505,14 +1505,14 @@ tr:last-child td {
   border-top: 1px solid var(--line);
 }
 .lesson-report strong {
-  font-size: 13px;
+  font-size: 15px;
 }
 .lesson-report small {
   display: block;
   margin-top: 6px;
 }
 .lesson-report p {
-  font-size: 13px;
+  font-size: 15px;
   color: #74879d;
   margin-top: 10px;
 }
@@ -1523,20 +1523,20 @@ tr:last-child td {
 }
 .unit-stats strong {
   font-family: Manrope, sans-serif;
-  font-size: 32px;
+  font-size: 37px;
   display: block;
 }
 .unit-stats small {
   display: block;
   margin-top: 4px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .settings-panel {
   padding: 27px;
   margin-bottom: 25px;
 }
 .settings-panel > p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7d8fa2;
   margin: 24px 0;
 }
@@ -1551,7 +1551,7 @@ tr:last-child td {
   min-height: 150px;
 }
 .empty p {
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
 }
 .page-footer {
@@ -1560,7 +1560,7 @@ tr:last-child td {
   align-items: center;
   gap: 20px;
   padding: 26px 0;
-  font-size: 10px;
+  font-size: 14px;
   color: #929b9d;
 }
 .page-footer > span:first-child {
@@ -1570,7 +1570,7 @@ tr:last-child td {
 }
 .footer-mark {
   font-family: Georgia, serif;
-  font-size: 21px;
+  font-size: 24px;
   color: #527194;
   font-weight: 900;
 }
@@ -1587,7 +1587,7 @@ tr:last-child td {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  font-size: 12px;
+  font-size: 14px;
   margin-bottom: 20px;
 }
 .toast {
@@ -1604,7 +1604,7 @@ tr:last-child td {
   z-index: 100;
   border-radius: 3px;
   box-shadow: 0 6px 25px #11263d30;
-  font-size: 12px;
+  font-size: 14px;
   max-width: 94vw;
 }
 .toast svg {
@@ -1646,7 +1646,7 @@ tr:last-child td {
   gap: 20px;
 }
 .modal-header h2 {
-  font-size: 24px;
+  font-size: 28px;
   margin-top: 7px;
 }
 .modal-form {
@@ -1656,15 +1656,15 @@ tr:last-child td {
   gap: 18px;
 }
 .modal-form > p {
-  font-size: 12px;
+  font-size: 14px;
   color: #78899d;
 }
 .modal-form > small {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .form-section-label {
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 1.3px;
   color: #8292a6;
   border-top: 1px solid var(--line);
@@ -1692,7 +1692,7 @@ tr:last-child td {
 .message-preview {
   min-height: 320px;
   background: #f7f8fa;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.9;
   padding: 17px;
 }
@@ -1759,7 +1759,7 @@ tr:last-child td {
   justify-content: center;
   background: #eaf0f6;
   color: #3a5b83;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   margin-bottom: 20px;
   border-radius: 2px;
@@ -1770,12 +1770,12 @@ tr:last-child td {
   top: 34px;
 }
 .dossier-identity h2 {
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: -1px;
 }
 .dossier-identity p {
-  font-size: 12px;
+  font-size: 14px;
   color: #8492a4;
   margin-top: 8px;
 }
@@ -1797,7 +1797,7 @@ tr:last-child td {
   border: 0;
 }
 .dossier-stats span {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
   color: #8b98a8;
   display: block;
@@ -1805,7 +1805,7 @@ tr:last-child td {
 .dossier-stats strong {
   font-family: Manrope, sans-serif;
   display: block;
-  font-size: 23px;
+  font-size: 26px;
   color: #3e5b7c;
   margin-top: 7px;
 }
@@ -1818,7 +1818,7 @@ tr:last-child td {
 }
 .dossier-tabs button {
   padding: 17px 0;
-  font-size: 12px;
+  font-size: 14px;
   color: #8a98a9;
   border-bottom: 2px solid transparent;
 }
@@ -1843,12 +1843,12 @@ tr:last-child td {
   border-bottom: 1px solid #dce0e1;
 }
 .student-details dt {
-  font-size: 11px;
+  font-size: 14px;
   color: #8996a6;
   margin-bottom: 8px;
 }
 .student-details dd {
-  font-size: 13px;
+  font-size: 15px;
   color: #48607d;
   line-height: 1.6;
   margin: 0;
@@ -1859,7 +1859,7 @@ tr:last-child td {
   grid-column: 1 / -1;
 }
 .dossier-note {
-  font-size: 12px;
+  font-size: 14px;
   background: #e9edf1;
   padding: 14px 16px;
   border-left: 2px solid #8ba0b8;
@@ -1868,17 +1868,17 @@ tr:last-child td {
   color: #627b97;
 }
 .dossier-note strong {
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.4px;
   color: #547193;
 }
 .dossier-note p {
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 6px;
 }
 .dossier-note small {
   display: block;
-  font-size: 10px;
+  font-size: 14px;
   margin-top: 8px;
 }
 .dossier-timeline article {
@@ -1899,7 +1899,7 @@ tr:last-child td {
 }
 .dossier-timeline time {
   display: block;
-  font-size: 10px;
+  font-size: 14px;
   color: #8b98aa;
   margin-bottom: 10px;
 }
@@ -1907,21 +1907,21 @@ tr:last-child td {
   margin-bottom: 10px;
 }
 .dossier-timeline h3 {
-  font-size: 14px;
+  font-size: 16px;
   color: #36516f;
 }
 .dossier-timeline h3 small {
   float: right;
-  font-size: 10px;
+  font-size: 14px;
 }
 .dossier-timeline p {
-  font-size: 12px;
+  font-size: 14px;
   color: #788a9d;
   margin-top: 7px;
   line-height: 1.8;
 }
 .dossier-empty {
-  font-size: 12px;
+  font-size: 14px;
   color: #8997a8;
   padding: 25px 0;
 }
@@ -1934,7 +1934,7 @@ tr:last-child td {
   border-top: 1px solid var(--line);
 }
 .dossier > footer button {
-  font-size: 11px;
+  font-size: 14px;
 }
 .dossier > footer .primary {
   margin-left: auto;
@@ -1961,7 +1961,7 @@ tr:last-child td {
   content: "W";
   font-family: Manrope, sans-serif;
   font-weight: 800;
-  font-size: 450px;
+  font-size: 518px;
   line-height: 1;
   position: absolute;
   bottom: -65px;
@@ -1979,19 +1979,19 @@ tr:last-child td {
   border-radius: 2px;
 }
 .login-brand h1 {
-  font-size: 43px;
+  font-size: 49px;
   letter-spacing: -1.4px;
   line-height: 1.35;
 }
 .login-brand p {
   max-width: 310px;
-  font-size: 14px;
+  font-size: 16px;
   color: #9fb4cd;
   margin-top: 23px;
   line-height: 1.8;
 }
 .login-brand > span {
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 2px;
   color: #6888ad;
   margin-top: 75px;
@@ -2005,15 +2005,15 @@ tr:last-child td {
   gap: 22px;
 }
 .login-form h2 {
-  font-size: 28px;
+  font-size: 32px;
 }
 .login-form > p {
-  font-size: 13px;
+  font-size: 15px;
   color: #8a97a6;
   margin-top: -10px;
 }
 .login-form > small {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.8;
 }
 .login-form .primary {
@@ -2031,19 +2031,19 @@ tr:last-child td {
     padding: 27px;
   }
   .work-queue > h2 {
-    font-size: 24px;
+    font-size: 28px;
   }
   .queue-task {
     padding-block: 23px;
   }
   .queue-task h3 {
-    font-size: 15px;
+    font-size: 17px;
   }
   .queue-task p {
-    font-size: 12px;
+    font-size: 14px;
   }
   .register-metrics strong {
-    font-size: 39px;
+    font-size: 45px;
   }
 }
 @media (max-width: 1250px) {
@@ -2064,7 +2064,7 @@ tr:last-child td {
   }
   .module-navigation > button {
     padding-inline: 12px;
-    font-size: 11px;
+    font-size: 14px;
     min-height: 56px;
   }
   .module-navigation > button svg {
@@ -2078,11 +2078,11 @@ tr:last-child td {
     gap: 20px;
   }
   .page-heading h1 {
-    font-size: 31px;
+    font-size: 36px;
   }
   .page-heading p {
     max-width: 460px;
-    font-size: 12px;
+    font-size: 14px;
   }
   .heading-actions {
     padding-top: 24px;
@@ -2090,13 +2090,13 @@ tr:last-child td {
   }
   .heading-actions .primary {
     padding-inline: 12px;
-    font-size: 11px;
+    font-size: 14px;
   }
   .unit-picker {
     padding-inline: 10px;
   }
   .unit-picker select {
-    font-size: 11px;
+    font-size: 14px;
     max-width: 150px;
   }
   .board-layout {
@@ -2104,12 +2104,12 @@ tr:last-child td {
     gap: 22px;
   }
   .register-metrics strong {
-    font-size: 30px;
+    font-size: 34px;
     flex-wrap: wrap;
     gap: 3px 8px;
   }
   .register-metrics small {
-    font-size: 10px;
+    font-size: 14px;
   }
   .register-metrics > div,
   .register-metrics > button {
@@ -2120,39 +2120,39 @@ tr:last-child td {
   }
   .board-table th {
     padding-inline: 12px;
-    font-size: 7px;
+    font-size: 14px;
   }
   .board-table td:nth-child(2) {
-    font-size: 10px;
+    font-size: 14px;
   }
   .board-table td:nth-child(2) small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .class-selector {
     gap: 9px;
     padding-left: 12px;
   }
   .class-selector strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .class-selector small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .register-title {
     padding: 20px;
   }
   .register-title h2 {
-    font-size: 21px;
+    font-size: 24px;
   }
   .register-title p {
-    font-size: 11px;
+    font-size: 14px;
     max-width: 250px;
   }
   .board-tabs {
     gap: 13px;
   }
   .board-tabs button {
-    font-size: 10px;
+    font-size: 14px;
   }
   .register-toolbar {
     padding-inline: 15px;
@@ -2162,21 +2162,21 @@ tr:last-child td {
     max-width: 130px;
   }
   .board-search input {
-    font-size: 10px;
+    font-size: 14px;
   }
   .journal-heading {
     padding: 20px;
     gap: 10px;
   }
   .journal-heading h3 {
-    font-size: 15px;
+    font-size: 17px;
   }
   .journal-heading p {
-    font-size: 10px;
+    font-size: 14px;
     max-width: 250px;
   }
   .journal-actions button {
-    font-size: 9px;
+    font-size: 14px;
     padding-inline: 9px;
   }
   .journal-table td,
@@ -2184,7 +2184,7 @@ tr:last-child td {
     padding-inline: 10px;
   }
   .journal-table .student-link {
-    font-size: 10px;
+    font-size: 14px;
   }
   .journal-legend {
     flex-wrap: wrap;
@@ -2195,16 +2195,16 @@ tr:last-child td {
     margin: 0;
   }
   .queue-task h3 {
-    font-size: 13px;
+    font-size: 15px;
   }
   .queue-intro {
-    font-size: 10px;
+    font-size: 14px;
   }
   .queue-task p {
-    font-size: 10px;
+    font-size: 14px;
   }
   .queue-footer {
-    font-size: 9px;
+    font-size: 14px;
   }
   .class-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2230,7 +2230,7 @@ tr:last-child td {
     padding-inline: 15px;
   }
   .class-directory td {
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 @media (max-width: 950px) {
@@ -2245,7 +2245,7 @@ tr:last-child td {
     height: 80px;
   }
   .institutional-brand strong {
-    font-size: 23px;
+    font-size: 26px;
   }
   .institutional-brand img {
     width: 41px;
@@ -2256,7 +2256,7 @@ tr:last-child td {
     gap: 17px;
   }
   .page-heading h1 {
-    font-size: 33px;
+    font-size: 38px;
   }
   .page-heading p {
     max-width: none;
@@ -2291,17 +2291,17 @@ tr:last-child td {
     padding-bottom: 18px;
   }
   .queue-task p {
-    font-size: 12px;
-  }
-  .queue-task h3 {
     font-size: 14px;
   }
+  .queue-task h3 {
+    font-size: 16px;
+  }
   .queue-intro {
-    font-size: 12px;
+    font-size: 14px;
   }
   .queue-footer {
     grid-column: 1 / -1;
-    font-size: 11px;
+    font-size: 14px;
   }
   .movement-summary {
     grid-column: 1 / -1;
@@ -2314,22 +2314,22 @@ tr:last-child td {
     margin-bottom: 0;
   }
   .movement-summary > div {
-    font-size: 10px;
+    font-size: 14px;
   }
   .register-title p {
     max-width: none;
   }
   .board-table th {
-    font-size: 8px;
+    font-size: 14px;
   }
   .board-table td:nth-child(2) {
-    font-size: 12px;
+    font-size: 14px;
   }
   .class-selector strong {
-    font-size: 12px;
+    font-size: 14px;
   }
   .board-tabs button {
-    font-size: 11px;
+    font-size: 14px;
   }
   .board-search {
     max-width: 190px;
@@ -2341,7 +2341,7 @@ tr:last-child td {
     max-width: 370px;
   }
   .journal-table .student-link {
-    font-size: 12px;
+    font-size: 14px;
   }
   .journal-legend > small {
     width: auto;
@@ -2378,7 +2378,7 @@ tr:last-child td {
     display: none;
   }
   .operational-shortcuts button {
-    font-size: 11px;
+    font-size: 14px;
   }
   .records-grid {
     grid-template-columns: 1fr 1fr;
@@ -2427,15 +2427,15 @@ tr:last-child td {
     padding: 3px;
   }
   .institutional-brand strong {
-    font-size: 20px;
+    font-size: 23px;
     gap: 4px;
   }
   .institutional-brand strong span {
-    font-size: 8px;
+    font-size: 14px;
     letter-spacing: 0.5px;
   }
   .institutional-brand small {
-    font-size: 6px;
+    font-size: 14px;
     letter-spacing: 1.5px;
     margin-top: 6px;
   }
@@ -2453,7 +2453,7 @@ tr:last-child td {
   .header-user .avatar {
     height: 28px;
     width: 28px;
-    font-size: 9px;
+    font-size: 14px;
   }
   .header-notification {
     display: none;
@@ -2479,7 +2479,7 @@ tr:last-child td {
     padding: 11px 10px;
     border-bottom: 1px solid #cdd8e4;
     min-height: 42px;
-    font-size: 12px;
+    font-size: 14px;
     gap: 9px;
   }
   .module-navigation > button.active {
@@ -2499,17 +2499,17 @@ tr:last-child td {
     gap: 18px;
   }
   .page-heading .eyebrow {
-    font-size: 7px;
+    font-size: 14px;
     margin-bottom: 10px;
     letter-spacing: 1.2px;
   }
   .page-heading h1 {
-    font-size: 29px;
+    font-size: 33px;
     letter-spacing: -1px;
     line-height: 1.3;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.8;
     margin-top: 9px;
   }
@@ -2524,11 +2524,11 @@ tr:last-child td {
     gap: 7px;
   }
   .unit-picker select {
-    font-size: 10px;
+    font-size: 14px;
     max-width: 145px;
   }
   .heading-actions .primary {
-    font-size: 10px;
+    font-size: 14px;
     padding: 10px 12px;
     min-height: 39px;
   }
@@ -2542,16 +2542,16 @@ tr:last-child td {
     padding-inline: 15px;
   }
   .register-metrics span {
-    font-size: 7px;
+    font-size: 14px;
     letter-spacing: 0.6px;
   }
   .register-metrics strong {
-    font-size: 29px;
+    font-size: 33px;
     flex-wrap: wrap;
     gap: 2px 7px;
   }
   .register-metrics small {
-    font-size: 9px;
+    font-size: 14px;
     display: flex;
     width: 100%;
     margin-top: 3px;
@@ -2561,11 +2561,11 @@ tr:last-child td {
   }
   .section-caption {
     padding: 12px 15px;
-    font-size: 8px;
+    font-size: 14px;
     letter-spacing: 1px;
   }
   .section-caption .index-label {
-    font-size: 8px;
+    font-size: 14px;
     letter-spacing: 1px;
   }
   .register-title {
@@ -2575,10 +2575,10 @@ tr:last-child td {
     flex-wrap: wrap;
   }
   .register-title h2 {
-    font-size: 23px;
+    font-size: 26px;
   }
   .register-title p {
-    font-size: 11px;
+    font-size: 14px;
     margin-top: 7px;
   }
   .board-date {
@@ -2592,11 +2592,11 @@ tr:last-child td {
     border-top: 1px solid var(--line);
   }
   .board-date > span {
-    font-size: 11px;
+    font-size: 14px;
   }
   .board-date input {
     max-width: 145px;
-    font-size: 11px;
+    font-size: 14px;
     padding: 8px;
   }
   .register-toolbar {
@@ -2610,29 +2610,29 @@ tr:last-child td {
     justify-content: space-between;
   }
   .board-tabs button {
-    font-size: 10px;
+    font-size: 14px;
     padding-block: 13px;
     gap: 5px;
   }
   .board-tabs b {
-    font-size: 8px;
+    font-size: 14px;
   }
   .board-search {
     border-top: 1px solid #e2e7ee;
     padding: 3px 0;
     max-width: 100%;
     width: 100%;
-    font-size: 10px;
+    font-size: 14px;
   }
   .board-search input {
-    font-size: 11px;
+    font-size: 14px;
     padding: 9px 0;
   }
   .board-table {
     min-width: 570px;
   }
   .board-table th {
-    font-size: 8px;
+    font-size: 14px;
     padding-block: 12px;
   }
   .board-table td {
@@ -2657,13 +2657,13 @@ tr:last-child td {
     gap: 9px;
   }
   .class-selector strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .class-selector small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .row-number {
-    font-size: 9px;
+    font-size: 14px;
   }
   .journal-heading {
     padding: 19px 15px;
@@ -2672,10 +2672,10 @@ tr:last-child td {
     gap: 14px;
   }
   .journal-heading h3 {
-    font-size: 17px;
+    font-size: 20px;
   }
   .journal-heading p {
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.7;
   }
   .journal-actions {
@@ -2685,7 +2685,7 @@ tr:last-child td {
     gap: 10px;
   }
   .journal-actions button {
-    font-size: 10px;
+    font-size: 14px;
     min-height: 37px;
     padding: 10px 12px;
   }
@@ -2702,7 +2702,7 @@ tr:last-child td {
     box-shadow: 2px 0 0 #e9edf2;
   }
   .journal-table .student-link {
-    font-size: 11px;
+    font-size: 14px;
   }
   .journal-table th:first-child {
     padding-left: 15px;
@@ -2715,22 +2715,22 @@ tr:last-child td {
     padding: 14px 15px;
     gap: 10px;
     flex-wrap: wrap;
-    font-size: 8px;
+    font-size: 14px;
   }
   .journal-legend > small {
     width: 100%;
     margin: 0;
-    font-size: 9px;
+    font-size: 14px;
   }
   .work-queue {
     display: block;
   }
   .work-queue > h2 {
-    font-size: 23px;
+    font-size: 26px;
     padding-top: 11px;
   }
   .queue-intro {
-    font-size: 11px;
+    font-size: 14px;
   }
   .queue-list {
     display: block;
@@ -2740,20 +2740,20 @@ tr:last-child td {
     padding-block: 20px;
   }
   .queue-task h3 {
-    font-size: 15px;
+    font-size: 17px;
   }
   .queue-task p {
-    font-size: 12px;
+    font-size: 14px;
   }
   .task-action {
-    font-size: 11px;
+    font-size: 14px;
     padding-top: 14px;
   }
   .queue-task .student-link {
-    font-size: 12px;
+    font-size: 14px;
   }
   .task-top > span {
-    font-size: 8px;
+    font-size: 14px;
   }
   .movement-summary {
     display: grid;
@@ -2762,10 +2762,10 @@ tr:last-child td {
     padding: 22px 20px;
   }
   .movement-summary > div {
-    font-size: 11px;
+    font-size: 14px;
   }
   .movement-summary .index-label {
-    font-size: 8px;
+    font-size: 14px;
   }
   .operational-shortcuts {
     flex-direction: column;
@@ -2777,7 +2777,7 @@ tr:last-child td {
   .operational-shortcuts button {
     padding: 17px 0;
     border-bottom: 1px solid #d4d8d7;
-    font-size: 12px;
+    font-size: 14px;
     gap: 11px;
   }
   .operational-shortcuts button:last-child {
@@ -2785,7 +2785,7 @@ tr:last-child td {
   }
   .page-footer {
     padding: 24px 0;
-    font-size: 9px;
+    font-size: 14px;
   }
   .list-toolbar {
     padding: 18px;
@@ -2796,10 +2796,10 @@ tr:last-child td {
     margin: 0;
   }
   .registry-label > strong {
-    font-size: 17px;
+    font-size: 20px;
   }
   .registry-label .index-label {
-    font-size: 8px;
+    font-size: 14px;
   }
   .student-filters {
     max-width: 100%;
@@ -2807,7 +2807,7 @@ tr:last-child td {
     gap: 8px;
   }
   .student-filters select {
-    font-size: 10px;
+    font-size: 14px;
     max-width: 50%;
     padding: 9px 7px;
   }
@@ -2816,32 +2816,32 @@ tr:last-child td {
     flex-basis: 100%;
   }
   .search input {
-    font-size: 12px;
+    font-size: 14px;
   }
   .table-scroll table {
     white-space: nowrap;
   }
   th {
-    font-size: 9px;
+    font-size: 14px;
     padding: 13px 17px;
   }
   td {
-    font-size: 12px;
+    font-size: 14px;
     padding: 17px;
   }
   .person .avatar {
     width: 31px;
     height: 31px;
-    font-size: 9px;
+    font-size: 14px;
   }
   .person {
     gap: 9px;
   }
   .person small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .package-label {
-    font-size: 9px;
+    font-size: 14px;
   }
   .panel-header {
     padding: 20px 18px;
@@ -2849,15 +2849,15 @@ tr:last-child td {
     align-items: flex-start;
   }
   .panel-header h2 {
-    font-size: 17px;
+    font-size: 20px;
   }
   .panel-header p {
-    font-size: 10px;
+    font-size: 14px;
     line-height: 1.8;
   }
   .primary,
   .secondary {
-    font-size: 10px;
+    font-size: 14px;
     padding: 10px 12px;
     min-height: 37px;
   }
@@ -2870,16 +2870,16 @@ tr:last-child td {
     padding: 24px;
   }
   .class-card h2 {
-    font-size: 21px;
+    font-size: 24px;
   }
   .class-card > p {
-    font-size: 12px;
+    font-size: 14px;
   }
   .class-directory th {
-    font-size: 9px;
+    font-size: 14px;
   }
   .class-directory td {
-    font-size: 12px;
+    font-size: 14px;
   }
   .lesson-config {
     padding: 19px;
@@ -2898,10 +2898,10 @@ tr:last-child td {
   }
   .lesson-config input,
   .lesson-config select {
-    font-size: 12px;
+    font-size: 14px;
   }
   .lesson-config label {
-    font-size: 11px;
+    font-size: 14px;
   }
   .attendance-totals {
     grid-template-columns: repeat(3, 1fr);
@@ -2916,17 +2916,17 @@ tr:last-child td {
     border: 0;
   }
   .attendance-totals span {
-    font-size: 9px;
+    font-size: 14px;
   }
   .attendance-totals strong {
-    font-size: 18px;
+    font-size: 21px;
   }
   .attendance-row {
     padding: 18px;
     gap: 17px;
   }
   .attendance-row .student-link {
-    font-size: 13px;
+    font-size: 15px;
   }
   .attendance-options {
     width: 100%;
@@ -2937,7 +2937,7 @@ tr:last-child td {
     min-width: 0;
     flex: 1;
     padding: 9px 5px;
-    font-size: 9px;
+    font-size: 14px;
     min-height: 41px;
     gap: 2px;
   }
@@ -2948,34 +2948,34 @@ tr:last-child td {
     padding: 19px;
     gap: 15px;
     flex-direction: column;
-    font-size: 11px;
+    font-size: 14px;
   }
   .form-footer .primary {
     width: 100%;
     min-height: 43px;
-    font-size: 11px;
+    font-size: 14px;
   }
   .info-banner {
     padding: 18px 17px;
     gap: 12px;
   }
   .info-banner strong {
-    font-size: 12px;
+    font-size: 14px;
   }
   .info-banner p {
-    font-size: 11px;
+    font-size: 14px;
   }
   .record-card {
     padding: 23px;
   }
   .record-card h2 {
-    font-size: 21px;
+    font-size: 24px;
   }
   .record-notes {
-    font-size: 13px;
+    font-size: 15px;
   }
   .record-card .skill-level {
-    font-size: 11px;
+    font-size: 14px;
   }
   .alert-row {
     padding: 19px;
@@ -2989,7 +2989,7 @@ tr:last-child td {
     margin: 0;
   }
   .alert-row .badge {
-    font-size: 9px;
+    font-size: 14px;
   }
   .lesson-report {
     padding: 22px 18px;
@@ -3006,16 +3006,16 @@ tr:last-child td {
     min-width: 110px;
   }
   .report-card h2 {
-    font-size: 21px;
+    font-size: 24px;
   }
   .report-card p {
-    font-size: 13px;
+    font-size: 15px;
   }
   .settings-panel {
     padding: 21px;
   }
   .settings-panel h2 {
-    font-size: 20px;
+    font-size: 23px;
   }
   .directory-note {
     display: none;
@@ -3030,7 +3030,7 @@ tr:last-child td {
     padding: 22px 19px;
   }
   .modal-header h2 {
-    font-size: 22px;
+    font-size: 25px;
   }
   .modal-form {
     padding: 21px 19px;
@@ -3042,30 +3042,30 @@ tr:last-child td {
   .modal-form input,
   .modal-form select,
   .modal-form textarea {
-    font-size: 13px;
+    font-size: 15px;
   }
   .modal-form label {
-    font-size: 12px;
+    font-size: 14px;
   }
   .modal-footer .primary,
   .modal-footer .secondary {
-    font-size: 12px;
+    font-size: 14px;
   }
   .message-buttons {
     justify-content: flex-start;
   }
   .message-preview {
     min-height: 300px;
-    font-size: 12px;
+    font-size: 14px;
   }
   .dossier-identity {
     padding: 24px 20px;
   }
   .dossier-identity h2 {
-    font-size: 27px;
+    font-size: 31px;
   }
   .dossier-identity p {
-    font-size: 11px;
+    font-size: 14px;
   }
   .dossier > header {
     padding-inline: 20px;
@@ -3078,14 +3078,14 @@ tr:last-child td {
     padding-left: 17px;
   }
   .dossier-stats strong {
-    font-size: 20px;
+    font-size: 23px;
   }
   .dossier-stats > div:last-child strong {
-    font-size: 17px;
+    font-size: 20px;
     margin-top: 11px;
   }
   .dossier-stats span {
-    font-size: 7px;
+    font-size: 14px;
   }
   .dossier-tabs {
     padding: 0 20px;
@@ -3093,7 +3093,7 @@ tr:last-child td {
     gap: 10px;
   }
   .dossier-tabs button {
-    font-size: 11px;
+    font-size: 14px;
     padding-block: 15px;
   }
   .dossier-content {
@@ -3103,17 +3103,17 @@ tr:last-child td {
     gap: 0 18px;
   }
   .student-details dt {
-    font-size: 10px;
+    font-size: 14px;
   }
   .student-details dd {
-    font-size: 12px;
+    font-size: 14px;
   }
   .dossier > footer {
     padding: 16px 20px;
     gap: 7px;
   }
   .dossier > footer button {
-    font-size: 9px;
+    font-size: 14px;
     min-height: 38px;
     padding: 10px 9px;
   }
@@ -3122,7 +3122,7 @@ tr:last-child td {
     flex: 1;
   }
   .toast {
-    font-size: 11px;
+    font-size: 14px;
     bottom: 14px;
     padding: 16px 17px;
     width: max-content;
@@ -3141,11 +3141,11 @@ tr:last-child td {
     margin-bottom: 25px;
   }
   .login-brand h1 {
-    font-size: 30px;
+    font-size: 34px;
     letter-spacing: -1px;
   }
   .login-brand p {
-    font-size: 12px;
+    font-size: 14px;
     max-width: 270px;
     margin-top: 16px;
   }
@@ -3153,7 +3153,7 @@ tr:last-child td {
     display: none;
   }
   .login-brand:after {
-    font-size: 260px;
+    font-size: 299px;
     bottom: -50px;
     right: 0;
   }
@@ -3164,7 +3164,7 @@ tr:last-child td {
     max-width: 370px;
   }
   .login-form h2 {
-    font-size: 27px;
+    font-size: 31px;
   }
 }
 @media print {
@@ -3219,7 +3219,7 @@ tr:last-child td {
   color: #7f92a9;
 }
 .followup-type span {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
   font-weight: 600;
 }
@@ -3231,20 +3231,20 @@ tr:last-child td {
   min-width: 0;
 }
 .followup-detail .student-link {
-  font-size: 14px;
+  font-size: 16px;
 }
 .followup-detail h3 {
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 8px;
   color: #637c98;
 }
 .followup-detail p {
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 6px;
   color: #8595a7;
 }
 .followup-detail time {
-  font-size: 10px;
+  font-size: 14px;
   display: block;
   margin-top: 9px;
   color: #9c8663;
@@ -3277,10 +3277,10 @@ tr:last-child td {
     flex-wrap: nowrap;
   }
   .followup-toolbar .board-tabs button {
-    font-size: 10px;
+    font-size: 14px;
   }
   .followup-toolbar .board-tabs b {
-    font-size: 8px;
+    font-size: 14px;
     min-width: 14px;
   }
   .followup-toolbar .search {
@@ -3296,17 +3296,17 @@ tr:last-child td {
     gap: 8px;
   }
   .followup-type span {
-    font-size: 7px;
+    font-size: 14px;
     letter-spacing: 0.5px;
   }
   .followup-detail .student-link {
-    font-size: 13px;
+    font-size: 15px;
   }
   .followup-detail p {
-    font-size: 11px;
+    font-size: 14px;
   }
   .followup-list > article > .secondary {
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 /* Keep the table's accessibility text inside its own scroll container. */

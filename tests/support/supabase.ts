@@ -214,6 +214,46 @@ export async function installSchoolApi(page: Page) {
     actor.must_change_password = false;
     return json(route, { ok: true, login_required: true });
   });
+  await page.route("**/api/records", async (route) => {
+    if (actor.role !== "admin")
+      return json(route, { error: "Apenas administradores." }, 403);
+    const input = route.request().postDataJSON();
+    const rows = store[input.table as keyof Store] as unknown as Record<
+      string,
+      unknown
+    >[];
+    const row = rows.find((r) => r.id === input.id);
+    if (!row) return json(route, { error: "Registro não encontrado." }, 404);
+    if (input.action === "edit") Object.assign(row, input.changes);
+    if (input.action === "archive") {
+      row.archived_at = new Date().toISOString();
+      row.record_archive_reason = input.reason;
+      if (input.table === "profiles") row.active = false;
+    }
+    if (input.action === "restore") {
+      row.archived_at = null;
+      row.record_archive_reason = "";
+      if (input.table === "profiles") row.active = true;
+    }
+    if (input.action === "delete") {
+      if (input.confirmation !== "EXCLUIR")
+        return json(route, { error: "Confirme a exclusão." }, 400);
+      if (
+        input.table === "students" &&
+        store.attendance.some((a) => a.student_id === row.id)
+      )
+        return json(
+          route,
+          {
+            error:
+              "Este registro possui vínculos ou histórico. Arquive para preservar o histórico.",
+          },
+          409,
+        );
+      rows.splice(rows.indexOf(row), 1);
+    }
+    return json(route, { ok: true });
+  });
   return { store, objects, actor: () => actor };
 }
 export async function login(page: Page, username = "admin") {

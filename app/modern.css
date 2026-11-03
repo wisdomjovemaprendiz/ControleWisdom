@@ -10,7 +10,7 @@
 body {
   background: #dfe2df;
   padding: 14px;
-  font-size: 14px;
+  font-size: 16px;
 }
 .app-shell {
   max-width: 1720px;
@@ -62,12 +62,12 @@ body {
 }
 .header-greeting strong {
   font-family: Manrope, sans-serif;
-  font-size: 22px;
+  font-size: 25px;
   letter-spacing: -0.8px;
   font-weight: 700;
 }
 .header-greeting > span {
-  font-size: 11px;
+  font-size: 14px;
   color: #8b929c;
 }
 .global-search {
@@ -83,7 +83,7 @@ body {
 .global-search input {
   border: 0;
   box-shadow: none !important;
-  font-size: 11px;
+  font-size: 14px;
   background: transparent;
   padding: 5px 0;
   min-width: 0;
@@ -104,7 +104,7 @@ body {
   gap: 12px;
 }
 .system-label {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 0.65px;
   border: 0;
   background: #e0e5ed;
@@ -131,7 +131,7 @@ body {
   position: absolute;
   right: -2px;
   top: -2px;
-  font-size: 8px;
+  font-size: 14px;
   font-weight: 600;
   background: #ed3346;
   color: white;
@@ -153,11 +153,11 @@ body {
   gap: 10px;
 }
 .header-user > span {
-  font-size: 11px;
+  font-size: 14px;
   max-width: 130px;
 }
 .header-user small {
-  font-size: 9px;
+  font-size: 14px;
   color: #91a0b2;
 }
 .header-user .avatar {
@@ -166,7 +166,7 @@ body {
   background: #e3e9f2;
   border: 2px solid #fff;
   color: #4b6f9f;
-  font-size: 10px;
+  font-size: 14px;
 }
 .institutional-tools .icon-button {
   color: #7d8c9f;
@@ -202,7 +202,7 @@ body {
   border-radius: 13px;
   color: #8b939f;
   white-space: normal;
-  font-size: 8px;
+  font-size: 14px;
   line-height: 1.4;
   font-weight: 500;
   text-align: center;
@@ -239,7 +239,7 @@ body {
   color: #ac4550;
   height: 13px;
   width: 13px;
-  font-size: 7px;
+  font-size: 14px;
 }
 .main-shell {
   grid-column: 2;
@@ -258,7 +258,7 @@ body {
   align-items: center;
 }
 .page-heading .eyebrow {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
   color: #8995a4;
   margin-bottom: 9px;
@@ -270,14 +270,14 @@ body {
   background: #db5f68;
 }
 .page-heading h1 {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
   letter-spacing: -1px;
   line-height: 1.35;
   color: #23364f;
 }
 .page-heading p {
-  font-size: 11px;
+  font-size: 14px;
   color: #939ca7;
   margin-top: 6px;
   max-width: 540px;
@@ -298,7 +298,7 @@ body {
   box-shadow: 0 1px 2px #152b4910;
 }
 .unit-picker select {
-  font-size: 10px;
+  font-size: 14px;
   max-width: 145px;
 }
 .unit-picker svg {
@@ -308,7 +308,7 @@ body {
 .primary,
 .secondary {
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 14px;
   padding: 11px 14px;
   min-height: 38px;
 }
@@ -327,7 +327,7 @@ body {
 }
 .heading-actions .primary,
 .heading-actions .secondary {
-  font-size: 10px;
+  font-size: 14px;
   padding-inline: 12px;
 }
 .register-metrics {
@@ -352,7 +352,7 @@ body {
   overflow: hidden;
 }
 .register-metrics span {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 0.8px;
   font-weight: 600;
   color: #8b96a4;
@@ -360,7 +360,7 @@ body {
   display: block;
 }
 .register-metrics strong {
-  font-size: 31px;
+  font-size: 36px;
   letter-spacing: -1.2px;
   display: block;
   margin-top: 6px;
@@ -370,7 +370,7 @@ body {
 .register-metrics small {
   display: flex;
   width: 100%;
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 0;
   margin-top: 5px;
   color: #a1acb8;
@@ -424,12 +424,12 @@ body {
   padding: 16px 21px 0;
   background: transparent;
   color: #a7b2c1;
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
 }
 .section-caption .index-label {
   color: #90a0b3;
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
 }
 .register-title {
@@ -439,11 +439,11 @@ body {
   align-items: center;
 }
 .register-title h2 {
-  font-size: 21px;
+  font-size: 24px;
   letter-spacing: -0.6px;
 }
 .register-title p {
-  font-size: 10px;
+  font-size: 14px;
   color: #95a2b4;
   margin-top: 7px;
   max-width: 350px;
@@ -451,12 +451,12 @@ body {
 .board-date input {
   border: 1px solid #e3e9ef;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: 14px;
   padding: 8px;
   max-width: 145px;
 }
 .board-date > span {
-  font-size: 9px;
+  font-size: 14px;
   color: #a2acb9;
 }
 .register-toolbar {
@@ -469,7 +469,7 @@ body {
   gap: 19px;
 }
 .board-tabs button {
-  font-size: 10px;
+  font-size: 14px;
   color: #9aa6b7;
   gap: 6px;
   padding-block: 13px;
@@ -480,7 +480,7 @@ body {
   border-bottom-color: #6280a4;
 }
 .board-tabs b {
-  font-size: 8px;
+  font-size: 14px;
   background: #edf2f8;
   color: #8b9db5;
   border-radius: 4px;
@@ -492,11 +492,11 @@ body {
   color: #aab6c5;
 }
 .board-search input {
-  font-size: 10px;
+  font-size: 14px;
   background: transparent;
 }
 .board-table th {
-  font-size: 7px;
+  font-size: 14px;
   letter-spacing: 0.6px;
   color: #a2aec0;
   padding: 14px 15px;
@@ -504,16 +504,16 @@ body {
   border-bottom: 1px solid #f1f4f7;
 }
 .board-table td {
-  font-size: 11px;
+  font-size: 14px;
   padding: 17px 15px;
   border-bottom: 1px solid #f0f4f8;
 }
 .board-table td:nth-child(2) {
-  font-size: 10px;
+  font-size: 14px;
   color: #8496af;
 }
 .board-table td small {
-  font-size: 9px;
+  font-size: 14px;
   color: #aab6c6;
 }
 .board-table td:first-child {
@@ -530,24 +530,24 @@ body {
   gap: 13px;
 }
 .class-selector strong {
-  font-size: 11px;
+  font-size: 14px;
   color: #3b587b;
   font-weight: 600;
 }
 .class-selector small {
-  font-size: 9px;
+  font-size: 14px;
 }
 .row-number {
   color: #adbaca;
-  font-size: 9px;
+  font-size: 14px;
 }
 .roster-count {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #5c7696;
 }
 .roster-count small {
-  font-size: 9px;
+  font-size: 14px;
   display: inline;
 }
 .capacity-line {
@@ -561,7 +561,7 @@ body {
   background: #a2b8d3;
 }
 .attendance-state {
-  font-size: 9px;
+  font-size: 14px;
 }
 .attendance-state.done {
   color: #70978c;
@@ -578,17 +578,17 @@ body {
   align-items: center;
 }
 .journal-heading .index-label {
-  font-size: 7px;
+  font-size: 14px;
   color: #a4b0c0;
 }
 .journal-heading h3 {
-  font-size: 16px;
+  font-size: 18px;
   color: #4b6586;
   letter-spacing: -0.3px;
   margin-top: 8px;
 }
 .journal-heading p {
-  font-size: 10px;
+  font-size: 14px;
   color: #a0aec0;
   max-width: 320px;
 }
@@ -598,7 +598,7 @@ body {
   flex-shrink: 0;
 }
 .journal-actions button {
-  font-size: 9px;
+  font-size: 14px;
   min-height: 32px;
   padding: 9px 11px;
   border-radius: 8px;
@@ -610,18 +610,18 @@ body {
 .journal-table th {
   background: #f8fafc;
   color: #9dadc0;
-  font-size: 8px;
+  font-size: 14px;
   padding: 11px 13px;
 }
 .journal-table th:not(:first-child) {
-  font-size: 9px;
+  font-size: 14px;
 }
 .journal-table td {
   padding: 11px 13px;
-  font-size: 10px;
+  font-size: 14px;
 }
 .journal-table .student-link {
-  font-size: 11px;
+  font-size: 14px;
   color: #5b7b9f;
   font-weight: 500;
 }
@@ -629,7 +629,7 @@ body {
   color: #8298b4;
 }
 .register-mark {
-  font-size: 9px;
+  font-size: 14px;
   min-width: 22px;
   min-height: 22px;
   border-radius: 6px;
@@ -653,7 +653,7 @@ body {
 .journal-legend {
   border-top: 0;
   padding: 15px 21px;
-  font-size: 8px;
+  font-size: 14px;
   color: #a8b5c6;
   gap: 14px;
 }
@@ -661,7 +661,7 @@ body {
   border-radius: 4px;
 }
 .journal-legend > small {
-  font-size: 8px;
+  font-size: 14px;
   color: #a7b4c4;
   max-width: 110px;
   width: auto;
@@ -689,25 +689,25 @@ body {
   color: #a9b4c4;
 }
 .work-queue .section-caption .index-label {
-  font-size: 8px;
+  font-size: 14px;
   color: #91a1b5;
 }
 .queue-count {
   border: 0;
   background: #f0f3f7;
   color: #a3b1c4;
-  font-size: 9px;
+  font-size: 14px;
   border-radius: 5px;
   padding: 3px;
   min-width: 19px;
 }
 .work-queue > h2 {
-  font-size: 20px;
+  font-size: 23px;
   padding: 12px 20px 0;
   letter-spacing: -0.7px;
 }
 .queue-intro {
-  font-size: 10px;
+  font-size: 14px;
   color: #9eabbc;
   padding: 7px 20px 19px;
   line-height: 1.8;
@@ -721,35 +721,35 @@ body {
   border-top: 1px solid #eef2f6;
 }
 .task-top > span {
-  font-size: 7px;
+  font-size: 14px;
   color: #9eaeb9;
 }
 .task-top time {
-  font-size: 8px;
+  font-size: 14px;
   color: #adbbcc;
 }
 .queue-task.absence .task-top > span {
   color: #c68787;
 }
 .queue-task h3 {
-  font-size: 12px;
+  font-size: 14px;
   color: #4a6587;
   margin-top: 9px;
   font-weight: 700;
 }
 .queue-task .student-link {
-  font-size: 10px;
+  font-size: 14px;
   color: #88a0bd;
   font-weight: 500;
 }
 .queue-task p {
-  font-size: 10px;
+  font-size: 14px;
   color: #a1afbf;
   line-height: 1.8;
   margin-top: 7px;
 }
 .task-action {
-  font-size: 9px;
+  font-size: 14px;
   color: #7b96b7;
   padding-top: 11px;
   font-weight: 600;
@@ -757,7 +757,7 @@ body {
 .queue-footer {
   background: #f7f9fb;
   border-top: 1px solid #eef2f7;
-  font-size: 9px;
+  font-size: 14px;
   color: #8aa0bb;
   padding: 17px 20px;
 }
@@ -771,17 +771,17 @@ body {
   padding: 22px 20px 16px;
 }
 .movement-summary .index-label {
-  font-size: 7px;
+  font-size: 14px;
   color: #a6b2c2;
   margin-bottom: 12px;
 }
 .movement-summary > div {
-  font-size: 10px;
+  font-size: 14px;
   color: #9eacbc;
   padding: 7px 0;
 }
 .movement-summary strong {
-  font-size: 12px;
+  font-size: 14px;
   color: #819bb7;
 }
 .birthdays-panel {
@@ -808,12 +808,12 @@ body {
   color: #c88592;
 }
 .birthday-heading h2 {
-  font-size: 17px;
+  font-size: 20px;
   letter-spacing: -0.5px;
   color: #536b89;
 }
 .birthday-heading p {
-  font-size: 9px;
+  font-size: 14px;
   line-height: 1.7;
   color: #a2afbf;
   margin-top: 5px;
@@ -827,7 +827,7 @@ body {
   border-radius: 9px;
 }
 .birthday-tabs button {
-  font-size: 9px;
+  font-size: 14px;
   color: #9aaabd;
   padding: 7px 8px;
   border-radius: 6px;
@@ -843,7 +843,7 @@ body {
   color: #55779f;
 }
 .birthday-tabs b {
-  font-size: 8px;
+  font-size: 14px;
   border-radius: 4px;
   background: #edf1f8;
   padding: 2px 5px;
@@ -871,12 +871,12 @@ body {
 }
 .birthday-date strong {
   display: block;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   color: #8b9fb9;
 }
 .birthday-date small {
-  font-size: 6px;
+  font-size: 14px;
   color: #a9b8cb;
   margin-top: 4px;
   display: block;
@@ -892,13 +892,13 @@ body {
   flex: 1;
 }
 .birthday-student > span:nth-child(2) > strong {
-  font-size: 10px;
+  font-size: 14px;
   color: #6d87a7;
   font-weight: 600;
 }
 .birthday-student > span:nth-child(2) > small {
   display: block;
-  font-size: 8px;
+  font-size: 14px;
   color: #a5b3c6;
   margin-top: 4px;
   line-height: 1.6;
@@ -907,13 +907,13 @@ body {
   color: #b1bfd0;
 }
 .birthday-empty {
-  font-size: 10px;
+  font-size: 14px;
   color: #a6b2c2;
   line-height: 1.8;
   padding: 7px 0 15px;
 }
 .birthday-footer {
-  font-size: 8px;
+  font-size: 14px;
   display: block;
   color: #b0bac9;
   border-top: 1px solid #f1f4f8;
@@ -936,7 +936,7 @@ body {
 }
 .operational-shortcuts button {
   padding: 0;
-  font-size: 10px;
+  font-size: 14px;
   color: #8fa4bd;
   border: 0;
   gap: 10px;
@@ -955,16 +955,16 @@ body {
   box-shadow: 0 2px 5px #243e5e03;
 }
 .panel-header h2 {
-  font-size: 18px;
+  font-size: 21px;
   color: #46617f;
 }
 .panel-header p {
   color: #a1adbd;
-  font-size: 11px;
+  font-size: 14px;
 }
 .panel-header .index-label {
   color: #a6b4c5;
-  font-size: 8px;
+  font-size: 14px;
 }
 .list-toolbar {
   background: #fff;
@@ -974,30 +974,30 @@ th {
   background: #fafbfd;
   color: #9eacc0;
   border-bottom: 1px solid #eff3f7;
-  font-size: 8px;
+  font-size: 14px;
 }
 td {
   border-bottom: 1px solid #f0f4f8;
   color: #7e94af;
-  font-size: 11px;
+  font-size: 14px;
 }
 td strong {
-  font-size: 11px;
+  font-size: 14px;
   color: #557291;
 }
 td small {
   color: #abb9ca;
-  font-size: 9px;
+  font-size: 14px;
 }
 .student-link {
   color: #6083aa;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
 }
 .badge {
   border: 0 !important;
   border-radius: 7px;
-  font-size: 9px;
+  font-size: 14px;
   padding: 5px 8px;
 }
 .badge.green {
@@ -1013,21 +1013,21 @@ td small {
   color: #9cacbf;
 }
 .registry-label > strong {
-  font-size: 15px;
+  font-size: 17px;
   color: #657f9e;
 }
 .registry-label .index-label {
-  font-size: 7px;
+  font-size: 14px;
   color: #a5b4c6;
 }
 .registry-label small {
-  font-size: 10px;
+  font-size: 14px;
   color: #a5b3c4;
 }
 .student-filters select {
   border: 1px solid #e7edf4;
   border-radius: 9px;
-  font-size: 10px;
+  font-size: 14px;
   color: #849cb9;
 }
 .search {
@@ -1036,7 +1036,7 @@ td small {
   color: #b1bfd0;
 }
 .search input {
-  font-size: 10px;
+  font-size: 14px;
   color: #7a93b2;
 }
 .avatar {
@@ -1053,7 +1053,7 @@ td small {
 .class-card h2,
 .record-card h2,
 .report-card h2 {
-  font-size: 20px;
+  font-size: 23px;
   color: #536e8f;
 }
 .circle-icon {
@@ -1076,11 +1076,11 @@ td small {
   color: #6c89ad;
 }
 .info-banner strong {
-  font-size: 12px;
+  font-size: 14px;
 }
 .info-banner p {
   color: #91a5bd;
-  font-size: 11px;
+  font-size: 14px;
 }
 .lesson-config {
   border-top: 0;
@@ -1091,10 +1091,10 @@ td small {
 .lesson-config select {
   border-color: #e5ecf4;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 .lesson-config label {
-  font-size: 11px;
+  font-size: 14px;
   color: #8ea2bc;
 }
 .attendance-totals {
@@ -1114,11 +1114,11 @@ td small {
   align-items: center;
 }
 .attendance-totals span {
-  font-size: 10px;
+  font-size: 14px;
   color: #9caec4;
 }
 .attendance-totals strong {
-  font-size: 21px;
+  font-size: 24px;
   color: #829cbd;
 }
 .attendance-totals .presente strong {
@@ -1134,7 +1134,7 @@ td small {
 .attendance-options button {
   border: 1px solid #e6edf5;
   border-radius: 9px;
-  font-size: 10px;
+  font-size: 14px;
   color: #9eafc5;
   min-width: 85px;
 }
@@ -1156,7 +1156,7 @@ td small {
 .form-footer {
   border-top: 1px solid #eef3f9;
   background: #fafcfe;
-  font-size: 11px;
+  font-size: 14px;
   color: #9eafc5;
 }
 .attendance-footer-actions {
@@ -1176,7 +1176,7 @@ td small {
   background: #eef7f1;
   color: #729d86;
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   min-height: 38px;
 }
@@ -1192,7 +1192,7 @@ td small {
 }
 .followup-detail p {
   color: #a3b2c5;
-  font-size: 11px;
+  font-size: 14px;
 }
 .history-item {
   border-top: 1px solid #f0f4f8;
@@ -1205,15 +1205,15 @@ td small {
 .report-filters select {
   border-color: #e5ecf5;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .report-filters strong {
-  font-size: 12px;
+  font-size: 14px;
   color: #7d96b5;
 }
 .report-filters label {
   color: #a0b1c7;
-  font-size: 10px;
+  font-size: 14px;
 }
 .modal {
   border: 0;
@@ -1225,15 +1225,15 @@ td small {
   border-bottom: 1px solid #edf2f8;
 }
 .modal-header h2 {
-  font-size: 23px;
+  font-size: 26px;
   color: #496889;
 }
 .modal-header .eyebrow {
   color: #a6b4c7;
-  font-size: 8px;
+  font-size: 14px;
 }
 .modal-form label {
-  font-size: 11px;
+  font-size: 14px;
   color: #8ca1bc;
 }
 .modal-form input,
@@ -1241,11 +1241,11 @@ td small {
 .modal-form textarea {
   border-color: #e1e9f3;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 .modal-form > p {
   color: #a1b0c4;
-  font-size: 11px;
+  font-size: 14px;
 }
 .modal-footer {
   border-top: 1px solid #edf2f8;
@@ -1284,12 +1284,12 @@ td small {
   color: #8ca6c7;
 }
 .import-dropzone strong {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: #6d8bad;
 }
 .import-dropzone span {
-  font-size: 10px;
+  font-size: 14px;
   color: #a2b5ce;
 }
 .import-dropzone input {
@@ -1312,7 +1312,7 @@ td small {
   background: #f0f5fb;
   border-radius: 11px;
   padding: 15px 17px;
-  font-size: 11px;
+  font-size: 14px;
   color: #93a8c2;
   flex-wrap: wrap;
 }
@@ -1326,10 +1326,10 @@ td small {
 }
 .import-summary b {
   font-family: Manrope, sans-serif;
-  font-size: 17px;
+  font-size: 20px;
 }
 .import-note {
-  font-size: 10px !important;
+  font-size: 14px !important;
   line-height: 1.9;
 }
 .import-preview {
@@ -1338,7 +1338,7 @@ td small {
   border-radius: 11px;
 }
 .import-preview td small {
-  font-size: 9px;
+  font-size: 14px;
   max-width: 250px;
   white-space: normal;
   line-height: 1.7;
@@ -1357,7 +1357,7 @@ td small {
 }
 .dossier > header .index-label {
   color: #9bafc9;
-  font-size: 8px;
+  font-size: 14px;
 }
 .dossier > header button {
   color: #9bafc9;
@@ -1393,13 +1393,13 @@ td small {
   border-color: #edf2f8;
 }
 .page-footer {
-  font-size: 8px;
+  font-size: 14px;
   color: #aeb9c3;
   padding: 23px 0;
 }
 .footer-mark {
   color: #9aafc9;
-  font-size: 17px;
+  font-size: 20px;
 }
 .login {
   border: 8px solid white;
@@ -1428,7 +1428,7 @@ td small {
 }
 .login-form label {
   color: #8fa3bd;
-  font-size: 12px;
+  font-size: 14px;
 }
 .login-form .primary {
   border-radius: 11px;
@@ -1465,7 +1465,7 @@ td small {
     min-height: 125px;
   }
   .register-metrics strong {
-    font-size: 35px;
+    font-size: 40px;
   }
   .board-table td {
     padding-block: 20px;
@@ -1480,10 +1480,10 @@ td small {
     padding-block: 21px;
   }
   .register-title h2 {
-    font-size: 24px;
+    font-size: 28px;
   }
   .page-heading h1 {
-    font-size: 31px;
+    font-size: 36px;
   }
 }
 @media (max-width: 1250px) {
@@ -1511,10 +1511,10 @@ td small {
     min-width: 160px;
   }
   .header-greeting strong {
-    font-size: 19px;
+    font-size: 22px;
   }
   .header-greeting > span {
-    font-size: 10px;
+    font-size: 14px;
   }
   .global-search {
     width: 220px;
@@ -1533,7 +1533,7 @@ td small {
     padding-inline: 10px;
   }
   .module-navigation > button {
-    font-size: 7px;
+    font-size: 14px;
     min-height: 51px;
     padding-block: 8px;
     gap: 6px;
@@ -1554,7 +1554,7 @@ td small {
     align-self: flex-end;
   }
   .page-heading h1 {
-    font-size: 28px;
+    font-size: 32px;
   }
   .page-heading p {
     max-width: none;
@@ -1569,13 +1569,13 @@ td small {
     min-height: 110px;
   }
   .register-metrics span {
-    font-size: 7px;
+    font-size: 14px;
   }
   .register-metrics strong {
-    font-size: 28px;
+    font-size: 32px;
   }
   .register-metrics small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .board-layout {
     grid-template-columns: minmax(0, 1fr) 255px;
@@ -1583,33 +1583,33 @@ td small {
   }
   .board-table th {
     padding-inline: 10px;
-    font-size: 7px;
+    font-size: 14px;
   }
   .board-table td {
     padding-inline: 10px;
-    font-size: 10px;
+    font-size: 14px;
   }
   .board-table td:nth-child(2) {
-    font-size: 9px;
+    font-size: 14px;
   }
   .class-selector {
     gap: 8px;
     padding-left: 11px;
   }
   .class-selector strong {
-    font-size: 10px;
+    font-size: 14px;
   }
   .class-selector small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .board-table td small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .roster-count {
-    font-size: 12px;
+    font-size: 14px;
   }
   .attendance-state {
-    font-size: 8px;
+    font-size: 14px;
   }
   .register-toolbar {
     padding-inline: 15px;
@@ -1619,32 +1619,32 @@ td small {
     gap: 13px;
   }
   .board-tabs button {
-    font-size: 9px;
+    font-size: 14px;
     gap: 4px;
   }
   .board-search {
     max-width: 130px;
   }
   .board-search input {
-    font-size: 9px;
+    font-size: 14px;
   }
   .register-title {
     padding: 16px;
     gap: 14px;
   }
   .register-title h2 {
-    font-size: 19px;
+    font-size: 22px;
   }
   .register-title p {
-    font-size: 9px;
+    font-size: 14px;
     max-width: 250px;
   }
   .board-date input {
     max-width: 130px;
-    font-size: 10px;
+    font-size: 14px;
   }
   .board-date > span {
-    font-size: 8px;
+    font-size: 14px;
   }
   .section-caption {
     padding-inline: 16px;
@@ -1654,14 +1654,14 @@ td small {
     gap: 10px;
   }
   .journal-heading h3 {
-    font-size: 14px;
+    font-size: 16px;
   }
   .journal-heading p {
-    font-size: 9px;
+    font-size: 14px;
     max-width: 250px;
   }
   .journal-actions button {
-    font-size: 8px;
+    font-size: 14px;
     padding: 8px 10px;
   }
   .journal-table td,
@@ -1669,7 +1669,7 @@ td small {
     padding-inline: 10px;
   }
   .journal-table .student-link {
-    font-size: 10px;
+    font-size: 14px;
   }
   .journal-legend {
     gap: 9px;
@@ -1683,29 +1683,29 @@ td small {
     margin: 0;
   }
   .work-queue > h2 {
-    font-size: 19px;
+    font-size: 22px;
   }
   .birthday-heading h2 {
-    font-size: 16px;
+    font-size: 18px;
   }
   .birthday-heading p {
-    font-size: 8px;
+    font-size: 14px;
   }
   .birthdays-panel {
     padding: 18px 17px 15px;
   }
   .birthday-student > span:nth-child(2) > strong {
-    font-size: 9px;
+    font-size: 14px;
   }
   .birthday-student > span:nth-child(2) > small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .operational-shortcuts {
     gap: 17px;
     padding: 17px;
   }
   .operational-shortcuts button {
-    font-size: 9px;
+    font-size: 14px;
   }
   .lesson-config label:first-child {
     min-width: 240px;
@@ -1714,10 +1714,10 @@ td small {
     gap: 8px;
   }
   .attendance-footer-actions .primary {
-    font-size: 10px;
+    font-size: 14px;
   }
   .whatsapp-share {
-    font-size: 9px;
+    font-size: 14px;
   }
 }
 @media (max-width: 980px) {
@@ -1725,7 +1725,7 @@ td small {
     min-width: 155px;
   }
   .header-greeting strong {
-    font-size: 19px;
+    font-size: 22px;
   }
   .global-search {
     width: 200px;
@@ -1743,27 +1743,27 @@ td small {
     display: block;
   }
   .board-table td:nth-child(2) {
-    font-size: 11px;
+    font-size: 14px;
   }
   .class-selector strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .register-title p {
     max-width: none;
-    font-size: 10px;
+    font-size: 14px;
   }
   .journal-heading p {
     max-width: 370px;
-    font-size: 10px;
+    font-size: 14px;
   }
   .journal-actions {
     flex-direction: row;
   }
   .journal-actions button {
-    font-size: 9px;
+    font-size: 14px;
   }
   .journal-table .student-link {
-    font-size: 11px;
+    font-size: 14px;
   }
   .journal-legend > small {
     width: auto;
@@ -1781,16 +1781,16 @@ td small {
     padding: 19px !important;
   }
   .register-metrics span {
-    font-size: 8px;
+    font-size: 14px;
   }
   .register-metrics strong {
-    font-size: 30px;
+    font-size: 34px;
   }
   .register-metrics small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .page-heading h1 {
-    font-size: 29px;
+    font-size: 33px;
   }
   .followup-toolbar .board-tabs {
     gap: 15px;
@@ -1803,16 +1803,16 @@ td small {
     justify-content: center;
   }
   .birthday-heading h2 {
-    font-size: 18px;
+    font-size: 21px;
   }
   .birthday-heading p {
-    font-size: 10px;
+    font-size: 14px;
   }
   .birthday-student > span:nth-child(2) > strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .birthday-student > span:nth-child(2) > small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .birthdays-panel {
     padding: 23px;
@@ -1821,13 +1821,13 @@ td small {
     width: 35px;
   }
   .birthday-tabs button {
-    font-size: 10px;
+    font-size: 14px;
   }
   .birthday-footer {
-    font-size: 9px;
+    font-size: 14px;
   }
   .queue-intro {
-    font-size: 10px;
+    font-size: 14px;
   }
   .movement-summary {
     display: block;
@@ -1868,11 +1868,11 @@ td small {
     gap: 4px;
   }
   .header-greeting strong {
-    font-size: 18px;
+    font-size: 21px;
     letter-spacing: -0.6px;
   }
   .header-greeting > span {
-    font-size: 8px;
+    font-size: 14px;
     max-width: 180px;
   }
   .global-search {
@@ -1882,7 +1882,7 @@ td small {
     margin-top: 6px;
   }
   .global-search input {
-    font-size: 11px;
+    font-size: 14px;
     min-height: 28px;
   }
   .global-search > button {
@@ -1908,7 +1908,7 @@ td small {
     width: 16px;
   }
   .birthday-alert-button b {
-    font-size: 7px;
+    font-size: 14px;
     min-width: 12px;
     height: 12px;
     top: -3px;
@@ -1941,7 +1941,7 @@ td small {
     border-radius: 12px;
     min-height: 63px;
     padding: 9px 4px !important;
-    font-size: 7px;
+    font-size: 14px;
     gap: 6px;
     justify-content: center;
     align-items: center;
@@ -1973,12 +1973,12 @@ td small {
     align-items: stretch;
   }
   .page-heading h1 {
-    font-size: 25px;
+    font-size: 29px;
     line-height: 1.35;
     letter-spacing: -0.85px;
   }
   .page-heading .eyebrow {
-    font-size: 6px;
+    font-size: 14px;
     letter-spacing: 1px;
     margin-bottom: 8px;
   }
@@ -1987,7 +1987,7 @@ td small {
     width: 4px;
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: 14px;
     margin-top: 7px;
     line-height: 1.8;
   }
@@ -2007,7 +2007,7 @@ td small {
     border-radius: 10px;
   }
   .unit-picker select {
-    font-size: 9px;
+    font-size: 14px;
     max-width: 132px;
   }
   .unit-picker svg {
@@ -2016,7 +2016,7 @@ td small {
   }
   .heading-actions .primary,
   .heading-actions .secondary {
-    font-size: 9px;
+    font-size: 14px;
     padding: 10px;
     min-height: 36px;
     gap: 6px;
@@ -2039,17 +2039,17 @@ td small {
     min-height: 105px;
   }
   .register-metrics span {
-    font-size: 7px;
+    font-size: 14px;
     letter-spacing: 0.5px;
     line-height: 1.6;
   }
   .register-metrics strong {
-    font-size: 28px;
+    font-size: 32px;
     line-height: 1.2;
     margin-top: 8px;
   }
   .register-metrics small {
-    font-size: 8px;
+    font-size: 14px;
     display: flex;
     width: 100%;
     line-height: 1.5;
@@ -2083,11 +2083,11 @@ td small {
   }
   .section-caption {
     padding: 15px 15px 0;
-    font-size: 7px;
+    font-size: 14px;
     letter-spacing: 0.8px;
   }
   .section-caption .index-label {
-    font-size: 7px;
+    font-size: 14px;
   }
   .register-title {
     padding: 14px 15px 17px;
@@ -2096,11 +2096,11 @@ td small {
     gap: 13px;
   }
   .register-title h2 {
-    font-size: 21px;
+    font-size: 24px;
     letter-spacing: -0.5px;
   }
   .register-title p {
-    font-size: 10px;
+    font-size: 14px;
     margin-top: 6px;
     max-width: none;
   }
@@ -2115,10 +2115,10 @@ td small {
     gap: 14px;
   }
   .board-date > span {
-    font-size: 9px;
+    font-size: 14px;
   }
   .board-date input {
-    font-size: 10px;
+    font-size: 14px;
     max-width: 139px;
     padding: 8px;
     border-radius: 9px;
@@ -2134,12 +2134,12 @@ td small {
     width: 100%;
   }
   .board-tabs button {
-    font-size: 9px;
+    font-size: 14px;
     gap: 5px;
     padding-block: 13px;
   }
   .board-tabs b {
-    font-size: 7px;
+    font-size: 14px;
     min-width: 13px;
     border-radius: 4px;
   }
@@ -2150,7 +2150,7 @@ td small {
     padding: 2px 0;
   }
   .board-search input {
-    font-size: 10px;
+    font-size: 14px;
     padding: 10px 0;
   }
   .board-table {
@@ -2172,32 +2172,32 @@ td small {
     background: #f1f6fc;
   }
   .board-table th {
-    font-size: 7px;
+    font-size: 14px;
     padding-block: 12px;
     padding-inline: 12px;
     border-color: #f0f4f8;
   }
   .board-table td:nth-child(2) {
-    font-size: 10px;
+    font-size: 14px;
   }
   .board-table td small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .class-selector {
     padding-left: 10px;
     gap: 10px;
   }
   .class-selector strong {
-    font-size: 10px;
+    font-size: 14px;
   }
   .class-selector small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .roster-count {
-    font-size: 12px;
+    font-size: 14px;
   }
   .attendance-state {
-    font-size: 8px;
+    font-size: 14px;
   }
   .journal-heading {
     padding: 19px 15px;
@@ -2206,14 +2206,14 @@ td small {
     gap: 14px;
   }
   .journal-heading .index-label {
-    font-size: 7px;
+    font-size: 14px;
   }
   .journal-heading h3 {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.6;
   }
   .journal-heading p {
-    font-size: 9px;
+    font-size: 14px;
     line-height: 1.8;
     max-width: none;
   }
@@ -2223,7 +2223,7 @@ td small {
     gap: 8px;
   }
   .journal-actions button {
-    font-size: 9px;
+    font-size: 14px;
     min-height: 35px;
     padding: 9px 11px;
     border-radius: 9px;
@@ -2245,30 +2245,30 @@ td small {
     padding-inline: 8px;
   }
   .journal-table .student-link {
-    font-size: 10px;
+    font-size: 14px;
   }
   .journal-table th {
-    font-size: 7px;
+    font-size: 14px;
   }
   .journal-table th:not(:first-child) {
-    font-size: 8px;
+    font-size: 14px;
   }
   .register-mark {
     min-width: 21px;
     min-height: 21px;
-    font-size: 9px;
+    font-size: 14px;
     border-radius: 5px;
   }
   .journal-legend {
     gap: 10px;
     flex-wrap: wrap;
     padding: 15px;
-    font-size: 7px;
+    font-size: 14px;
   }
   .journal-legend > small {
     width: 100%;
     max-width: none;
-    font-size: 8px;
+    font-size: 14px;
     text-align: left;
     margin: 0;
   }
@@ -2277,17 +2277,17 @@ td small {
     border-radius: 15px;
   }
   .birthday-heading h2 {
-    font-size: 19px;
+    font-size: 22px;
   }
   .birthday-heading p {
-    font-size: 9px;
+    font-size: 14px;
   }
   .birthday-tabs {
     margin: 19px 0 14px;
     padding: 4px;
   }
   .birthday-tabs button {
-    font-size: 10px;
+    font-size: 14px;
     padding-block: 8px;
   }
   .birthday-student {
@@ -2300,19 +2300,19 @@ td small {
     border-radius: 10px;
   }
   .birthday-date strong {
-    font-size: 16px;
+    font-size: 18px;
   }
   .birthday-date small {
-    font-size: 7px;
+    font-size: 14px;
   }
   .birthday-student > span:nth-child(2) > strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .birthday-student > span:nth-child(2) > small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .birthday-footer {
-    font-size: 8px;
+    font-size: 14px;
   }
   .work-queue {
     display: block;
@@ -2323,11 +2323,11 @@ td small {
     padding-top: 20px;
   }
   .work-queue > h2 {
-    font-size: 22px;
+    font-size: 25px;
     padding-top: 12px;
   }
   .queue-intro {
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.8;
   }
   .queue-list {
@@ -2338,28 +2338,28 @@ td small {
     padding: 19px 0;
   }
   .queue-task h3 {
-    font-size: 14px;
+    font-size: 16px;
   }
   .queue-task .student-link {
-    font-size: 11px;
+    font-size: 14px;
   }
   .queue-task p {
-    font-size: 11px;
+    font-size: 14px;
     color: #9badc1;
     line-height: 1.8;
   }
   .task-action {
-    font-size: 10px;
+    font-size: 14px;
     padding-top: 13px;
   }
   .task-top > span {
-    font-size: 7px;
+    font-size: 14px;
   }
   .task-top time {
-    font-size: 9px;
+    font-size: 14px;
   }
   .queue-footer {
-    font-size: 10px;
+    font-size: 14px;
     padding: 18px 20px;
   }
   .movement-summary {
@@ -2370,14 +2370,14 @@ td small {
   }
   .movement-summary .index-label {
     grid-column: 1/-1;
-    font-size: 7px;
+    font-size: 14px;
     margin: 0;
   }
   .movement-summary > div {
-    font-size: 10px;
+    font-size: 14px;
   }
   .movement-summary strong {
-    font-size: 13px;
+    font-size: 15px;
   }
   .operational-shortcuts {
     flex-direction: column;
@@ -2390,19 +2390,19 @@ td small {
   .operational-shortcuts button {
     padding: 17px 0;
     border-bottom: 1px solid #f0f4f8;
-    font-size: 11px;
+    font-size: 14px;
     gap: 11px;
   }
   .operational-shortcuts button:last-child {
     border: 0;
   }
   .page-footer {
-    font-size: 7px;
+    font-size: 14px;
     padding: 21px 0;
     gap: 10px;
   }
   .footer-mark {
-    font-size: 16px;
+    font-size: 18px;
   }
   .panel,
   .class-card,
@@ -2411,23 +2411,23 @@ td small {
     border-radius: 14px;
   }
   .panel-header h2 {
-    font-size: 18px;
+    font-size: 21px;
   }
   .panel-header p {
-    font-size: 10px;
+    font-size: 14px;
   }
   .list-toolbar {
     padding: 19px 17px;
     gap: 16px;
   }
   .registry-label > strong {
-    font-size: 16px;
+    font-size: 18px;
   }
   .student-filters {
     gap: 8px;
   }
   .student-filters select {
-    font-size: 9px;
+    font-size: 14px;
     padding: 10px 7px;
     border-radius: 8px;
   }
@@ -2435,28 +2435,28 @@ td small {
     border-radius: 9px;
   }
   .search input {
-    font-size: 11px;
+    font-size: 14px;
   }
   .table-scroll td {
     padding: 17px;
-    font-size: 11px;
+    font-size: 14px;
   }
   .table-scroll td strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .table-scroll th {
-    font-size: 8px;
+    font-size: 14px;
   }
   .table-scroll td small {
-    font-size: 9px;
+    font-size: 14px;
   }
   .person .avatar {
     height: 30px;
     width: 30px;
-    font-size: 9px;
+    font-size: 14px;
   }
   .student-link {
-    font-size: 11px;
+    font-size: 14px;
   }
   .lesson-config {
     padding: 19px;
@@ -2468,11 +2468,11 @@ td small {
     flex-basis: 100%;
   }
   .lesson-config label {
-    font-size: 10px;
+    font-size: 14px;
   }
   .lesson-config input,
   .lesson-config select {
-    font-size: 12px;
+    font-size: 14px;
     padding: 11px;
     border-radius: 10px;
   }
@@ -2488,24 +2488,24 @@ td small {
     gap: 7px;
   }
   .attendance-totals span {
-    font-size: 8px;
+    font-size: 14px;
   }
   .attendance-totals strong {
-    font-size: 18px;
+    font-size: 21px;
   }
   .attendance-row {
     padding: 18px 17px;
     gap: 15px;
   }
   .attendance-row .student-link {
-    font-size: 12px;
+    font-size: 14px;
   }
   .attendance-options {
     gap: 5px;
   }
   .attendance-options button {
     min-width: 0;
-    font-size: 8px;
+    font-size: 14px;
     flex: 1;
     padding: 9px 4px;
     border-radius: 9px;
@@ -2515,7 +2515,7 @@ td small {
     padding: 19px 17px;
     gap: 16px;
     flex-direction: column;
-    font-size: 10px;
+    font-size: 14px;
   }
   .attendance-footer-actions {
     width: 100%;
@@ -2525,7 +2525,7 @@ td small {
   }
   .attendance-footer-actions button {
     width: 100%;
-    font-size: 11px;
+    font-size: 14px;
     min-height: 40px;
     border-radius: 10px;
   }
@@ -2534,10 +2534,10 @@ td small {
     padding: 18px 16px;
   }
   .info-banner strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .info-banner p {
-    font-size: 10px;
+    font-size: 14px;
   }
   .modal {
     border-radius: 18px;
@@ -2548,24 +2548,24 @@ td small {
     padding: 22px 19px;
   }
   .modal-header h2 {
-    font-size: 21px;
+    font-size: 24px;
   }
   .modal-form {
     padding: 21px 19px;
     gap: 17px;
   }
   .modal-form label {
-    font-size: 11px;
+    font-size: 14px;
   }
   .modal-form input,
   .modal-form select,
   .modal-form textarea {
-    font-size: 12px;
+    font-size: 14px;
     border-radius: 10px;
   }
   .modal-footer .primary,
   .modal-footer .secondary {
-    font-size: 11px;
+    font-size: 14px;
     min-height: 39px;
     border-radius: 10px;
   }
@@ -2579,7 +2579,7 @@ td small {
   }
   .import-controls .secondary {
     align-self: flex-start;
-    font-size: 10px;
+    font-size: 14px;
   }
   .import-dropzone {
     min-height: 150px;
@@ -2587,11 +2587,11 @@ td small {
   }
   .import-summary {
     gap: 15px;
-    font-size: 10px;
+    font-size: 14px;
     padding: 14px;
   }
   .import-summary b {
-    font-size: 16px;
+    font-size: 18px;
   }
   .import-summary svg {
     height: 14px;
@@ -2599,39 +2599,39 @@ td small {
   }
   .import-preview td {
     padding: 13px;
-    font-size: 10px;
+    font-size: 14px;
   }
   .import-preview td small {
-    font-size: 8px;
+    font-size: 14px;
     max-width: 150px;
   }
   .import-preview th {
-    font-size: 7px;
+    font-size: 14px;
   }
   .import-preview .badge {
-    font-size: 8px;
+    font-size: 14px;
   }
   .import-note {
-    font-size: 9px !important;
+    font-size: 14px !important;
   }
   .dossier {
     border-radius: 18px 0 0 18px;
   }
   .dossier-stats strong {
-    font-size: 20px;
+    font-size: 23px;
   }
   .dossier-identity h2 {
-    font-size: 26px;
+    font-size: 30px;
   }
   .dossier > footer button {
-    font-size: 9px;
+    font-size: 14px;
     border-radius: 9px;
   }
   .dossier-tabs {
     gap: 10px;
   }
   .dossier-tabs button {
-    font-size: 10px;
+    font-size: 14px;
   }
   .login {
     min-height: calc(100dvh - 12px);
@@ -2648,16 +2648,16 @@ td small {
     margin-bottom: 24px;
   }
   .login-brand h1 {
-    font-size: 29px;
+    font-size: 33px;
   }
   .login-form h2 {
-    font-size: 26px;
+    font-size: 30px;
   }
   .login-form {
     padding-block: 38px;
   }
   .toast {
-    font-size: 10px;
+    font-size: 14px;
     padding: 15px 17px;
     border-radius: 12px;
   }
@@ -2717,7 +2717,7 @@ td small {
   padding: 19px 20px;
   box-shadow: 0 2px 5px #4a665710;
   color: #50695b;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
   position: relative;
   white-space: pre-wrap;
@@ -2736,7 +2736,7 @@ td small {
   color: #365948;
 }
 .whatsapp-bubble em {
-  font-size: 11px;
+  font-size: 14px;
   color: #8a9f91;
 }
 .message-editor {
@@ -2745,7 +2745,7 @@ td small {
   background: #f9fbfd;
 }
 .message-editor summary {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: #8ca2bf;
   padding: 13px 15px;
@@ -2769,18 +2769,18 @@ td small {
     border-radius: 12px;
   }
   .whatsapp-bubble {
-    font-size: 11px;
+    font-size: 14px;
     padding: 17px 16px;
     line-height: 1.8;
   }
   .whatsapp-bubble em {
-    font-size: 10px;
+    font-size: 14px;
   }
   .message-editor summary {
-    font-size: 10px;
+    font-size: 14px;
   }
   .message-editor textarea {
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 /* Readable secondary text while keeping the light surface treatment. */
@@ -2819,10 +2819,10 @@ td small {
   margin-bottom: 5px;
 }
 .movement-summary > div {
-  font-size: 9px;
+  font-size: 14px;
 }
 .module-navigation > button {
-  font-size: 9px;
+  font-size: 14px;
   line-height: 1.45;
   color: #79899b;
 }
@@ -2838,16 +2838,16 @@ td small {
 }
 @media (max-width: 700px) {
   .module-navigation > button {
-    font-size: 8px !important;
+    font-size: 14px !important;
   }
   .movement-summary > div {
-    font-size: 10px;
+    font-size: 14px;
   }
   .queue-task p {
-    font-size: 11px;
+    font-size: 14px;
   }
   .journal-table .student-link {
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 .student-avatar {
@@ -2859,7 +2859,7 @@ td small {
   background: #edf2f9;
   color: #89a1c1;
   font-family: Manrope, sans-serif;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   overflow: hidden;
   flex-shrink: 0;
@@ -2890,7 +2890,7 @@ td small {
   margin-bottom: 20px;
 }
 .dossier-photo .student-avatar {
-  font-size: 20px;
+  font-size: 23px;
   border-radius: 17px;
 }
 .birthday-student .birthday-name {
@@ -2898,13 +2898,13 @@ td small {
   min-width: 0;
 }
 .birthday-student .birthday-name > strong {
-  font-size: 10px;
+  font-size: 14px;
   color: #6d87a7;
   font-weight: 600;
 }
 .birthday-student .birthday-name > small {
   display: block;
-  font-size: 8px;
+  font-size: 14px;
   color: #8a9db4;
   margin-top: 4px;
   line-height: 1.6;
@@ -2942,11 +2942,11 @@ td small {
   border-radius: 15px;
 }
 .student-photo-editor strong {
-  font-size: 12px;
+  font-size: 14px;
   color: #6a85a8;
 }
 .student-photo-editor p {
-  font-size: 10px;
+  font-size: 14px;
   color: #95a7bf;
   line-height: 1.8;
   margin: 5px 0 11px;
@@ -2960,7 +2960,7 @@ td small {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  font-size: 10px !important;
+  font-size: 14px !important;
   flex-direction: row;
   gap: 7px !important;
   align-items: center;
@@ -2977,7 +2977,7 @@ td small {
 }
 .student-photo-editor small {
   display: block;
-  font-size: 9px;
+  font-size: 14px;
   color: #91a7c1;
   margin-top: 9px;
 }
@@ -2997,7 +2997,7 @@ td small {
   padding: 15px 17px;
   background: #edf6f0;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: #709a82;
 }
 .password-change {
@@ -3009,15 +3009,15 @@ td small {
   gap: 19px;
 }
 .password-change h2 {
-  font-size: 23px;
+  font-size: 26px;
   color: #537194;
 }
 .password-change > p {
-  font-size: 12px;
+  font-size: 14px;
   color: #8da2bc;
 }
 .password-change label {
-  font-size: 11px;
+  font-size: 14px;
   color: #8a9fba;
 }
 .password-change input {
@@ -3025,7 +3025,7 @@ td small {
   border-radius: 10px;
 }
 .password-change > small {
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.8;
   color: #9aacc4;
 }
@@ -3079,37 +3079,37 @@ td small {
     height: 62px !important;
   }
   .student-photo-editor strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .student-photo-editor p {
-    font-size: 9px;
+    font-size: 14px;
   }
   .photo-editor-actions {
     gap: 10px;
     flex-wrap: wrap;
   }
   .photo-file-label {
-    font-size: 9px !important;
+    font-size: 14px !important;
   }
   .photo-editor-actions .text-link {
-    font-size: 9px;
+    font-size: 14px;
   }
   .password-change {
     padding: 23px;
     gap: 18px;
   }
   .password-change h2 {
-    font-size: 23px;
+    font-size: 26px;
   }
   .team-notice {
-    font-size: 11px;
+    font-size: 14px;
     margin: 0 17px 19px;
   }
   .birthday-student .birthday-name > strong {
-    font-size: 10px;
+    font-size: 14px;
   }
   .birthday-student .birthday-name > small {
-    font-size: 8px;
+    font-size: 14px;
   }
   .birthday-student .student-avatar {
     width: 25px !important;
@@ -3121,5 +3121,178 @@ td small {
   }
   .password-required {
     padding: 24px 12px;
+  }
+}
+/* Readable operational typography and complete administrative management. */
+body {
+  line-height: 1.55;
+}
+input,
+select,
+textarea {
+  font-size: 16px;
+  min-height: 44px;
+}
+button.primary,
+button.secondary {
+  min-height: 42px;
+}
+.record-manager {
+  min-width: 0;
+  padding: 26px;
+}
+.record-filters {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1.3fr;
+  gap: 16px;
+  margin: 24px 0 14px;
+}
+.record-filters label {
+  min-width: 0;
+  gap: 8px;
+}
+.record-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 10px;
+}
+.record-search input {
+  border: 0;
+  padding-left: 0;
+}
+.record-identity {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 190px;
+}
+.record-identity small {
+  display: block;
+  color: #58677b;
+  white-space: normal;
+  max-width: 370px;
+}
+.record-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 300px;
+}
+.record-actions .secondary {
+  padding: 8px 11px;
+  gap: 6px;
+  font-size: 14px;
+}
+.record-count {
+  color: #58677b;
+  margin: 12px 0;
+}
+.record-notice {
+  background: #edf7f0;
+  color: #236644;
+  padding: 14px 18px;
+  border-radius: 12px;
+}
+.danger-action {
+  color: #b52632 !important;
+}
+.danger-button {
+  background: #b52632 !important;
+}
+.record-delete-warning {
+  padding: 16px;
+  border-radius: 12px;
+  background: #fff3f2;
+  color: #892634;
+}
+.record-delete-warning p {
+  color: inherit;
+}
+.record-delete-warning ul {
+  margin: 12px 0 0;
+  padding-left: 22px;
+}
+.record-manager .modal-header p {
+  margin: 8px 0 0;
+  max-width: 520px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1000px) {
+  .record-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .record-manager {
+    padding: 16px;
+  }
+  .record-filters {
+    grid-template-columns: 1fr;
+  }
+}
+:root :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
+  font-size: 16px;
+}
+/* Larger navigation labels need room for complete words. */
+@media screen and (min-width: 701px) {
+  .app-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .module-navigation {
+    align-self: start;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 12px 10px 24px 15px;
+    max-height: calc(100dvh - 45px);
+    overflow-y: auto;
+  }
+  .module-navigation > button {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 12px;
+    min-height: 46px;
+    padding: 11px 13px;
+    font-size: 15px;
+    overflow-wrap: normal;
+  }
+  .module-navigation > button svg {
+    flex-shrink: 0;
+  }
+  .module-navigation > button span {
+    white-space: normal;
+    word-break: normal;
+  }
+  .module-navigation > button b {
+    position: static;
+    min-width: 21px;
+    height: 21px;
+    margin-left: auto;
+  }
+  .unit-picker {
+    min-width: 205px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .module-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .module-navigation > button {
+    flex-direction: row;
+    text-align: left;
+    justify-content: flex-start;
+    min-height: 48px;
+    padding: 10px !important;
+    overflow-wrap: normal;
+  }
+  .module-navigation > button svg {
+    flex-shrink: 0;
+  }
+  .module-navigation > button span {
+    word-break: normal;
   }
 }

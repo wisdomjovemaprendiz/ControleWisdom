@@ -473,13 +473,11 @@ test("foto é comprimida antes do envio e aparece no cadastro e na chamada", asy
   await dialog.getByLabel("Nome completo").fill("Aluno Com Foto");
   await dialog.getByLabel("Turma *").selectOption("c1");
   await dialog.getByLabel("WhatsApp do responsável").fill("5511999999999");
-  await dialog
-    .getByLabel("Foto do aluno", { exact: true })
-    .setInputFiles({
-      name: "foto.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(data, "base64"),
-    });
+  await dialog.getByLabel("Foto do aluno", { exact: true }).setInputFiles({
+    name: "foto.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(data, "base64"),
+  });
   await expect(dialog.getByText(/Foto pronta:/)).toBeVisible();
   await dialog.getByRole("button", { name: "Salvar registro" }).click();
   await expect(dialog).toHaveCount(0);
@@ -526,4 +524,122 @@ test("saída retorna ao login e não há dados ou seletor de demonstração", as
   await expect(
     page.getByRole("heading", { name: "Entre no seu espaço" }),
   ).toBeVisible();
+});
+
+test("administrador edita unidade e arquiva, restaura e exclui registro sem vínculos", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Gestão de registros", exact: true })
+    .click();
+  await page
+    .getByLabel("Tipo de registro", { exact: true })
+    .selectOption("units");
+  await page
+    .getByRole("button", { name: "Editar Unidade Centro", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nome", { exact: true }).fill("Centro revisado");
+  await dialog.getByRole("button", { name: "Salvar alterações" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    page.locator("tbody").getByText("Centro revisado", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Tipo de registro", { exact: true })
+    .selectOption("offerings");
+  const offering = schoolApi.store.offerings[0];
+  await page
+    .getByRole("button", { name: `Arquivar ${offering.name}`, exact: true })
+    .click();
+  dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Motivo do arquivamento")
+    .fill("Atualização do catálogo");
+  await dialog.getByRole("button", { name: "Confirmar arquivamento" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.getByLabel("Situação dos registros").selectOption("archived");
+  await expect(
+    page.locator("tbody").getByText(offering.name, { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: `Restaurar ${offering.name}`, exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirmar restauração" })
+    .click();
+  await page.getByLabel("Situação dos registros").selectOption("all");
+  await page
+    .getByRole("button", { name: `Excluir ${offering.name}`, exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Digite EXCLUIR para confirmar")
+    .fill("EXCLUIR");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Excluir definitivamente", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.locator("tbody").getByText(offering.name, { exact: true }),
+  ).toHaveCount(0);
+});
+test("exclusão informa vínculos e não apaga aluno com chamada", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Gestão de registros", exact: true })
+    .click();
+  const student = schoolApi.store.students.find((s) =>
+    schoolApi.store.attendance.some((a) => a.student_id === s.id),
+  )!;
+  await page
+    .getByRole("button", { name: `Excluir ${student.name}`, exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(/vínculo\(s\) encontrado/)).toBeVisible();
+  await dialog.getByLabel("Digite EXCLUIR para confirmar").fill("EXCLUIR");
+  await dialog
+    .getByRole("button", { name: "Excluir definitivamente", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText("vínculos");
+  expect(schoolApi.store.students.some((s) => s.id === student.id)).toBe(true);
+});
+test("fontes de navegação, tabelas e formulários permanecem legíveis", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  const size = await page
+    .locator("tbody td")
+    .first()
+    .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  expect(size).toBeGreaterThanOrEqual(14);
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  expect(
+    await page
+      .getByRole("dialog")
+      .getByLabel("Nome completo")
+      .evaluate((e) => parseFloat(getComputedStyle(e).fontSize)),
+  ).toBeGreaterThanOrEqual(16);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancelar", exact: true })
+    .click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menu" }).click();
+  await page
+    .getByRole("button", { name: "Gestão de registros", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Gestão de registros", level: 2 }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });

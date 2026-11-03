@@ -1,6 +1,12 @@
 "use client";
 import { isManager, loginAddress } from "@/lib/accounts";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   LayoutDashboard,
   Users,
@@ -36,6 +42,8 @@ import { birthdaysThisWeek } from "@/lib/birthdays";
 import { OperationsBoard } from "@/components/operations-board";
 import { FollowUpCenter } from "@/components/follow-up-center";
 import { StudentDossier } from "@/components/student-dossier";
+import { RecordManager } from "@/components/record-manager";
+import { operationalStore, type RecordTable } from "@/lib/records";
 import { TeamManager } from "@/components/team-manager";
 import { PasswordChange } from "@/components/password-change";
 import { DailyAnalysis } from "@/components/daily-analysis";
@@ -82,6 +90,7 @@ const nav = [
   ["reports", "Relatórios", BarChart3],
   ["units", "Unidades", Building2],
   ["settings", "Equipe e acesso", Settings],
+  ["records", "Gestão de registros", Archive],
 ] as const;
 const tables: (keyof Store)[] = [
   "units",
@@ -120,7 +129,7 @@ function Empty({ text }: { text: string }) {
   );
 }
 export default function App() {
-  const [store, setStore] = useState<Store | null>(null),
+  const [allRecords, setStore] = useState<Store | null>(null),
     [profile, setProfile] = useState<Profile | null>(null),
     [page, setPage] = useState("overview"),
     [unit, setUnit] = useState("all"),
@@ -137,6 +146,12 @@ export default function App() {
     } | null>(null),
     [login, setLogin] = useState({ username: "", password: "" }),
     [sessionReady, setSessionReady] = useState(false);
+  const store = useMemo(
+    () => (allRecords ? operationalStore(allRecords) : null),
+    [allRecords],
+  );
+  const [managementTable, setManagementTable] =
+    useState<RecordTable>("students");
   const [importOpen, setImportOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
@@ -179,7 +194,7 @@ export default function App() {
         throw new Error(
           "Seu usuário ainda não possui perfil de acesso. Solicite o vínculo à coordenação.",
         );
-      if (p.active === false)
+      if (p.active === false || p.archived_at)
         throw new Error("Seu acesso está desativado. Procure a administração.");
       if (p.must_change_password) {
         setProfile(p);
@@ -925,7 +940,11 @@ export default function App() {
         aria-label="Módulos do sistema"
       >
         {nav
-          .filter((n) => n[0] !== "units" || isManager(profile.role))
+          .filter(
+            (n) =>
+              (n[0] !== "units" || isManager(profile.role)) &&
+              (n[0] !== "records" || profile.role === "admin"),
+          )
           .map(([key, label, Icon], index) => (
             <button
               key={key}
@@ -980,6 +999,8 @@ export default function App() {
                         "Relatórios de frequência, matrículas e atividade da equipe.",
                       units:
                         "Cadastro e acompanhamento das unidades da Wisdom Cursos.",
+                      records:
+                        "Edite, arquive, restaure e exclua registros com controle de vínculos.",
                       settings:
                         "Perfis da equipe e permissões de acesso por unidade.",
                     } as Record<string, string>
@@ -988,6 +1009,28 @@ export default function App() {
               </p>
             </div>
             <div className="heading-actions">
+              {profile.role === "admin" &&
+                [
+                  "students",
+                  "classes",
+                  "offerings",
+                  "units",
+                  "settings",
+                ].includes(page) && (
+                  <button
+                    className="secondary"
+                    onClick={() => {
+                      setManagementTable(
+                        page === "settings"
+                          ? "profiles"
+                          : (page as RecordTable),
+                      );
+                      goto("records");
+                    }}
+                  >
+                    <Archive size={16} /> Gerenciar registros
+                  </button>
+                )}
               {page === "students" && (
                 <button
                   className="secondary"
@@ -1019,7 +1062,9 @@ export default function App() {
                   ))}
                 </select>
               </label>
-              {!["attendance", "reports", "settings"].includes(page) &&
+              {!["attendance", "reports", "settings", "records"].includes(
+                page,
+              ) &&
                 !(page === "pedagogy" && profile.role === "secretaria") && (
                   <button
                     className="primary"
@@ -1987,6 +2032,14 @@ export default function App() {
                 </section>
               ))}
             </div>
+          )}
+          {page === "records" && profile.role === "admin" && allRecords && (
+            <RecordManager
+              key={managementTable}
+              initialTable={managementTable}
+              store={allRecords}
+              onSaved={load}
+            />
           )}
           {page === "settings" && (
             <div className="account-settings">

@@ -4,11 +4,15 @@ export type Status =
 export type AttendanceStatus =
   "presente" | "falta" | "atrasado" | "justificado";
 export interface Unit {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   name: string;
   address: string;
 }
 export interface Profile {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   name: string;
   username?: string | null;
@@ -18,6 +22,8 @@ export interface Profile {
   unit_id: string;
 }
 export interface CourseClass {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   unit_id: string;
   name: string;
@@ -29,6 +35,8 @@ export interface CourseClass {
   whatsapp: string;
 }
 export interface Offering {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   unit_id: string;
   name: string;
@@ -37,6 +45,8 @@ export interface Offering {
   courses: string;
 }
 export interface Student {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   photo_path?: string | null;
   id: string;
   unit_id: string;
@@ -55,6 +65,8 @@ export interface Student {
   archive_reason: string;
 }
 export interface Lesson {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   unit_id: string;
   class_id: string;
@@ -65,6 +77,8 @@ export interface Lesson {
   closed: boolean;
 }
 export interface Attendance {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   unit_id: string;
   lesson_id: string;
@@ -72,6 +86,8 @@ export interface Attendance {
   status: AttendanceStatus;
 }
 export interface Pedagogy {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   unit_id: string;
   class_id: string;
@@ -86,6 +102,8 @@ export interface Pedagogy {
   follow_up: string;
 }
 export interface Contact {
+  archived_at?: string | null;
+  record_archive_reason?: string;
   id: string;
   unit_id: string;
   student_id: string;

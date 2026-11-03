@@ -26,7 +26,7 @@ export async function authorizedProfile(
     .select("*")
     .eq("id", data.user.id)
     .single();
-  if (profileError || !profile || !profile.active)
+  if (profileError || !profile || !profile.active || profile.archived_at)
     throw new ApiError(
       403,
       "Seu acesso está indisponível. Procure a administração.",

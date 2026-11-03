@@ -14,6 +14,8 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
     "002_bulk_enrollment.sql",
     "003_accounts_and_daily_analysis.sql",
     "004_student_photos.sql",
+    "005_record_management.sql",
+    "006_archive_permissions.sql",
   ])
     await db.exec(
       readFileSync(
@@ -43,7 +45,10 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
     db.exec(
       `reset role;select set_config('request.jwt.claim.sub','${id(n)}',false);set role authenticated;`,
     );
-  const service = async () => db.exec("reset role;set role service_role;");
+  const service = async () =>
+    db.exec(
+      "reset role;select set_config('request.jwt.claim.sub','',false);set role service_role;",
+    );
   await t.test(
     "primeiro administrador é único e não acessa a escola antes de trocar a senha",
     async () => {
@@ -260,6 +265,182 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       assert.equal(
         (await db.query("select * from public.daily_analytics")).rows.length,
         0,
+      );
+    },
+  );
+  await t.test(
+    "gestão administrativa edita, arquiva, restaura e exclui com vínculos protegidos",
+    async () => {
+      await service();
+      const manage = (
+        table: string,
+        row: number,
+        action: string,
+        changes = {},
+        reason = "Reorganização",
+      ) =>
+        db.query("select public.manage_record($1,$2,$3,$4,$5::jsonb,$6)", [
+          id(1),
+          table,
+          id(row),
+          action,
+          JSON.stringify(changes),
+          reason,
+        ]);
+      await manage("units", 11, "edit", {
+        name: "Centro atualizado",
+        address: "Rua Nova",
+      });
+      assert.equal(
+        (
+          await db.query<{ name: string }>(
+            "select name from public.units where id=$1",
+            [id(11)],
+          )
+        ).rows[0].name,
+        "Centro atualizado",
+      );
+      await assert.rejects(
+        manage("students", 31, "edit", { unit_id: id(12) }),
+        /Campo não permitido/,
+      );
+      await assert.rejects(manage("profiles", 1, "archive"), /próprio acesso/);
+      await assert.rejects(manage("students", 31, "delete"), /vínculos/);
+      await manage("classes", 23, "archive");
+      assert.ok(
+        (
+          await db.query<{ archived_at: string }>(
+            "select archived_at from public.classes where id=$1",
+            [id(23)],
+          )
+        ).rows[0].archived_at,
+      );
+      await assert.rejects(
+        db.exec(
+          `insert into public.students(id,unit_id,class_id,name,guardian_phone) values('${id(90)}','${id(11)}','${id(23)}','Bloqueado','')`,
+        ),
+        /arquivado/,
+      );
+      await manage("classes", 23, "restore");
+      await manage("classes", 23, "delete");
+      assert.equal(
+        (await db.query("select id from public.classes where id=$1", [id(23)]))
+          .rows.length,
+        0,
+      );
+      await manage("students", 31, "archive");
+      assert.equal(
+        (
+          await db.query<{ status: string }>(
+            "select status from public.students where id=$1",
+            [id(31)],
+          )
+        ).rows[0].status,
+        "cancelamento",
+      );
+      await manage("students", 31, "restore");
+      await manage("students", 31, "edit", {
+        status: "ativo",
+        archive_reason: "",
+      });
+      await as(2);
+      await assert.rejects(
+        db.query("update public.students set archived_at=now() where id=$1", [
+          id(31),
+        ]),
+        /Apenas administradores/,
+      );
+      await assert.rejects(
+        db.query("select public.manage_record($1,$2,$3,$4)", [
+          id(1),
+          "units",
+          id(11),
+          "delete",
+        ]),
+        /permission denied/,
+      );
+      await service();
+      await assert.rejects(
+        db.query("select public.manage_record($1,$2,$3,$4)", [
+          id(2),
+          "units",
+          id(11),
+          "delete",
+        ]),
+        /Apenas administradores/,
+      );
+      await db.exec("reset role");
+      await assert.rejects(
+        db.query("delete from auth.users where id=$1", [id(1)]),
+        /Mantenha pelo menos/,
+      );
+    },
+  );
+  await t.test(
+    "ciclo completo de todos os tipos de registro e remoção de usuário sem histórico",
+    async () => {
+      await service();
+      await db.exec(
+        `insert into public.contacts(id,unit_id,student_id,author_id,reason,outcome) values('${id(81)}','${id(11)}','${id(31)}','${id(2)}','Contato','Concluído');insert into public.pedagogy(id,unit_id,class_id,student_id,author_id,kind,skill,level,notes) values('${id(82)}','${id(11)}','${id(21)}','${id(31)}','${id(2)}','Evolução','Comunicação',3,'Registro');insert into public.offerings(id,unit_id,name,kind,duration_months,courses) values('${id(83)}','${id(11)}','Curso temporário','individual',2,'Informática');insert into public.lessons(id,unit_id,class_id,teacher_id,teacher,date,topic) values('${id(84)}','${id(12)}','${id(22)}','${id(4)}','Pedro','2026-10-01','Aula temporária');insert into public.attendance(id,unit_id,lesson_id,student_id,status) values('${id(85)}','${id(12)}','${id(84)}','${id(32)}','presente');insert into public.units(id,name) values('${id(86)}','Unidade temporária');`,
+      );
+      for (const [table, row, changes] of [
+        ["attendance", 85, { status: "atrasado" }],
+        ["lessons", 84, { topic: "Conteúdo corrigido" }],
+        ["contacts", 81, { outcome: "Retorno atualizado" }],
+        ["pedagogy", 82, { level: 4, notes: "Evolução corrigida" }],
+        ["offerings", 83, { name: "Curso corrigido", duration_months: 3 }],
+        ["units", 86, { address: "Endereço corrigido" }],
+      ] as const) {
+        for (const action of ["edit", "archive", "restore", "delete"])
+          await db.query(
+            "select public.manage_record($1,$2,$3,$4,$5::jsonb,$6)",
+            [
+              id(1),
+              table,
+              id(row),
+              action,
+              JSON.stringify(changes),
+              "Registro temporário",
+            ],
+          );
+        assert.equal(
+          (
+            await db.query(`select id from public.${table} where id=$1`, [
+              id(row),
+            ])
+          ).rows.length,
+          0,
+        );
+      }
+      await db.exec("reset role");
+      await db.query("insert into auth.users(id) values($1)", [id(87)]);
+      await service();
+      await db.query("select public.admin_create_profile($1,$2,$3,$4,$5,$6)", [
+        id(1),
+        id(87),
+        "temporario",
+        "Usuário temporário",
+        "secretaria",
+        id(11),
+      ]);
+      for (const action of ["edit", "archive", "restore"])
+        await db.query(
+          "select public.manage_record($1,'profiles',$2,$3,$4::jsonb,'Ajuste')",
+          [id(1), id(87), action, JSON.stringify({ name: "Nome corrigido" })],
+        );
+      await db.exec("reset role");
+      await db.query("delete from auth.users where id=$1", [id(87)]);
+      assert.equal(
+        (await db.query("select id from public.profiles where id=$1", [id(87)]))
+          .rows.length,
+        0,
+      );
+      assert.ok(
+        (
+          await db.query(
+            "select id from public.account_events where target_id is null",
+          )
+        ).rows.length > 0,
       );
     },
   );
