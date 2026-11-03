@@ -64,6 +64,7 @@ try {
     "004_student_photos.sql",
     "005_record_management.sql",
     "006_archive_permissions.sql",
+    "007_historical_record_edits.sql",
   ]) {
     const version = file.slice(0, 3);
     if (done.some((row) => row.version === version)) {

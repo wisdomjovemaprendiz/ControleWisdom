@@ -16,6 +16,7 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
     "004_student_photos.sql",
     "005_record_management.sql",
     "006_archive_permissions.sql",
+    "007_historical_record_edits.sql",
   ])
     await db.exec(
       readFileSync(
@@ -38,6 +39,15 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       "utf8",
     ),
   );
+  // After replaying older migrations for idempotency, restore the latest guards.
+  for (const file of [
+    "005_record_management.sql",
+    "006_archive_permissions.sql",
+    "007_historical_record_edits.sql",
+  ])
+    await db.exec(
+      readFileSync(new URL("../supabase/" + file, import.meta.url), "utf8"),
+    );
   await db.exec(
     `insert into auth.users(id) values('${id(1)}'),('${id(2)}'),('${id(3)}'),('${id(4)}'),('${id(5)}'),('${id(6)}');insert into public.units(id,name) values('${id(11)}','Centro'),('${id(12)}','Vila Nova');insert into public.profiles(id,name,username,role,unit_id) values('${id(2)}','Ana','ana','professor','${id(11)}'),('${id(3)}','Secretaria','secretaria','secretaria','${id(11)}'),('${id(4)}','Pedro','pedro','professor','${id(12)}'),('${id(5)}','Coordenação','coordenacao','coordenacao','${id(12)}');insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values('${id(21)}','${id(11)}','Turma A','Informática','${id(2)}','Ana','Segunda',4),('${id(22)}','${id(12)}','Turma B','Informática','${id(4)}','Pedro','Terça',4),('${id(23)}','${id(11)}','Turma vazia','Informática','${id(2)}','Ana','Quarta',4);insert into public.students(id,unit_id,class_id,name,guardian_phone) values('${id(31)}','${id(11)}','${id(21)}','Aluno Centro',''),('${id(32)}','${id(12)}','${id(22)}','Aluno Vila','');`,
   );
@@ -441,6 +451,49 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
             "select id from public.account_events where target_id is null",
           )
         ).rows.length > 0,
+      );
+    },
+  );
+  await t.test(
+    "históricos continuam editáveis após transferência e desativação do professor",
+    async () => {
+      await service();
+      // Same-unit transfer to a newly created class preserves previous attendance.
+      await db.exec(
+        `insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values('${id(91)}','${id(11)}','Nova turma','Informática','${id(2)}','Ana','Terça',20)`,
+      );
+      await db.query("update public.students set class_id=$1 where id=$2", [
+        id(91),
+        id(31),
+      ]);
+      const mark = (
+        await db.query<{ id: string }>(
+          "select id from public.attendance where student_id=$1 limit 1",
+          [id(31)],
+        )
+      ).rows[0];
+      await db.query(
+        "select public.manage_record($1,'attendance',$2,'edit',$3::jsonb)",
+        [id(1), mark.id, JSON.stringify({ status: "atrasado" })],
+      );
+      await db.query(
+        "select public.manage_record($1,'attendance',$2,'archive','{}'::jsonb,'Correção histórica')",
+        [id(1), mark.id],
+      );
+      await db.query("update public.profiles set active=false where id=$1", [
+        id(2),
+      ]);
+      await db.query(
+        "select public.manage_record($1,'classes',$2,'archive','{}'::jsonb,'Encerramento')",
+        [id(1), id(91)],
+      );
+      assert.ok(
+        (
+          await db.query<{ archived_at: string }>(
+            "select archived_at from public.classes where id=$1",
+            [id(91)],
+          )
+        ).rows[0].archived_at,
       );
     },
   );
