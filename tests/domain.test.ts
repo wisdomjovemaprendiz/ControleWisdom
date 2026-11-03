@@ -43,8 +43,11 @@ test("resumo inclui conteúdo, professor e situações da chamada correta", () =
     message = attendanceMessage(s, s.lessons[0]);
   assert.match(message, /Planilhas/);
   assert.match(message, /Ana Oliveira/);
-  assert.match(message, /Faltosos:\* Lucas Ferreira/);
-  assert.match(message, /Atrasados:\* Pedro Henrique/);
+  assert.doesNotMatch(message, /Lucas Ferreira/);
+  assert.match(message, /Pedro Henrique — Atrasado/);
+  assert.match(message, /Maria Eduarda — Presente/);
+  assert.doesNotMatch(message, /Maria Eduarda Lima/);
+  assert.match(message, /\*WISDOM CURSOS\*/);
   assert.doesNotMatch(message, /Valentina Ribeiro/);
 });
 test("evolução individual não mistura registros de outros alunos", () => {

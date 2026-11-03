@@ -26,7 +26,12 @@ import {
   Pencil,
   Loader2,
   RefreshCw,
+  Upload,
+  Cake,
 } from "lucide-react";
+import { WhatsAppPreview } from "@/components/whatsapp-preview";
+import { StudentImporter } from "@/components/student-importer";
+import { birthdaysThisWeek } from "@/lib/birthdays";
 import { OperationsBoard } from "@/components/operations-board";
 import { FollowUpCenter } from "@/components/follow-up-center";
 import { StudentDossier } from "@/components/student-dossier";
@@ -50,6 +55,7 @@ import {
   absenceCount,
   frequency,
   attendanceMessage,
+  attendanceReportLines,
   evolutionMessage,
   whatsappUrl,
   validateStudent,
@@ -120,6 +126,8 @@ export default function App() {
     } | null>(null),
     [login, setLogin] = useState({ email: "", password: "" }),
     [sessionReady, setSessionReady] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
   const [dossierId, setDossierId] = useState<string | null>(null);
   const [studentStatus, setStudentStatus] = useState("all"),
@@ -231,6 +239,19 @@ export default function App() {
   const selectedLesson = store?.lessons.find(
     (l) => l.class_id === selectedClass?.id && l.date === lessonDate,
   );
+  const attendanceDirty = Boolean(
+    selectedLesson &&
+    (topic.trim() !== selectedLesson.topic ||
+      active
+        .filter((s) => s.class_id === selectedClass?.id)
+        .some(
+          (s) =>
+            marks[s.id] !==
+            store?.attendance.find(
+              (a) => a.lesson_id === selectedLesson.id && a.student_id === s.id,
+            )?.status,
+        )),
+  );
   useEffect(() => {
     if (!store || !selectedClass) return;
     const l = store.lessons.find(
@@ -291,35 +312,66 @@ export default function App() {
     if (error) setError("Não foi possível entrar. Confira seu e-mail e senha.");
   }
   async function pdf(title: string, lines: string[]) {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.setTextColor(24, 71, 62);
-    doc.text("WISDOM", 18, 22);
-    doc.setFontSize(13);
-    doc.text(title, 18, 33);
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    doc.text(
-      `Emitido em ${displayDate(today())} | ${unit === "all" ? "Todas as unidades" : store?.units.find((u) => u.id === unit)?.name || ""}`,
-      18,
-      42,
-    );
-    let y = 54;
-    for (const line of lines) {
-      const wrapped = doc.splitTextToSize(line.replace(/\*/g, ""), 173);
-      for (const text of wrapped) {
-        if (y > 278) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(text, 18, y);
-        y += 6;
-      }
-      y += 2;
+    try {
+      const { createInstitutionalPdf } = await import("@/lib/pdf");
+      const scopeUnit =
+        profile?.role === "coordenacao" ? unit : profile?.unit_id;
+      const doc = await createInstitutionalPdf({
+        title,
+        lines,
+        unit:
+          scopeUnit === "all"
+            ? "Todas as unidades"
+            : store?.units.find((u) => u.id === scopeUnit)?.name ||
+              "Wisdom Cursos",
+        author: profile?.name || "Equipe Wisdom",
+      });
+      doc.save(
+        `wisdom-${title
+          .toLocaleLowerCase("pt-BR")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, "-")}.pdf`,
+      );
+      notify("Relatório PDF gerado com sucesso.");
+    } catch (e) {
+      setError((e as Error).message);
     }
-    doc.save(`wisdom-${title.toLowerCase().replace(/[^a-z0-9]/g, "-")}.pdf`);
-    notify("PDF gerado. Guarde o arquivo em local seguro.");
+  }
+  async function saveImportedStudents(records: Student[]) {
+    if (!profile || !store || !records.length || records.length > 500)
+      return false;
+    if (
+      records.some(
+        (s) => profile.role !== "coordenacao" && s.unit_id !== profile.unit_id,
+      )
+    )
+      return false;
+    setBusy(true);
+    try {
+      let saved = records;
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("students")
+          .insert(records)
+          .select("*");
+        if (error) throw error;
+        saved = data as Student[];
+      }
+      setStore((previous) =>
+        previous
+          ? { ...previous, students: [...previous.students, ...saved] }
+          : previous,
+      );
+      notify(
+        `${saved.length} alunos importados. Complete os cadastros na secretaria.`,
+      );
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setBusy(false);
+    }
   }
   async function saveAttendance(e: FormEvent) {
     e.preventDefault();
@@ -563,7 +615,7 @@ export default function App() {
       <main className="login">
         <div className="login-brand">
           <img
-            src="/wisdom-symbol.svg"
+            src="/wisdom-logo.svg"
             alt="Wisdom Cursos"
             className="brand-symbol"
           />
@@ -647,13 +699,14 @@ export default function App() {
       <header className="institutional-header">
         <a
           className="institutional-brand"
+          aria-label="Wisdom Cursos — início"
           href="#"
           onClick={(e) => {
             e.preventDefault();
             goto("overview");
           }}
         >
-          <img src="/wisdom-symbol.svg" alt="" />
+          <img src="/wisdom-logo.svg" alt="" />
           <div>
             <strong>
               WISDOM<span>CURSOS</span>
@@ -661,8 +714,33 @@ export default function App() {
             <small>CONTROLE ACADÊMICO</small>
           </div>
         </a>
-        <div className="header-divider" />
-        <span className="header-purpose">Formação para o próximo passo.</span>
+        <div className="header-greeting">
+          <strong>Olá, {profile.name.split(" ")[0]}!</strong>
+          <span>
+            {labels[profile.role]} •{" "}
+            {profile.role === "coordenacao"
+              ? "Visão das unidades"
+              : store.units.find((u) => u.id === profile.unit_id)?.name}
+          </span>
+        </div>
+        <form
+          className="global-search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            goto("students");
+            setQuery(globalSearch);
+          }}
+        >
+          <input
+            aria-label="Buscar alunos no sistema"
+            placeholder="Pesquisar no sistema…"
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+          />
+          <button type="submit" aria-label="Buscar alunos">
+            <Search size={17} />
+          </button>
+        </form>
         <div className="institutional-tools">
           <span className="system-label">
             {isDemo ? "DEMONSTRAÇÃO" : "ÁREA DA EQUIPE"}
@@ -677,6 +755,21 @@ export default function App() {
               <RefreshCw size={18} />
             </button>
           )}
+          <button
+            className="birthday-alert-button"
+            title="Aniversariantes de hoje e da semana"
+            onClick={() => {
+              goto("overview");
+              requestAnimationFrame(() =>
+                document
+                  .getElementById("birthdays")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+              );
+            }}
+          >
+            <Cake size={19} />
+            <b>{birthdaysThisWeek(students).filter((b) => b.isToday).length}</b>
+          </button>
           <button
             className="header-notification"
             title="Central de atenção"
@@ -724,6 +817,8 @@ export default function App() {
           .map(([key, label, Icon], index) => (
             <button
               key={key}
+              title={label}
+              aria-label={label}
               className={page === key ? "active" : ""}
               onClick={() => goto(key)}
             >
@@ -790,6 +885,14 @@ export default function App() {
               </p>
             </div>
             <div className="heading-actions">
+              {page === "students" && (
+                <button
+                  className="secondary"
+                  onClick={() => setImportOpen(true)}
+                >
+                  <Upload size={16} /> Importar Excel
+                </button>
+              )}
               <label className="unit-picker">
                 <Building2 size={16} />
                 <select
@@ -1342,6 +1445,7 @@ export default function App() {
                         <div className="avatar">{initials(s.name)}</div>
                         <button
                           className="student-link"
+                          type="button"
                           onClick={() => setDossierId(s.id)}
                         >
                           {s.name}
@@ -1381,10 +1485,37 @@ export default function App() {
                   <span>
                     {Object.keys(marks).length} alunos com situação registrada
                   </span>
-                  <button className="primary" disabled={busy || !selectedClass}>
-                    <CheckCircle2 size={17} />
-                    {busy ? "Salvando…" : "Finalizar chamada e gerar resumo"}
-                  </button>
+                  <div className="attendance-footer-actions">
+                    {selectedLesson?.closed && (
+                      <button
+                        type="button"
+                        className="whatsapp-share"
+                        disabled={busy || attendanceDirty}
+                        title={
+                          attendanceDirty
+                            ? "Salve as alterações da chamada antes de compartilhar."
+                            : "Preparar mensagem para o grupo da turma"
+                        }
+                        onClick={() =>
+                          setMessage({
+                            title: "Compartilhar chamada no grupo",
+                            text: attendanceMessage(store, selectedLesson),
+                            phone: "",
+                          })
+                        }
+                      >
+                        <MessageCircle size={17} /> Compartilhar chamada no
+                        grupo
+                      </button>
+                    )}
+                    <button
+                      className="primary"
+                      disabled={busy || !selectedClass}
+                    >
+                      <CheckCircle2 size={17} />
+                      {busy ? "Salvando…" : "Finalizar chamada e gerar resumo"}
+                    </button>
+                  </div>
                 </div>
               </section>
             </form>
@@ -1667,7 +1798,7 @@ export default function App() {
                           onClick={() =>
                             pdf(
                               "Resumo da aula",
-                              attendanceMessage(store, l).split("\n"),
+                              attendanceReportLines(store, l),
                             )
                           }
                         >
@@ -1901,6 +2032,15 @@ export default function App() {
           }}
         />
       )}
+      {importOpen && (
+        <StudentImporter
+          store={store}
+          profile={profile}
+          initialUnit={currentUnit}
+          onClose={() => setImportOpen(false)}
+          onImport={saveImportedStudents}
+        />
+      )}
       {modal && (
         <div
           className="modal-overlay"
@@ -1973,6 +2113,9 @@ export default function App() {
                         max={today()}
                         defaultValue={(modal.data as Student)?.birth_date}
                       />
+                      <small>
+                        Exibe alertas de aniversário do dia e da semana.
+                      </small>
                     </label>
                     <label>
                       Telefone do aluno
@@ -2432,14 +2575,18 @@ export default function App() {
                 Revise os destinatários antes de compartilhar informações de
                 alunos. Para grupos, copie o texto e cole no WhatsApp.
               </p>
-              <textarea
-                className="message-preview"
-                aria-label="Mensagem para WhatsApp"
-                value={message.text}
-                onChange={(e) =>
-                  setMessage({ ...message, text: e.target.value })
-                }
-              />
+              <WhatsAppPreview text={message.text} />
+              <details className="message-editor">
+                <summary>Editar texto da mensagem</summary>
+                <textarea
+                  className="message-preview"
+                  aria-label="Mensagem para WhatsApp"
+                  value={message.text}
+                  onChange={(e) =>
+                    setMessage({ ...message, text: e.target.value })
+                  }
+                />
+              </details>
               <label>
                 WhatsApp de destino (opcional)
                 <input

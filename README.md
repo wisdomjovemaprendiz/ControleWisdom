@@ -24,7 +24,7 @@ O Playwright usa Chromium em `/usr/bin/chromium` neste ambiente. Para outra máq
 
 ## Ativar Supabase
 
-1. Crie um projeto Supabase. No SQL Editor, execute **uma vez** `supabase/001_schema.sql` em um projeto novo. A migração cria tabelas, relacionamentos, índices, RLS, auditoria e a operação atômica de chamada. Faça backup e revise o esquema antes de aplicar a um banco já existente.
+1. Crie um projeto Supabase. No SQL Editor, execute **uma vez** `supabase/001_schema.sql` e depois `supabase/002_bulk_enrollment.sql` em um projeto novo. A migração cria tabelas, relacionamentos, índices, RLS, auditoria e a operação atômica de chamada. Faça backup e revise o esquema antes de aplicar a um banco já existente.
 2. Em Authentication → Users, crie a primeira conta da coordenação com e-mail confirmado e uma senha definida com segurança. Copie o UUID do usuário.
 3. No SQL Editor, execute o modelo abaixo substituindo os valores indicados. Não inclua senhas neste SQL.
 
@@ -96,3 +96,19 @@ NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= npm run dev -- --port 3
 # Em outro terminal:
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 npm run test:e2e
 ```
+
+## Excel, aniversários e novos relatórios
+
+Em **Alunos → Importar Excel**, selecione a unidade, baixe o modelo e envie um arquivo `.xlsx` com as colunas **Nome** e **Turma**. A coluna **Data de nascimento** é opcional e aceita `DD/MM/AAAA` ou datas reais do Excel. A importação lê a primeira aba, aceita até 500 alunos e arquivos de até 5 MB. Use o nome exato ou o ID de uma turma já cadastrada na unidade selecionada.
+
+A revisão mostra linhas prontas, duplicadas e com erro. Somente as prontas são importadas após confirmação. Nomes repetidos na mesma turma são sinalizados; homônimos devem ser revisados e cadastrados manualmente quando necessário. Turmas inexistentes, acesso a outra unidade, excesso de vagas e datas inválidas são rejeitados. O envio ao banco é uma única inserção transacional: uma falha de restrição reverte o lote inteiro. Em caso de falha de rede, atualize os alunos antes de repetir, pois a resposta pode ter se perdido após a gravação.
+
+**Banco já existente:** execute `supabase/002_bulk_enrollment.sql` no SQL Editor. Essa migração permite telefone vazio para a matrícula inicial importada, sem preencher números fictícios. Ela mantém RLS, autoria, auditoria e o controle de vagas. Os demais dados ficam pendentes para a secretaria. Não reexecute `001_schema.sql` em um banco já criado. A migração 002 foi validada em PostgreSQL embarcado; sua aplicação no projeto remoto depende de acesso administrativo ao Supabase.
+
+O campo **Nascimento** permanece no cadastro e alimenta os alertas **Hoje** e **Esta semana**, que considera segunda a domingo no calendário de São Paulo. Os alertas incluem apenas alunos ativos da unidade permitida/selecionada. Datas ausentes não são estimadas; aniversários de 29/02 aparecem nessa data em anos bissextos.
+
+Após finalizar a chamada, o botão **Compartilhar chamada no grupo** permanece disponível. Ele prepara uma mensagem revisável com cabeçalho, turma, data, professor, conteúdo e listas de **presentes** e **atrasados**, usando somente os dois primeiros nomes. A prévia mostra negrito e itálico, e o texto copiado preserva a sintaxe do WhatsApp. O envio continua manual e exige escolher o grupo correto. Alterações ainda não salvas impedem compartilhar uma versão desatualizada.
+
+Os PDFs internos continuam incluindo nomes completos e todas as situações da chamada, inclusive faltas e justificativas. Eles usam a marca institucional, fontes incorporadas com acentos, cabeçalhos, tabelas, indicadores de gestão e rodapé com paginação. A interface segue a referência visual enviada: navegação lateral compacta, superfícies claras e arredondadas, mantendo o azul e vermelho da Wisdom. A marca vetorial e as fontes usadas nos documentos estão em `public/`, com as respectivas licenças em `public/licenses/`.
+
+Para atualizar a versão raster da marca a partir do SVG, execute `node scripts/render-brand.mjs` em uma máquina com o Chromium configurado. Os assets já estão incluídos no repositório; o build na Vercel não precisa de navegador.

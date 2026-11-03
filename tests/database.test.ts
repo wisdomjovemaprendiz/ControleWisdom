@@ -15,6 +15,12 @@ test("migração PostgreSQL e políticas RLS reais", async (t) => {
     "utf8",
   ).replace("create extension if not exists pgcrypto;", "");
   await db.exec(schema);
+  const migration = readFileSync(
+    new URL("../supabase/002_bulk_enrollment.sql", import.meta.url),
+    "utf8",
+  );
+  await db.exec(migration);
+  await db.exec(migration);
   await db.exec(
     `insert into auth.users values('${uid(1)}'),('${uid(2)}'),('${uid(3)}'),('${uid(4)}');insert into public.units(id,name) values('${uid(11)}','Centro'),('${uid(12)}','Vila Nova');insert into public.profiles values('${uid(1)}','Coord','coordenacao','${uid(11)}'),('${uid(2)}','Prof','professor','${uid(11)}'),('${uid(3)}','Secretaria','secretaria','${uid(11)}'),('${uid(4)}','Prof 2','professor','${uid(12)}');insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values('${uid(21)}','${uid(11)}','Turma A','Informática','${uid(2)}','Prof','Seg',2),('${uid(22)}','${uid(12)}','Turma B','Informática','${uid(4)}','Prof 2','Ter',20);insert into public.students(id,unit_id,class_id,name,guardian_phone) values('${uid(31)}','${uid(11)}','${uid(21)}','Aluno A','5511999999999'),('${uid(32)}','${uid(12)}','${uid(22)}','Aluno B','5511999999999');`,
   );
@@ -176,5 +182,54 @@ test("migração PostgreSQL e políticas RLS reais", async (t) => {
       /Turma sem vagas/,
     );
   });
+  await t.test(
+    "importação incompleta é permitida e o lote sem vagas é revertido por inteiro",
+    async () => {
+      await as(3);
+      await db.exec(
+        `insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values('${uid(23)}','${uid(11)}','Turma Importação','Informática','${uid(2)}','Prof','Seg',2)`,
+      );
+      const insert = `insert into public.students(unit_id,class_id,name,guardian_phone) values`;
+      const row = (name: string) => `('${uid(11)}','${uid(23)}','${name}','')`;
+      await assert.rejects(
+        db.exec(
+          insert +
+            [row("Importado A"), row("Importado B"), row("Importado C")].join(
+              ",",
+            ),
+        ),
+        /Turma sem vagas/,
+      );
+      assert.equal(
+        (
+          await db.query(
+            `select * from public.students where class_id='${uid(23)}'`,
+          )
+        ).rows.length,
+        0,
+      );
+      await db.exec(
+        insert + [row("Importado A"), row("Importado B")].join(","),
+      );
+      const result = await db.query<{
+        guardian_phone: string;
+        created_by: string;
+      }>(
+        `select guardian_phone,created_by from public.students where class_id='${uid(23)}'`,
+      );
+      assert.equal(result.rows.length, 2);
+      assert.ok(
+        result.rows.every(
+          (r) => r.guardian_phone === "" && r.created_by === uid(3),
+        ),
+      );
+      await assert.rejects(
+        db.exec(
+          `insert into public.students(unit_id,class_id,name,guardian_phone) values('${uid(11)}','${uid(23)}','Telefone inválido','123')`,
+        ),
+        /check constraint|Turma sem vagas/,
+      );
+    },
+  );
   await db.close();
 });

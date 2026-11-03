@@ -8,6 +8,7 @@ import "@fontsource/manrope/600.css";
 import "@fontsource/manrope/700.css";
 import "@fontsource/manrope/800.css";
 import "./globals.css";
+import "./modern.css";
 export const metadata: Metadata = {
   title: "Wisdom Cursos • Gestão educacional",
   icons: { icon: "/wisdom-symbol.svg" },

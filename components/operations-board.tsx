@@ -1,4 +1,5 @@
 "use client";
+import { BirthdaysPanel } from "./birthdays-panel";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -421,84 +422,91 @@ export function OperationsBoard({
             </div>
           )}
         </section>
-        <aside className="work-queue">
-          <div className="section-caption">
-            <span className="index-label">02 / ACOMPANHAR</span>
-            <span className="queue-count">{tasks.length}</span>
-          </div>
-          <h2>Próximas ações</h2>
-          <p className="queue-intro">
-            Pendências do cadastro e acompanhamentos que precisam de retorno.
-          </p>
-          <div className="queue-list">
-            {tasks.slice(0, 5).map((task, i) => (
-              <article className={`queue-task ${task.kind}`} key={task.id}>
-                <div className="task-top">
-                  <span>
-                    {task.kind === "absence"
-                      ? "FREQUÊNCIA"
-                      : task.kind === "registration"
-                        ? "SECRETARIA"
-                        : task.kind === "contact"
-                          ? "RESPONSÁVEL"
-                          : "PEDAGÓGICO"}
-                  </span>
-                  {task.date && <time>{displayDate(task.date)}</time>}
-                </div>
-                <h3>{task.title}</h3>
-                <button
-                  className="student-link"
-                  onClick={() => onStudent(task.student)}
-                >
-                  {task.student.name}
-                </button>
-                <p>{task.detail}</p>
-                <button
-                  className="task-action"
-                  onClick={() =>
-                    task.kind === "registration"
-                      ? onAction("student", task.student)
+        <div className="board-side">
+          <BirthdaysPanel
+            store={store}
+            students={students}
+            onStudent={onStudent}
+          />
+          <aside className="work-queue">
+            <div className="section-caption">
+              <span className="index-label">02 / ACOMPANHAR</span>
+              <span className="queue-count">{tasks.length}</span>
+            </div>
+            <h2>Próximas ações</h2>
+            <p className="queue-intro">
+              Pendências do cadastro e acompanhamentos que precisam de retorno.
+            </p>
+            <div className="queue-list">
+              {tasks.slice(0, 3).map((task, i) => (
+                <article className={`queue-task ${task.kind}`} key={task.id}>
+                  <div className="task-top">
+                    <span>
+                      {task.kind === "absence"
+                        ? "FREQUÊNCIA"
+                        : task.kind === "registration"
+                          ? "SECRETARIA"
+                          : task.kind === "contact"
+                            ? "RESPONSÁVEL"
+                            : "PEDAGÓGICO"}
+                    </span>
+                    {task.date && <time>{displayDate(task.date)}</time>}
+                  </div>
+                  <h3>{task.title}</h3>
+                  <button
+                    className="student-link"
+                    onClick={() => onStudent(task.student)}
+                  >
+                    {task.student.name}
+                  </button>
+                  <p>{task.detail}</p>
+                  <button
+                    className="task-action"
+                    onClick={() =>
+                      task.kind === "registration"
+                        ? onAction("student", task.student)
+                        : task.kind === "pedagogy"
+                          ? onPage("pedagogy")
+                          : onAction("contact", task.student)
+                    }
+                  >
+                    {task.kind === "registration"
+                      ? "Completar cadastro"
                       : task.kind === "pedagogy"
-                        ? onPage("pedagogy")
-                        : onAction("contact", task.student)
-                  }
-                >
-                  {task.kind === "registration"
-                    ? "Completar cadastro"
-                    : task.kind === "pedagogy"
-                      ? "Abrir acompanhamento"
-                      : "Registrar contato"}
-                  <ArrowRight size={15} />
-                </button>
-              </article>
-            ))}
-            {!tasks.length && (
-              <div className="empty">
-                <Check size={26} />
-                <p>Sem pendências identificadas nesta unidade.</p>
-              </div>
-            )}
-          </div>
-          <button className="queue-footer" onClick={() => onPage("alerts")}>
-            Abrir central de acompanhamento <ArrowUpRight size={16} />
-          </button>
-          <div className="movement-summary">
-            <span className="index-label">SITUAÇÃO DAS MATRÍCULAS</span>
-            {["conclusao", "cancelamento", "abandono", "inadimplencia"].map(
-              (status) => (
-                <div key={status}>
-                  <span>{labels[status]}</span>
-                  <strong>
-                    {students
-                      .filter((s) => s.status === status)
-                      .length.toString()
-                      .padStart(2, "0")}
-                  </strong>
+                        ? "Abrir acompanhamento"
+                        : "Registrar contato"}
+                    <ArrowRight size={15} />
+                  </button>
+                </article>
+              ))}
+              {!tasks.length && (
+                <div className="empty">
+                  <Check size={26} />
+                  <p>Sem pendências identificadas nesta unidade.</p>
                 </div>
-              ),
-            )}
-          </div>
-        </aside>
+              )}
+            </div>
+            <button className="queue-footer" onClick={() => onPage("alerts")}>
+              Abrir central de acompanhamento <ArrowUpRight size={16} />
+            </button>
+            <div className="movement-summary">
+              <span className="index-label">SITUAÇÃO DAS MATRÍCULAS</span>
+              {["conclusao", "cancelamento", "abandono", "inadimplencia"].map(
+                (status) => (
+                  <div key={status}>
+                    <span>{labels[status]}</span>
+                    <strong>
+                      {students
+                        .filter((s) => s.status === status)
+                        .length.toString()
+                        .padStart(2, "0")}
+                    </strong>
+                  </div>
+                ),
+              )}
+            </div>
+          </aside>
+        </div>
       </div>
       <div className="operational-shortcuts">
         <span>ACESSO DIRETO</span>

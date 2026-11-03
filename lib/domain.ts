@@ -145,28 +145,49 @@ export function displayDate(value: string) {
     ? new Date(value + "T12:00:00").toLocaleDateString("pt-BR")
     : "—";
 }
+export function shortStudentName(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).join(" ");
+}
 export function attendanceMessage(store: Store, lesson: Lesson) {
   const group = store.classes.find((c) => c.id === lesson.class_id);
-  const rows = store.attendance.filter((a) => a.lesson_id === lesson.id);
-  return (
-    `*Wisdom | Resumo da aula*\n${group?.name || ""} • ${displayDate(lesson.date)}\nProfessor(a): ${lesson.teacher}\nConteúdo: ${lesson.topic}\n\n` +
-    ["presente", "falta", "atrasado", "justificado"]
-      .map(
-        (s) =>
-          `*${{ presente: "Presentes", falta: "Faltosos", atrasado: "Atrasados", justificado: "Justificados" }[s]}:* ${
-            rows
-              .filter((a) => a.status === s)
-              .map(
-                (a) =>
-                  store.students.find((st) => st.id === a.student_id)?.name ||
-                  "",
-              )
-              .join(", ") || "Nenhum"
-          }`,
-      )
-      .join("\n") +
-    "\n\nSeguimos aprendendo juntos!"
+  const rows = store.attendance.filter(
+    (a) =>
+      a.lesson_id === lesson.id &&
+      (a.status === "presente" || a.status === "atrasado"),
   );
+  const section = (
+    status: "presente" | "atrasado",
+    title: string,
+    icon: string,
+  ) => {
+    const selected = rows.filter((a) => a.status === status);
+    return (
+      `*${icon} ${title} (${selected.length})*\n` +
+      (selected.length
+        ? selected
+            .map(
+              (a) =>
+                `• ${shortStudentName(store.students.find((s) => s.id === a.student_id)?.name || "Aluno")} — ${labels[status]}`,
+            )
+            .join("\n")
+        : "• Nenhum registro")
+    );
+  };
+  return `*WISDOM CURSOS*\n_Acompanhamento da aula_\n━━━━━━━━━━━━━━━━━━\n*Turma:* ${group?.name || ""}\n*Data:* ${displayDate(lesson.date)}\n*Professor(a):* ${lesson.teacher}\n\n*Conteúdo trabalhado*\n${lesson.topic}\n\n${section("presente", "PRESENTES", "✅")}\n\n${section("atrasado", "ATRASADOS", "🕒")}\n━━━━━━━━━━━━━━━━━━\n_Equipe Wisdom • Aprender transforma o futuro._`;
+}
+export function attendanceReportLines(store: Store, lesson: Lesson) {
+  return [
+    `Data: ${displayDate(lesson.date)}`,
+    `Turma: ${store.classes.find((c) => c.id === lesson.class_id)?.name || ""}`,
+    `Professor(a): ${lesson.teacher}`,
+    `Conteúdo: ${lesson.topic}`,
+    ...store.attendance
+      .filter((a) => a.lesson_id === lesson.id)
+      .map(
+        (a) =>
+          `${store.students.find((s) => s.id === a.student_id)?.name || "Aluno"} | ${labels[a.status]}`,
+      ),
+  ];
 }
 export function evolutionMessage(store: Store, student: Student) {
   const records = store.pedagogy

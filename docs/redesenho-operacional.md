@@ -18,7 +18,7 @@ A documentação externa do Moodle não estava acessível pela política de rede
 
 ## Estrutura implementada
 
-- **Navegação institucional horizontal:** marca Wisdom, identificação de perfil, módulos com rótulos explícitos. Menu compacto em celular.
+- **Navegação lateral compacta:** marca Wisdom, identificação de perfil e módulos com ícones e rótulos explícitos. Menu expansível em celular.
 - **Entrada por função:** “Meu diário de classe” para professor, “Mesa da secretaria” para secretaria e “Operação das unidades” para coordenação. O professor encontra suas turmas atribuídas no quadro. Secretaria consulta relatórios sem receber controles para editar a chamada.
 - **Quadro operacional:** seleção de data, busca por turma/professor, filtros de chamadas sem registro e baixa ocupação, identificação de professor, unidade e vagas.
 - **Diário de frequência:** matriz de alunos por até seis aulas recentes, legenda P/F/A/J, percentual individual, acesso à aula selecionada e à ficha do aluno.
@@ -31,7 +31,7 @@ A fila não é um calendário de aulas. O filtro “sem chamada” significa aus
 
 ## Direção visual
 
-Azul institucional na marca e nas faixas de contexto; vermelho no sinal de navegação e em prioridades; fundo de papel e linhas de registro para reforçar o caráter acadêmico. A hierarquia é baseada em documentos, turmas e tarefas. Foram retirados o gráfico de entrada, os cartões decorativos e os textos motivacionais do painel. Tabelas densas têm rolagem própria em celular; nomes permanecem fixos no diário.
+Azul institucional na marca e nas ações; vermelho como cor da marca e em prioridades; superfícies claras e arredondadas sobre fundo cinza suave. A hierarquia é baseada em documentos, turmas e tarefas. O gráfico de entrada e os textos motivacionais foram retirados. Na evolução guiada pela referência visual enviada pelo usuário, os indicadores usam cartões compactos e o painel mantém o quadro de turmas como área principal. Tabelas densas têm rolagem própria em celular; nomes permanecem fixos no diário.
 
 ## Validação
 

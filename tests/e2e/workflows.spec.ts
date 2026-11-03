@@ -228,3 +228,159 @@ test("ficha fecha por Escape e devolve o foco ao aluno", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(source).toBeFocused();
 });
+
+test("Excel importa nomes e turmas com revisão e mantém cadastro incompleto", async ({
+  page,
+}) => {
+  const { default: writeXlsxFile } = await import("write-excel-file/node");
+  const buffer = await writeXlsxFile([
+    ["Nome", "Turma", "Data de nascimento"],
+    ["Aluno Excel Um", "Informática • Turma 01", "14/05/2009"],
+    ["Aluno Excel Dois", "Inglês • Turma 02", ""],
+    ["Gabriel Almeida", "Informática • Turma 01", ""],
+    ["Sem Turma", "Turma inexistente", ""],
+  ]).toBuffer();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Importar Excel", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Importar alunos do Excel" });
+  await dialog.getByLabel("Unidade da importação").selectOption("u1");
+  await dialog.getByLabel("Arquivo Excel de alunos").setInputFiles({
+    name: "alunos.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer,
+  });
+  await expect(
+    dialog.getByRole("button", { name: "Importar 2 alunos", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    dialog.locator(".badge").filter({ hasText: "Duplicado" }),
+  ).toHaveCount(1);
+  await expect(
+    dialog.locator(".badge").filter({ hasText: "Revisar" }),
+  ).toHaveCount(1);
+  await dialog
+    .getByRole("button", { name: "Importar 2 alunos", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await page
+    .getByPlaceholder("Buscar aluno ou responsável…")
+    .fill("Aluno Excel");
+  await expect(page.locator(".table-scroll tbody tr")).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Aluno Excel Um", exact: true })
+    .click();
+  const dossier = page.getByRole("dialog", { name: "Aluno Excel Um" });
+  await expect(dossier.getByText("14/05/2009", { exact: true })).toBeVisible();
+  await expect(
+    dossier.getByText("Não informado", { exact: true }).first(),
+  ).toBeVisible();
+});
+test("modelo Excel baixado contém cabeçalhos de importação", async ({
+  page,
+}) => {
+  const { readSheet } = await import("read-excel-file/node");
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Importar Excel", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Unidade da importação").selectOption("u1");
+  const pending = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Baixar modelo Excel" }).click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toBe("modelo-alunos-wisdom.xlsx");
+  const data = await readSheet((await download.path())!);
+  expect(data[0]).toEqual(["Nome", "Turma", "Data de nascimento"]);
+});
+test("aniversários de hoje e da semana respeitam o filtro de unidade", async ({
+  page,
+}) => {
+  const panel = page.locator(".birthdays-panel");
+  await panel.getByRole("button", { name: /^Hoje/ }).click();
+  await expect(panel.locator(".birthday-student")).toHaveCount(1);
+  await expect(panel.locator(".birthday-student")).toContainText(
+    "Gabriel Almeida",
+  );
+  await page.getByLabel("Filtrar unidade").selectOption("u2");
+  await expect(panel.locator(".birthday-student")).toHaveCount(0);
+  await expect(panel).toContainText("Nenhum aniversário hoje.");
+});
+test("chamada salva mantém botão do grupo e mensagem com dois nomes e estados", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Chamada", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Compartilhar chamada no grupo", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator(".whatsapp-bubble")).toContainText(
+    "Maria Eduarda — Presente",
+  );
+  await expect(dialog.locator(".whatsapp-bubble")).toContainText(
+    "Pedro Henrique — Atrasado",
+  );
+  await expect(dialog.locator(".whatsapp-bubble")).not.toContainText(
+    "Maria Eduarda Lima",
+  );
+  await expect(dialog.locator(".whatsapp-bubble")).not.toContainText(
+    "Lucas Ferreira",
+  );
+  await dialog
+    .getByRole("button", { name: "Copiar texto", exact: true })
+    .click();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("*WISDOM CURSOS*");
+  expect(copied).toContain("Maria Eduarda — Presente");
+  await dialog.getByRole("button", { name: "Fechar mensagem" }).click();
+  await expect(
+    page.getByRole("button", {
+      name: "Compartilhar chamada no grupo",
+      exact: true,
+    }),
+  ).toBeVisible();
+});
+
+test("alterações não salvas exigem finalizar novamente antes de compartilhar", async ({
+  page,
+}) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Chamada", exact: true })
+    .click();
+  await page
+    .getByLabel("Conteúdo trabalhado")
+    .fill("Conteúdo atualizado para o grupo");
+  await expect(
+    page.getByRole("button", {
+      name: "Compartilhar chamada no grupo",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Finalizar chamada e gerar resumo" })
+    .click();
+  await expect(
+    page.getByRole("dialog").locator(".whatsapp-bubble"),
+  ).toContainText("Conteúdo atualizado para o grupo");
+  await page.getByRole("button", { name: "Fechar mensagem" }).click();
+  await expect(
+    page.getByRole("button", {
+      name: "Compartilhar chamada no grupo",
+      exact: true,
+    }),
+  ).toBeEnabled();
+});

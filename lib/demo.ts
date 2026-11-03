@@ -118,7 +118,15 @@ export function demoStore(): Store {
       class_id: i > 12 ? "c4" : i < 7 ? "c1" : i < 11 ? "c2" : "c3",
       offering_id: i > 12 ? "o3" : i % 2 ? "o1" : "o2",
       name,
-      birth_date: "2009-05-14",
+      birth_date:
+        i === 0
+          ? "2009-" + d.slice(5)
+          : i === 1
+            ? "2009-" +
+              new Date(new Date(d + "T12:00:00Z").getTime() + 2 * 86400000)
+                .toISOString()
+                .slice(5, 10)
+            : "2009-05-14",
       phone: "",
       guardian: ["Patrícia Almeida", "Fernanda Santos", "Roberto Ferreira"][
         i % 3
