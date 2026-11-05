@@ -1,4 +1,17 @@
 "use client";
+import {
+  INDIVIDUAL,
+  isIndividual,
+  canTeachIndividual,
+  studentPlacement,
+  lessonPlacement,
+} from "@/lib/individual";
+import { StudentPlacementFields } from "@/components/student-placement-fields";
+import {
+  OffboardingChecklist,
+  offboardingFromForm,
+} from "@/components/offboarding-checklist";
+import { LifecycleSettings } from "@/components/lifecycle-settings";
 import { isManager, loginAddress } from "@/lib/accounts";
 import {
   useEffect,
@@ -200,6 +213,8 @@ export default function App() {
   const [dossierId, setDossierId] = useState<string | null>(null);
   const [studentStatus, setStudentStatus] = useState("all"),
     [studentClass, setStudentClass] = useState("all");
+  const [individualStudentId, setIndividualStudentId] = useState("");
+  const [individualDuration, setIndividualDuration] = useState("");
   const [classId, setClassId] = useState(""),
     [lessonDate, setLessonDate] = useState(today()),
     [topic, setTopic] = useState(""),
@@ -384,21 +399,48 @@ export default function App() {
           .toLowerCase()
           .includes(query.toLowerCase()) &&
         (studentStatus === "all" || s.status === studentStatus) &&
-        (studentClass === "all" || s.class_id === studentClass),
+        (studentClass === "all" ||
+          (studentClass === INDIVIDUAL && isIndividual(s)) ||
+          s.class_id === studentClass),
     );
   const writableClasses = classes.filter(
     (c) => profile?.role !== "professor" || c.teacher_id === profile.id,
   );
+  const individualStudents = active.filter(
+    (s) => profile && canTeachIndividual(profile, s),
+  );
+  const individualStudent =
+    classId === INDIVIDUAL
+      ? individualStudents.find((s) => s.id === individualStudentId)
+      : undefined;
   const selectedClass =
-    writableClasses.find((c) => c.id === classId) || writableClasses[0];
+    classId === INDIVIDUAL
+      ? individualStudent
+        ? {
+            id: INDIVIDUAL,
+            unit_id: individualStudent.unit_id,
+            name: "Aula individual",
+          }
+        : undefined
+      : writableClasses.find((c) => c.id === classId) || writableClasses[0];
+  const isAttendanceStudent = (s: Student) =>
+    classId === INDIVIDUAL
+      ? s.id === individualStudent?.id
+      : !!selectedClass && s.class_id === selectedClass.id;
+  const matchesLesson = (l: Lesson) =>
+    classId === INDIVIDUAL
+      ? !!individualStudent && l.student_id === individualStudent.id
+      : !!selectedClass && l.class_id === selectedClass.id;
   const selectedLesson = store?.lessons.find(
-    (l) => l.class_id === selectedClass?.id && l.date === lessonDate,
+    (l) => matchesLesson(l) && l.date === lessonDate,
   );
   const attendanceDirty = Boolean(
     selectedLesson &&
     (topic.trim() !== selectedLesson.topic ||
+      (classId === INDIVIDUAL &&
+        Number(individualDuration) !== selectedLesson.duration_minutes) ||
       active
-        .filter((s) => s.class_id === selectedClass?.id)
+        .filter(isAttendanceStudent)
         .some(
           (s) =>
             marks[s.id] !==
@@ -421,9 +463,16 @@ export default function App() {
   useEffect(() => {
     if (!store || !selectedClass) return;
     const l = store.lessons.find(
-      (l) => l.class_id === selectedClass.id && l.date === lessonDate,
+      (l) => matchesLesson(l) && l.date === lessonDate,
     );
     setTopic(l?.topic || "");
+    setIndividualDuration(
+      String(
+        l?.duration_minutes ||
+          individualStudent?.individual_duration_minutes ||
+          "",
+      ),
+    );
     const next: Record<string, AttendanceStatus> = {};
     store.attendance
       .filter((a) => a.lesson_id === l?.id)
@@ -442,7 +491,13 @@ export default function App() {
           ]),
       ),
     );
-  }, [selectedClass?.id, lessonDate, store?.lessons, store?.attendance]);
+  }, [
+    selectedClass?.id,
+    individualStudent?.id,
+    lessonDate,
+    store?.lessons,
+    store?.attendance,
+  ]);
   async function save<K extends keyof Store>(
     table: K,
     record: Store[K][number],
@@ -455,16 +510,26 @@ export default function App() {
       {
         const { data, error } = await (table === "pedagogy"
           ? supabase.rpc("save_pedagogical_record", { record_data: record })
-          : table === "contacts"
-            ? supabase.from(table).insert(record)
-            : supabase.from(table).upsert(record));
+          : table === "students"
+            ? allRecords?.students.some((s) => s.id === record.id)
+              ? supabase
+                  .from(table)
+                  .update(record)
+                  .eq("id", record.id)
+                  .select()
+                  .single()
+              : supabase.from(table).insert(record).select().single()
+            : table === "contacts"
+              ? supabase.from(table).insert(record)
+              : supabase.from(table).upsert(record));
         if (error)
           throw new Error(
             error.code === "23505"
               ? "Este acompanhamento já foi registrado. Atualize os dados para consultar a evolução."
               : error.message,
           );
-        if (table === "pedagogy" && data) persisted = data as Store[K][number];
+        if ((table === "pedagogy" || table === "students") && data)
+          persisted = data as Store[K][number];
       }
       setStore((prev) =>
         prev
@@ -606,7 +671,7 @@ export default function App() {
   async function saveAttendance(e: FormEvent) {
     e.preventDefault();
     if (!selectedClass || !profile || !store) return;
-    const list = active.filter((s) => s.class_id === selectedClass.id);
+    const list = active.filter(isAttendanceStudent);
     if (!list.length) {
       setError("Esta turma não possui alunos ativos.");
       return;
@@ -622,7 +687,11 @@ export default function App() {
     const lesson: Lesson = {
       id: selectedLesson?.id || crypto.randomUUID(),
       unit_id: selectedClass.unit_id,
-      class_id: selectedClass.id,
+      class_id: classId === INDIVIDUAL ? null : selectedClass.id,
+      student_id: individualStudent?.id || null,
+      duration_minutes: individualStudent
+        ? Number(individualDuration) || null
+        : null,
       teacher_id: profile.id,
       teacher: profile.name,
       date: lessonDate,
@@ -689,16 +758,37 @@ export default function App() {
     if (modal.kind === "student") {
       const c = store.classes.find((c) => c.id === v("class_id"));
       const previous = modal.data as Student | undefined;
+      const individualTeacher = store.profiles.find(
+        (p) => p.id === v("individual_teacher_id"),
+      );
       const offering = store.offerings.find((o) => o.id === v("offering_id"));
       const record: Student = {
         id,
         unit_id:
           c?.unit_id ||
+          individualTeacher?.unit_id ||
           offering?.unit_id ||
           previous?.unit_id ||
           (unit !== "all" ? unit : profile.unit_id),
         photo_path: previous?.photo_path || null,
-        class_id: v("class_id") || null,
+        class_id: v("class_id") === INDIVIDUAL ? null : v("class_id") || null,
+        enrollment_mode: v("class_id") === INDIVIDUAL ? "individual" : "class",
+        individual_hours:
+          v("class_id") === INDIVIDUAL
+            ? Number(v("individual_hours")) || null
+            : null,
+        individual_duration_minutes:
+          v("class_id") === INDIVIDUAL
+            ? Number(v("individual_duration_minutes")) || null
+            : null,
+        individual_days:
+          v("class_id") === INDIVIDUAL
+            ? fd.getAll("individual_days").map(Number)
+            : [],
+        individual_teacher_id:
+          v("class_id") === INDIVIDUAL
+            ? v("individual_teacher_id") || null
+            : null,
         offering_id: v("offering_id") || null,
         name: v("name"),
         birth_date: fd.has("birth_date")
@@ -727,7 +817,7 @@ export default function App() {
         setError(invalid);
         return;
       }
-      if (!c && v("class_id")) {
+      if (!c && v("class_id") && v("class_id") !== INDIVIDUAL) {
         setError("Turma não encontrada.");
         return;
       }
@@ -940,20 +1030,24 @@ export default function App() {
         ...previous,
         status: v("status") as Student["status"],
         archive_reason: v("archive_reason"),
+        offboarding: offboardingFromForm(fd),
       });
     }
     if (modal.kind === "pedagogy") {
       const c = store.classes.find((c) => c.id === v("class_id"));
-      if (!c) return;
       const st = store.students.find((s) => s.id === v("student_id"));
-      if (st && st.class_id !== c.id && !modal.parentRecord) {
+      if (!c && !(v("class_id") === INDIVIDUAL && st && isIndividual(st))) {
+        setError("Selecione a turma ou o aluno da aula individual.");
+        return;
+      }
+      if (c && st && st.class_id !== c.id && !modal.parentRecord) {
         setError("O aluno deve pertencer à turma selecionada.");
         return;
       }
       ok = await save("pedagogy", {
         id,
-        unit_id: c.unit_id,
-        class_id: c.id,
+        unit_id: c?.unit_id || st!.unit_id,
+        class_id: c?.id || null,
         student_id: v("student_id") || null,
         author_id: profile.id,
         date: today(),
@@ -1102,7 +1196,9 @@ export default function App() {
       scoped(l.unit_id) &&
       (!reportFrom || l.date >= reportFrom) &&
       l.date <= reportTo &&
-      (reportClass === "all" || l.class_id === reportClass),
+      (reportClass === "all" ||
+        (reportClass === INDIVIDUAL && !!l.student_id) ||
+        l.class_id === reportClass),
   );
   return (
     <div className="app-shell">
@@ -1461,6 +1557,7 @@ export default function App() {
                     onChange={(e) => setStudentClass(e.target.value)}
                   >
                     <option value="all">Todas as turmas</option>
+                    <option value={INDIVIDUAL}>Aulas individuais</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -1517,7 +1614,7 @@ export default function App() {
                             </div>
                           </div>
                         </td>
-                        <td>{className(s.class_id)}</td>
+                        <td>{studentPlacement(store, s)}</td>
                         <td>
                           {s.guardian || "Não informado"}
                           <small>{s.guardian_phone || "Sem telefone"}</small>
@@ -1848,13 +1945,18 @@ export default function App() {
                     Turma
                     <select
                       aria-label="Turma"
-                      value={selectedClass?.id || ""}
+                      value={
+                        classId === INDIVIDUAL
+                          ? INDIVIDUAL
+                          : selectedClass?.id || ""
+                      }
                       onChange={(e) => setClassId(e.target.value)}
                       required
                     >
                       <option value="" disabled>
                         Selecione
                       </option>
+                      <option value={INDIVIDUAL}>Aulas individuais</option>
                       {writableClasses.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -1862,6 +1964,43 @@ export default function App() {
                       ))}
                     </select>
                   </label>
+                  {classId === INDIVIDUAL && (
+                    <>
+                      <label>
+                        Aluno da aula individual
+                        <select
+                          aria-label="Aluno da aula individual"
+                          value={individualStudentId}
+                          onChange={(e) =>
+                            setIndividualStudentId(e.target.value)
+                          }
+                          required
+                        >
+                          <option value="">Selecione o aluno</option>
+                          {individualStudents.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {studentDisplayName(s)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Duração desta aula (minutos)
+                        <input
+                          aria-label="Duração desta aula (minutos)"
+                          type="number"
+                          min="5"
+                          max="480"
+                          required
+                          value={individualDuration}
+                          onChange={(e) =>
+                            setIndividualDuration(e.target.value)
+                          }
+                        />
+                      </label>
+                    </>
+                  )}
+
                   <label>
                     Data da aula
                     <input
@@ -1909,8 +2048,7 @@ export default function App() {
                     <strong>
                       {
                         active.filter(
-                          (s) =>
-                            s.class_id === selectedClass?.id && !marks[s.id],
+                          (s) => isAttendanceStudent(s) && !marks[s.id],
                         ).length
                       }
                     </strong>
@@ -1934,7 +2072,7 @@ export default function App() {
                         setMarks(
                           Object.fromEntries(
                             active
-                              .filter((s) => s.class_id === selectedClass?.id)
+                              .filter(isAttendanceStudent)
                               .map((s) => [s.id, "presente"]),
                           ),
                         );
@@ -1943,103 +2081,97 @@ export default function App() {
                       <Check size={16} /> Todos presentes
                     </button>
                   </div>
-                  {active
-                    .filter((s) => s.class_id === selectedClass?.id)
-                    .map((s) => (
-                      <div className="attendance-row" key={s.id}>
-                        <div className="person">
-                          <StudentAvatar student={s} />
-                          <button
-                            className="student-link"
-                            type="button"
-                            onClick={() => setDossierId(s.id)}
-                          >
-                            {studentDisplayName(s)}
-                          </button>
-                        </div>
-                        <div className="attendance-options">
-                          {(
-                            [
-                              "presente",
-                              "falta",
-                              "atrasado",
-                              "justificado",
-                            ] as AttendanceStatus[]
-                          ).map((status) => (
-                            <button
-                              type="button"
-                              key={status}
-                              aria-pressed={marks[s.id] === status}
-                              className={
-                                marks[s.id] === status ? `chosen ${status}` : ""
-                              }
-                              onClick={() => {
-                                setMarks({ ...marks, [s.id]: status });
-                                setAttendanceDetails((prev) => ({
-                                  ...prev,
-                                  [s.id]: {
-                                    arrival_time:
-                                      status === "atrasado"
-                                        ? prev[s.id]?.arrival_time || ""
-                                        : "",
-                                    justification:
-                                      status === "justificado"
-                                        ? prev[s.id]?.justification || ""
-                                        : "",
-                                  },
-                                }));
-                              }}
-                            >
-                              {marks[s.id] === status && <Check size={14} />}{" "}
-                              {labels[status]}
-                            </button>
-                          ))}
-                        </div>
-                        {marks[s.id] === "atrasado" && (
-                          <label className="attendance-detail">
-                            Horário de chegada (opcional)
-                            <input
-                              type="time"
-                              aria-label={`Horário de chegada de ${studentDisplayName(s)}`}
-                              value={
-                                attendanceDetails[s.id]?.arrival_time || ""
-                              }
-                              onChange={(e) =>
-                                setAttendanceDetails((prev) => ({
-                                  ...prev,
-                                  [s.id]: {
-                                    arrival_time: e.target.value,
-                                    justification: "",
-                                  },
-                                }))
-                              }
-                            />
-                          </label>
-                        )}
-                        {marks[s.id] === "justificado" && (
-                          <label className="attendance-detail">
-                            Motivo da justificativa (opcional)
-                            <textarea
-                              maxLength={2000}
-                              aria-label={`Justificativa de ${studentDisplayName(s)}`}
-                              value={
-                                attendanceDetails[s.id]?.justification || ""
-                              }
-                              onChange={(e) =>
-                                setAttendanceDetails((prev) => ({
-                                  ...prev,
-                                  [s.id]: {
-                                    arrival_time: "",
-                                    justification: e.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                          </label>
-                        )}
+                  {active.filter(isAttendanceStudent).map((s) => (
+                    <div className="attendance-row" key={s.id}>
+                      <div className="person">
+                        <StudentAvatar student={s} />
+                        <button
+                          className="student-link"
+                          type="button"
+                          onClick={() => setDossierId(s.id)}
+                        >
+                          {studentDisplayName(s)}
+                        </button>
                       </div>
-                    ))}
-                  {!active.some((s) => s.class_id === selectedClass?.id) && (
+                      <div className="attendance-options">
+                        {(
+                          [
+                            "presente",
+                            "falta",
+                            "atrasado",
+                            "justificado",
+                          ] as AttendanceStatus[]
+                        ).map((status) => (
+                          <button
+                            type="button"
+                            key={status}
+                            aria-pressed={marks[s.id] === status}
+                            className={
+                              marks[s.id] === status ? `chosen ${status}` : ""
+                            }
+                            onClick={() => {
+                              setMarks({ ...marks, [s.id]: status });
+                              setAttendanceDetails((prev) => ({
+                                ...prev,
+                                [s.id]: {
+                                  arrival_time:
+                                    status === "atrasado"
+                                      ? prev[s.id]?.arrival_time || ""
+                                      : "",
+                                  justification:
+                                    status === "justificado"
+                                      ? prev[s.id]?.justification || ""
+                                      : "",
+                                },
+                              }));
+                            }}
+                          >
+                            {marks[s.id] === status && <Check size={14} />}{" "}
+                            {labels[status]}
+                          </button>
+                        ))}
+                      </div>
+                      {marks[s.id] === "atrasado" && (
+                        <label className="attendance-detail">
+                          Horário de chegada (opcional)
+                          <input
+                            type="time"
+                            aria-label={`Horário de chegada de ${studentDisplayName(s)}`}
+                            value={attendanceDetails[s.id]?.arrival_time || ""}
+                            onChange={(e) =>
+                              setAttendanceDetails((prev) => ({
+                                ...prev,
+                                [s.id]: {
+                                  arrival_time: e.target.value,
+                                  justification: "",
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
+                      {marks[s.id] === "justificado" && (
+                        <label className="attendance-detail">
+                          Motivo da justificativa (opcional)
+                          <textarea
+                            maxLength={2000}
+                            aria-label={`Justificativa de ${studentDisplayName(s)}`}
+                            value={attendanceDetails[s.id]?.justification || ""}
+                            onChange={(e) =>
+                              setAttendanceDetails((prev) => ({
+                                ...prev,
+                                [s.id]: {
+                                  arrival_time: "",
+                                  justification: e.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                  ))}
+                  {!active.some(isAttendanceStudent) && (
                     <Empty text="Nenhum aluno ativo nesta turma." />
                   )}
                   <div className="form-footer">
@@ -2121,7 +2253,9 @@ export default function App() {
                           )}{" "}
                         {studentName(p.student_id)}
                       </h2>
-                      <p>{className(p.class_id)}</p>
+                      <p>
+                        {p.class_id ? className(p.class_id) : "Aula individual"}
+                      </p>
                       <div className="skill-level">
                         <span>{p.skill}</span>
                         <span>
@@ -2279,6 +2413,7 @@ export default function App() {
                     onChange={(e) => setReportClass(e.target.value)}
                   >
                     <option value="all">Todas as turmas</option>
+                    <option value={INDIVIDUAL}>Aulas individuais</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -2377,7 +2512,7 @@ export default function App() {
                               p.date <= reportTo,
                           )
                           .flatMap((p) => [
-                            `${displayDate(p.date)} | ${studentName(p.student_id)} | ${className(p.class_id)} | ${p.kind}`,
+                            `${displayDate(p.date)} | ${studentName(p.student_id)} | ${p.class_id ? className(p.class_id) : "Aula individual"} | ${p.kind}`,
                             ...pedagogicalReportLines(p),
                           ]),
                       ),
@@ -2409,7 +2544,7 @@ export default function App() {
                   .map((l) => (
                     <div className="lesson-report" key={l.id}>
                       <div>
-                        <strong>{className(l.class_id)}</strong>
+                        <strong>{lessonPlacement(store, l)}</strong>
                         <small>
                           {displayDate(l.date)} • {l.teacher}
                         </small>
@@ -2495,6 +2630,9 @@ export default function App() {
               store={allRecords}
               onSaved={load}
             />
+          )}
+          {page === "settings" && isManager(profile.role) && (
+            <LifecycleSettings store={allRecords!} />
           )}
           {page === "settings" && (
             <div className="account-settings">
@@ -2709,34 +2847,18 @@ export default function App() {
                       />
                     </label>
                   </div>
-                  <label>
-                    Turma
-                    <select
-                      name="class_id"
-                      aria-label="Turma"
-                      defaultValue={
-                        (modal.data as Student)?.class_id ||
-                        modal.classPreset ||
-                        ""
-                      }
-                    >
-                      <option value="">Selecionar turma depois</option>
-                      {classes
-                        .filter(
-                          (c) =>
-                            (!modal.data || c.unit_id === modal.data.unit_id) &&
-                            (profile.role !== "comercial" ||
-                              c.enrollment_open !== false ||
-                              c.id === (modal.data as Student)?.class_id),
-                        )
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} •{" "}
-                            {store.units.find((u) => u.id === c.unit_id)?.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
+                  <StudentPlacementFields
+                    student={modal.data as Student | undefined}
+                    preset={modal.classPreset}
+                    classes={classes.filter(
+                      (c) =>
+                        (!modal.data || c.unit_id === modal.data.unit_id) &&
+                        (profile.role !== "comercial" ||
+                          c.enrollment_open !== false ||
+                          c.id === (modal.data as Student)?.class_id),
+                    )}
+                    teachers={store.profiles.filter((p) => scoped(p.unit_id))}
+                  />
                   <label>
                     Curso ou pacote contratado
                     <select
@@ -3013,6 +3135,7 @@ export default function App() {
               )}
               {modal.kind === "archive" && (
                 <>
+                  <OffboardingChecklist />
                   <p>
                     O histórico de {(modal.data as Student).name} será
                     preservado.
@@ -3041,6 +3164,7 @@ export default function App() {
                   store={store}
                   classes={writableClasses}
                   parent={modal.parentRecord}
+                  individualStudents={individualStudents}
                 />
               )}
               {modal.kind === "contact" && (

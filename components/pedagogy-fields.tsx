@@ -1,4 +1,5 @@
 "use client";
+import { INDIVIDUAL, isIndividual } from "@/lib/individual";
 import { studentDisplayName } from "@/lib/domain";
 import { useState } from "react";
 import { Sparkles, BookOpen, Check } from "lucide-react";
@@ -19,13 +20,17 @@ export function PedagogyFields({
   store,
   classes,
   parent,
+  individualStudents,
 }: {
   store: Store;
   classes: CourseClass[];
   parent?: Pedagogy;
+  individualStudents?: Store["students"];
 }) {
   const [classId, setClassId] = useState(
-      parent?.class_id || classes[0]?.id || "",
+      (parent && !parent.class_id ? INDIVIDUAL : parent?.class_id) ||
+        classes[0]?.id ||
+        INDIVIDUAL,
     ),
     [studentId, setStudentId] = useState(parent?.student_id || ""),
     [mode, setMode] = useState<"manual" | "assisted">("manual"),
@@ -111,6 +116,7 @@ export function PedagogyFields({
             setStudentId("");
           }}
         >
+          <option value={INDIVIDUAL}>Aulas individuais</option>
           {classes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -120,19 +126,36 @@ export function PedagogyFields({
         {parent && <input type="hidden" name="class_id" value={classId} />}
       </label>
       <label>
-        Aluno (opcional)
+        {classId === INDIVIDUAL
+          ? "Aluno da aula individual"
+          : "Aluno (opcional)"}
         <select
           name="student_id"
-          aria-label="Aluno (opcional)"
+          aria-label={
+            classId === INDIVIDUAL
+              ? "Aluno da aula individual"
+              : "Aluno (opcional)"
+          }
+          required={classId === INDIVIDUAL}
           value={studentId}
           disabled={!!parent}
           onChange={(e) => setStudentId(e.target.value)}
         >
-          <option value="">Registro de toda a turma</option>
-          {store.students
+          <option value="">
+            {classId === INDIVIDUAL
+              ? "Selecione o aluno"
+              : "Registro de toda a turma"}
+          </option>
+          {(classId === INDIVIDUAL
+            ? individualStudents || store.students
+            : store.students
+          )
             .filter(
               (s) =>
-                (s.class_id === classId && s.status === "ativo") ||
+                ((classId === INDIVIDUAL
+                  ? isIndividual(s)
+                  : s.class_id === classId) &&
+                  s.status === "ativo") ||
                 s.id === parent?.student_id,
             )
             .map((s) => (

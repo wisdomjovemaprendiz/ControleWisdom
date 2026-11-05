@@ -124,7 +124,15 @@ export async function createInstitutionalPdf({
   if (featuredStudent) {
     const photo = photos.find((p) => p.id === featuredStudent.id);
     if (photo) {
-      doc.addImage(photo.data, "JPEG", 16, y, 19, 19, `student-${photo.id}`);
+      doc.addImage(
+        photo.data,
+        photo.format || "JPEG",
+        16,
+        y,
+        19,
+        19,
+        `student-${photo.id}`,
+      );
       doc.setFont("Wisdom", "bold");
       doc.setFontSize(12);
       doc.setTextColor(41, 75, 118);
@@ -235,7 +243,7 @@ export async function createInstitutionalPdf({
         if (photo)
           doc.addImage(
             photo.data,
-            "JPEG",
+            photo.format || "JPEG",
             cell.cell.x + 3,
             cell.cell.y + (cell.cell.height - 7) / 2,
             7,

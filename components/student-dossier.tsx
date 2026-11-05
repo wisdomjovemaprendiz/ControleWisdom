@@ -1,4 +1,10 @@
 "use client";
+import {
+  studentPlacement,
+  individualMinutes,
+  isIndividual,
+  weekdays,
+} from "@/lib/individual";
 import { studentDisplayName, attendanceDescription } from "@/lib/domain";
 import { comparePedagogy } from "@/lib/domain";
 import { outcomeLabels } from "@/lib/pedagogy";
@@ -119,7 +125,7 @@ export function StudentDossier({
           </span>
           <h2 id="dossier-title">{studentDisplayName(s)}</h2>
           <p>
-            {store.classes.find((c) => c.id === s.class_id)?.name} /{" "}
+            {studentPlacement(store, s)} /{" "}
             {store.units.find((u) => u.id === s.unit_id)?.name}
           </p>
         </div>
@@ -168,6 +174,44 @@ export function StudentDossier({
           {tab === "summary" && (
             <>
               <dl className="student-details">
+                {isIndividual(s) && (
+                  <>
+                    <div>
+                      <dt>Modalidade</dt>
+                      <dd>Aula individual</dd>
+                    </div>
+                    <div>
+                      <dt>Carga horária</dt>
+                      <dd>
+                        {(individualMinutes(store, s.id) / 60).toLocaleString(
+                          "pt-BR",
+                          { maximumFractionDigits: 1 },
+                        )}{" "}
+                        h realizadas
+                        {s.individual_hours
+                          ? ` de ${s.individual_hours} h`
+                          : ""}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Duração por aula</dt>
+                      <dd>
+                        {s.individual_duration_minutes
+                          ? `${s.individual_duration_minutes} minutos`
+                          : "A definir"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Dias de aula</dt>
+                      <dd>
+                        {s.individual_days
+                          ?.map((d) => weekdays[d])
+                          .join(", ") || "A definir"}
+                      </dd>
+                    </div>
+                  </>
+                )}
+
                 {[
                   [
                     "Etapa cadastral",
@@ -189,6 +233,30 @@ export function StudentDossier({
                     <dd>{value || "Não informado"}</dd>
                   </div>
                 ))}
+                {s.offboarding?.completed_at && (
+                  <div>
+                    <dt>Desligamento concluído</dt>
+                    <dd>
+                      {new Date(s.offboarding.completed_at).toLocaleString(
+                        "pt-BR",
+                        { timeZone: "America/Sao_Paulo" },
+                      )}
+                      <p>
+                        Por{" "}
+                        {s.offboarding.completed_by_name ||
+                          store.profiles.find(
+                            (p) => p.id === s.offboarding?.completed_by,
+                          )?.name ||
+                          "Usuário anterior"}
+                      </p>
+                      <ul>
+                        {s.offboarding.steps?.map((step) => (
+                          <li key={step.id}>✓ {step.label}</li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </div>
+                )}
               </dl>
               {s.archive_reason && (
                 <div className="dossier-note">

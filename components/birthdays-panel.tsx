@@ -1,4 +1,5 @@
 "use client";
+import { studentPlacement } from "@/lib/individual";
 import { studentDisplayName } from "@/lib/domain";
 import { StudentAvatar } from "./student-avatar";
 import { useState } from "react";
@@ -67,9 +68,7 @@ export function BirthdaysPanel({
             <StudentAvatar student={b.student} size={28} />
             <span className="birthday-name">
               <strong>{studentDisplayName(b.student)}</strong>
-              <small>
-                {store.classes.find((c) => c.id === b.student.class_id)?.name}
-              </small>
+              <small>{studentPlacement(store, b.student)}</small>
             </span>
             <ArrowRight size={14} />
           </button>

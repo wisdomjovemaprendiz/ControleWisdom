@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         throw new ApiError(400, "Você não pode excluir sua própria conta.");
       const { data: target, error: lookup } = await client
         .from("profiles")
-        .select("id,unit_id")
+        .select("id,unit_id,name,role")
         .eq("id", id)
         .single();
       if (lookup || !target) throw new ApiError(404, "Usuário não encontrado.");
@@ -46,6 +46,8 @@ export async function POST(request: Request) {
         entity: "profiles",
         entity_id: id,
         operation: "MANAGE_DELETE",
+        actor_name: profile.name,
+        before_data: target,
       });
       if (logged.error) console.error("USER_DELETE_AUDIT_FAILED");
     } else {

@@ -47,7 +47,7 @@ export function followUps(
       });
     const missing = [
       !s.name.trim() && "nome",
-      !s.class_id && "turma",
+      !s.class_id && s.enrollment_mode !== "individual" && "turma",
       !s.guardian && "responsável",
       !s.guardian_phone && "WhatsApp",
       !s.birth_date && "nascimento",

@@ -1246,3 +1246,191 @@ test("módulos administrativos cabem em tela pequena sem comprimir a página", a
     ).toBeLessThanOrEqual(24);
   }
 });
+
+test("matrícula individual salva agenda sem turma e participa de chamada e pedagogia", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nome completo").fill("Aluno Individual");
+  await dialog.getByLabel("Turma", { exact: true }).selectOption("individual");
+  await dialog.getByLabel("Carga horária total (horas)").fill("20");
+  await dialog.getByLabel("Duração de cada aula (minutos)").fill("60");
+  await dialog.getByLabel("Professor das aulas individuais").selectOption("p2");
+  await dialog.getByLabel("Segunda", { exact: true }).check();
+  await dialog.getByLabel("Quarta", { exact: true }).check();
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const student = schoolApi.store.students.find(
+    (s) => s.name === "Aluno Individual",
+  )!;
+  expect(student.class_id).toBeNull();
+  expect(student.enrollment_mode).toBe("individual");
+  expect(student.individual_days).toEqual([1, 3]);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Chamada", exact: true })
+    .click();
+  await page.getByLabel("Turma", { exact: true }).selectOption("individual");
+  await page.getByLabel("Aluno da aula individual").selectOption(student.id);
+  await expect(page.getByLabel("Duração desta aula (minutos)")).toHaveValue(
+    "60",
+  );
+  await page
+    .getByPlaceholder("O que os alunos aprenderam hoje?")
+    .fill("Organização de tarefas individuais");
+  await expect(page.locator(".attendance-row")).toHaveCount(1);
+  await page
+    .locator(".attendance-row")
+    .getByRole("button", { name: "Falta", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Finalizar chamada", exact: false })
+    .click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Aula individual");
+  await expect(dialog).toContainText("Aluno Individual");
+  await expect(dialog).toContainText("AUSENTES (1)");
+  const lesson = schoolApi.store.lessons.find(
+    (l) => l.student_id === student.id,
+  )!;
+  expect(lesson.class_id).toBeNull();
+  expect(lesson.duration_minutes).toBe(60);
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Pedagógico", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Novo registro", exact: true })
+    .click();
+  dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Turma *", { exact: true })
+    .selectOption("individual");
+  await dialog.getByLabel("Aluno da aula individual").selectOption(student.id);
+  await dialog.getByLabel("Habilidade observada *").fill("Organização");
+  await dialog
+    .getByLabel("Observações e evolução *")
+    .fill("Organiza as tarefas com apoio visual.");
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(
+    schoolApi.store.pedagogy.find((p) => p.student_id === student.id)?.class_id,
+  ).toBeNull();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Central de atenção", exact: true })
+    .click();
+  await expect(
+    page.getByText("Aluno Individual", { exact: true }).first(),
+  ).toBeVisible();
+});
+
+test("desligamento exige checklist configurável antes de salvar", async ({
+  page,
+}) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  const row = page.locator("tbody tr").first();
+  const id = schoolApi.store.students[0].id;
+  await row.getByTitle("Arquivar aluno", { exact: true }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Detalhes *")
+    .fill("Conclusão confirmada pela secretaria");
+  await expect(dialog.getByRole("checkbox")).toHaveCount(1);
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toBeVisible();
+  expect(schoolApi.store.students.find((s) => s.id === id)?.status).toBe(
+    "ativo",
+  );
+  await dialog.getByRole("checkbox").check();
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(
+    schoolApi.store.students.find((s) => s.id === id)?.offboarding?.steps
+      ?.length,
+  ).toBe(1);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Equipe e acesso", exact: true })
+    .click();
+  await page
+    .getByLabel("Nova etapa", { exact: true })
+    .fill("Conferiu os materiais devolvidos?");
+  await page
+    .getByRole("button", { name: "Adicionar etapa", exact: true })
+    .click();
+  await expect(page.getByLabel("Etapa 2", { exact: true })).toHaveValue(
+    "Conferiu os materiais devolvidos?",
+  );
+});
+
+test("foto redonda amplia duas vezes sem abrir a ficha do aluno", async ({
+  page,
+}) => {
+  const student = schoolApi.store.students[0];
+  student.photo_path = `${student.unit_id}/${student.id}/identificacao.png`;
+  const data = await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = 100;
+    c.height = 100;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#13478b";
+    ctx.fillRect(0, 0, 100, 100);
+    return c.toDataURL("image/png").split(",")[1];
+  });
+  schoolApi.objects.set(student.photo_path, {
+    body: Buffer.from(data, "base64"),
+    type: "image/png",
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Operação das unidades", exact: true }),
+  ).toBeVisible();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  const avatar = page
+    .getByRole("button", {
+      name: `Ampliar foto de ${student.name}`,
+      exact: true,
+    })
+    .first();
+  await expect(avatar).toBeVisible();
+  expect(await avatar.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
+    "50%",
+  );
+  const box = await avatar.boundingBox();
+  await avatar.click();
+  const zoom = page.getByRole("dialog", {
+    name: `Foto de ${student.name} ampliada 2 vezes`,
+    exact: true,
+  });
+  await expect(zoom).toBeVisible();
+  const image = await zoom
+    .getByRole("img", { name: student.name, exact: true })
+    .boundingBox();
+  expect(image!.width).toBeCloseTo(box!.width * 2, 0);
+  await expect(
+    page.getByRole("dialog", { name: "Ficha do aluno", exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(zoom).toHaveCount(0);
+});

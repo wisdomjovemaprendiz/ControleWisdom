@@ -4,6 +4,14 @@ import { canAccess, type Store, type Profile } from "../../lib/domain";
 const base = "http://127.0.0.1:54321";
 export async function installSchoolApi(page: Page) {
   const store = schoolFixture();
+  const offboardingSteps = [
+    {
+      id: "step-whatsapp",
+      label: "Retirou o aluno do grupo de WhatsApp da turma?",
+      position: 0,
+      active: true,
+    },
+  ];
   store.profiles.push({
     id: "p5",
     name: "Carla Comercial",
@@ -178,6 +186,30 @@ export async function installSchoolApi(page: Page) {
           })
         : json(route, {}, 404);
     }
+    if (path === "/rest/v1/audit_log") return json(route, []);
+    if (path === "/rest/v1/offboarding_steps") {
+      if (req.method() === "POST") {
+        offboardingSteps.push({
+          ...req.postDataJSON(),
+          id: crypto.randomUUID(),
+          active: true,
+        });
+        return json(route, {});
+      }
+      if (req.method() === "PATCH") {
+        const row = offboardingSteps.find(
+          (x) => x.id === url.searchParams.get("id")?.slice(3),
+        );
+        if (row) Object.assign(row, req.postDataJSON());
+        return json(route, {});
+      }
+      return json(
+        route,
+        offboardingSteps.filter(
+          (s) => url.searchParams.get("active") !== "eq.true" || s.active,
+        ),
+      );
+    }
     if (path === "/rest/v1/daily_analytics") return json(route, []);
     if (path === "/rest/v1/rpc/save_pedagogical_record") {
       const record = req.postDataJSON().record_data;
@@ -226,7 +258,12 @@ export async function installSchoolApi(page: Page) {
           else values.push(record);
         }
         return req.headers()["prefer"]?.includes("return=representation")
-          ? json(route, records)
+          ? json(
+              route,
+              req.headers()["accept"]?.includes("vnd.pgrst.object")
+                ? records[0]
+                : records,
+            )
           : route.fulfill({
               status: 201,
               headers: { "Access-Control-Allow-Origin": "*" },
@@ -236,6 +273,13 @@ export async function installSchoolApi(page: Page) {
         const id = url.searchParams.get("id")?.replace(/^eq\./, "");
         for (const row of values)
           if (row.id === id) Object.assign(row, req.postDataJSON());
+        if (req.headers()["prefer"]?.includes("return=representation"))
+          return json(
+            route,
+            req.headers()["accept"]?.includes("vnd.pgrst.object")
+              ? values.find((row) => row.id === id)
+              : values.filter((row) => row.id === id),
+          );
         return route.fulfill({
           status: 204,
           headers: { "Access-Control-Allow-Origin": "*" },
@@ -335,7 +379,7 @@ export async function installSchoolApi(page: Page) {
     }
     return json(route, { ok: true });
   });
-  return { store, objects, actor: () => actor };
+  return { store, objects, offboardingSteps, actor: () => actor };
 }
 export async function login(page: Page, username = "admin") {
   await page.getByLabel("Nome de usuário", { exact: true }).fill(username);

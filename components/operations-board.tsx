@@ -57,8 +57,11 @@ export function OperationsBoard({
   const scopeClasses = classes.filter(
     (c) => profile.role !== "professor" || c.teacher_id === profile.id,
   );
-  const students = store.students.filter((s) =>
-      classes.some((c) => c.id === s.class_id),
+  const students = store.students.filter(
+      (s) =>
+        (s.enrollment_mode === "individual" &&
+          (unit === "all" || s.unit_id === unit)) ||
+        classes.some((c) => c.id === s.class_id),
     ),
     active = students.filter((s) => s.status === "ativo");
   const tasks = followUps(store, profile, unit);

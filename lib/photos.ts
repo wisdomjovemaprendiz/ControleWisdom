@@ -123,6 +123,7 @@ export async function studentPhotoUrl(path: string): Promise<string | null> {
   }
 }
 export interface ReportPhoto {
+  format?: "PNG" | "JPEG";
   id: string;
   name: string;
   data: Uint8Array;
@@ -143,13 +144,19 @@ export async function photoForReport(
       canvas.height = 96;
       const ctx = canvas.getContext("2d");
       if (!ctx) return null;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(48, 48, 48, 0, Math.PI * 2);
+      ctx.clip();
       ctx.drawImage(bitmap, 0, 0, 96, 96);
+      ctx.restore();
       const blob = await new Promise<Blob | null>((r) =>
-        canvas.toBlob(r, "image/jpeg", 0.8),
+        canvas.toBlob(r, "image/png"),
       );
       return blob
         ? {
             id: student.id,
+            format: "PNG",
             name: studentDisplayName(student),
             data: new Uint8Array(await blob.arrayBuffer()),
           }

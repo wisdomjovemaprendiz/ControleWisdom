@@ -1,3 +1,4 @@
+import { canTeachIndividual } from "./individual";
 import type { Pedagogy, Profile, Store, SupportPlan } from "./domain";
 import { canAccess, today } from "./domain";
 export const CATALOGUE_VERSION = "wisdom-pedagogy-2026.11-v1";
@@ -544,6 +545,9 @@ export function pendingPedagogy(
         (profile.role !== "professor" ||
           store.classes.some(
             (c) => c.id === p.class_id && c.teacher_id === profile.id,
+          ) ||
+          store.students.some(
+            (s) => s.id === p.student_id && canTeachIndividual(profile, s),
           )),
     )
     .map((p) => ({

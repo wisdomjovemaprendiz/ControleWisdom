@@ -901,5 +901,231 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       await db.exec("select public.run_daily_analytics()");
     },
   );
+
+  await t.test(
+    "aulas individuais, checklist e auditoria preservam segurança e histórico",
+    async () => {
+      await db.exec(
+        "reset role;select set_config('request.jwt.claim.sub','',false)",
+      );
+      await db.exec(
+        readFileSync(
+          new URL(
+            "../supabase/011_individual_lifecycle_audit.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      await as(3);
+      await db.query(
+        "insert into public.students(id,unit_id,name,enrollment_mode,individual_hours,individual_duration_minutes,individual_days,individual_teacher_id) values($1,$2,'Aula Particular','individual',20,60,array[1,3],$3)",
+        [id(200), id(11), id(2)],
+      );
+      await assert.rejects(
+        db.query(
+          "update public.students set status='abandono',archive_reason='Desligamento' where id=$1",
+          [id(200)],
+        ),
+        /checklist/,
+      );
+      await as(2);
+      const lesson = {
+        id: id(201),
+        unit_id: id(11),
+        class_id: null,
+        student_id: id(200),
+        duration_minutes: 60,
+        teacher_id: id(2),
+        teacher: "Ana",
+        date: "2026-01-02",
+        topic: "Revisão individual",
+        closed: true,
+      };
+      const rows = [
+        {
+          id: id(202),
+          unit_id: id(11),
+          lesson_id: id(201),
+          student_id: id(200),
+          status: "falta",
+        },
+      ];
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify(lesson),
+        JSON.stringify(rows),
+      ]);
+      assert.equal(
+        (
+          await db.query("select * from public.attendance where lesson_id=$1", [
+            id(201),
+          ])
+        ).rows.length,
+        1,
+      );
+      await assert.rejects(
+        db.query("select public.save_lesson_attendance($1,$2)", [
+          JSON.stringify({ ...lesson, id: id(205), date: "2026-01-03" }),
+          JSON.stringify([
+            { ...rows[0], id: id(206), lesson_id: id(205), student_id: id(31) },
+          ]),
+        ]),
+        /Presença inválida/,
+      );
+      assert.equal(
+        (await db.query("select * from public.lessons where id=$1", [id(205)]))
+          .rows.length,
+        0,
+      );
+      await db.query("select public.save_pedagogical_record($1)", [
+        JSON.stringify({
+          id: id(203),
+          unit_id: id(11),
+          class_id: null,
+          student_id: id(200),
+          author_id: id(2),
+          date: "2026-01-02",
+          kind: "Intervenção",
+          skill: "Organização",
+          level: 2,
+          notes: "Precisa de apoio",
+          intervention: "Dividir as tarefas",
+          follow_up: "2026-01-09",
+          support_plan: {},
+        }),
+      ]);
+      await db.query(
+        "update public.offboarding_steps set label='Tentativa do professor'",
+      );
+      assert.equal(
+        (
+          await db.query(
+            "select * from public.offboarding_steps where label='Tentativa do professor'",
+          )
+        ).rows.length,
+        0,
+      );
+      await as(4);
+      await assert.rejects(
+        db.query("select public.save_lesson_attendance($1,$2)", [
+          JSON.stringify({ ...lesson, id: id(204), teacher_id: id(4) }),
+          JSON.stringify(rows),
+        ]),
+        /permissão/,
+      );
+      await as(3);
+      const steps = (
+        await db.query<{ id: string }>(
+          "select id from public.offboarding_steps where active",
+        )
+      ).rows.map((x) => ({ id: x.id, completed: true }));
+      await db.query(
+        "update public.students set status='abandono',archive_reason='Mudança de planos',offboarding=$2 where id=$1",
+        [id(200), JSON.stringify({ steps })],
+      );
+      const snapshot = (
+        await db.query<any>(
+          "select offboarding from public.students where id=$1",
+          [id(200)],
+        )
+      ).rows[0].offboarding;
+      assert.equal(snapshot.completed_by, id(3));
+      assert.ok(snapshot.steps[0].label);
+      await as(1);
+      await db.query(
+        "update public.offboarding_steps set label='Confirmou a saída do grupo de WhatsApp?'",
+      );
+      assert.equal(
+        (
+          await db.query<any>(
+            "select offboarding from public.students where id=$1",
+            [id(200)],
+          )
+        ).rows[0].offboarding.steps[0].label,
+        snapshot.steps[0].label,
+      );
+      const audit = (
+        await db.query<any>(
+          "select * from public.audit_log where entity_id=$1 and operation='UPDATE' order by id desc limit 1",
+          [id(200)],
+        )
+      ).rows[0];
+      assert.equal(audit.actor_id, id(3));
+      assert.equal(audit.before_data.status, "ativo");
+      assert.equal(audit.after_data.status, "abandono");
+      assert.ok(audit.actor_name);
+      await service();
+      await assert.rejects(
+        db.query(
+          "select public.manage_record($1,'students',$2,'archive','{}','Arquivamento')",
+          [id(1), id(200)],
+        ),
+        /checklist/,
+      );
+      const currentSteps = (
+        await db.query<{ id: string }>(
+          "select id from public.offboarding_steps where active",
+        )
+      ).rows.map((x) => ({ id: x.id, completed: true }));
+      await db.query(
+        "select public.manage_record($1,'students',$2,'archive',$3,'Arquivamento')",
+        [
+          id(1),
+          id(200),
+          JSON.stringify({ offboarding: { steps: currentSteps } }),
+        ],
+      );
+      await as(1);
+      const latest = (
+        await db.query<any>(
+          "select actor_id,before_data,after_data from public.audit_log where entity_id=$1 and operation='UPDATE' order by id desc limit 1",
+          [id(200)],
+        )
+      ).rows[0];
+      assert.equal(latest.actor_id, id(1));
+      assert.ok(latest.after_data.archived_at);
+      await db.query(
+        "insert into public.students(id,unit_id,name) values($1,$2,'Aluno sem histórico')",
+        [id(210), id(11)],
+      );
+      await db.query(
+        "insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values($1,$2,'Turma nova para transferência','Curso',$3,'Ana','Segunda',10)",
+        [id(220), id(11), id(2)],
+      );
+      await db.query("update public.students set class_id=$2 where id=$1", [
+        id(210),
+        id(220),
+      ]);
+      const transfer = (
+        await db.query<any>(
+          "select * from public.audit_log where entity_id=$1 and operation='UPDATE' order by id desc limit 1",
+          [id(210)],
+        )
+      ).rows[0];
+      assert.equal(transfer.before_data.class_id, null);
+      assert.equal(transfer.after_data.class_id, id(220));
+      assert.equal(transfer.actor_id, id(1));
+      await service();
+      await db.query("select public.manage_record($1,'students',$2,'delete')", [
+        id(1),
+        id(210),
+      ]);
+      await as(1);
+      const deletion = (
+        await db.query<any>(
+          "select * from public.audit_log where entity_id=$1 and operation='DELETE'",
+          [id(210)],
+        )
+      ).rows[0];
+      assert.equal(deletion.actor_id, id(1));
+      assert.equal(deletion.before_data.name, "Aluno sem histórico");
+      assert.equal(deletion.after_data, null);
+      await as(3);
+      assert.equal(
+        (await db.query("select * from public.audit_log")).rows.length,
+        0,
+      );
+    },
+  );
   await db.close();
 });

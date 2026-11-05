@@ -1,4 +1,5 @@
 "use client";
+import { studentPlacement } from "@/lib/individual";
 import { useState } from "react";
 import {
   Users,
@@ -192,10 +193,7 @@ export function SalesDashboard({
                 <StudentAvatar student={s} />
                 <span className="sales-student-identity">
                   <strong>{studentDisplayName(s)}</strong>
-                  <small>
-                    {store.classes.find((c) => c.id === s.class_id)?.name ||
-                      "Turma a definir"}
-                  </small>
+                  <small>{studentPlacement(store, s)}</small>
                 </span>
                 <span
                   className={`sales-student-status badge ${enrollmentStage(s) === "complete" ? "green" : "amber"}`}

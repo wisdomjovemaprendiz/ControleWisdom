@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -8,6 +8,12 @@ import {
   Search,
   X,
 } from "lucide-react";
+import {
+  OffboardingChecklist,
+  offboardingFromForm,
+} from "./offboarding-checklist";
+import { StudentPlacementFields } from "./student-placement-fields";
+import { INDIVIDUAL } from "@/lib/individual";
 import { supabase } from "@/lib/supabase";
 import type { Store, Student } from "@/lib/domain";
 import { labels, studentDisplayName } from "@/lib/domain";
@@ -29,6 +35,7 @@ export function RecordManager({
   initialTable?: RecordTable;
 }) {
   const [table, setTable] = useState<RecordTable>(initialTable),
+    [editStatus, setEditStatus] = useState(""),
     [query, setQuery] = useState(""),
     [state, setState] = useState("all"),
     [unit, setUnit] = useState("all"),
@@ -39,6 +46,9 @@ export function RecordManager({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
+  useEffect(() => {
+    setEditStatus(String(selection?.row.status || ""));
+  }, [selection]);
   const rows = store[table] as unknown as ManagedRecord[];
   function title(row: ManagedRecord, t: RecordTable = table): string {
     if (t === "students") return studentDisplayName(row as unknown as Student);
@@ -71,6 +81,28 @@ export function RecordManager({
         if (field.key === "enrollment_date" && value === "") continue;
         changes[field.key] = value;
       }
+    if (table === "students" && selection.action === "edit") {
+      const placement = String(data.get("class_id") || "");
+      changes.class_id = placement === INDIVIDUAL ? null : placement || null;
+      changes.enrollment_mode =
+        placement === INDIVIDUAL ? "individual" : "class";
+      changes.individual_hours =
+        placement === INDIVIDUAL
+          ? Number(data.get("individual_hours")) || null
+          : null;
+      changes.individual_duration_minutes =
+        placement === INDIVIDUAL
+          ? Number(data.get("individual_duration_minutes")) || null
+          : null;
+      changes.individual_days =
+        placement === INDIVIDUAL
+          ? data.getAll("individual_days").map(Number)
+          : [];
+      changes.individual_teacher_id =
+        placement === INDIVIDUAL
+          ? data.get("individual_teacher_id") || null
+          : null;
+    }
     try {
       const session = await supabase.auth.getSession();
       if (!session.data.session)
@@ -85,7 +117,10 @@ export function RecordManager({
           table,
           id: selection.row.id,
           action: selection.action,
-          changes,
+          changes:
+            table === "students"
+              ? { ...changes, offboarding: offboardingFromForm(data) }
+              : changes,
           reason: data.get("reason"),
           confirmation: data.get("confirmation"),
         }),
@@ -397,68 +432,110 @@ export function RecordManager({
                   {error}
                 </div>
               )}
+              {selection.action === "edit" && table === "students" && (
+                <StudentPlacementFields
+                  student={selection.row as unknown as Student}
+                  classes={store.classes.filter(
+                    (c) =>
+                      !c.archived_at && c.unit_id === selection.row.unit_id,
+                  )}
+                  teachers={store.profiles}
+                />
+              )}
               {selection.action === "edit" &&
-                recordFields[table].map((field) => (
-                  <label key={field.key}>
-                    {field.label}
-                    {field.type === "textarea" ? (
-                      <textarea
-                        name={field.key}
-                        defaultValue={String(selection.row[field.key] ?? "")}
-                        required={field.required}
-                      />
-                    ) : field.options || field.relation ? (
-                      <select
-                        name={field.key}
-                        defaultValue={String(selection.row[field.key] ?? "")}
-                        required={field.required}
-                      >
-                        {!field.required && field.relation && (
-                          <option value="">Não informado</option>
-                        )}
-                        {field.options?.map((o) => (
-                          <option key={o} value={o}>
-                            {o === "true"
-                              ? "Sim"
-                              : o === "false"
-                                ? "Não"
-                                : labels[o] || o}
-                          </option>
-                        ))}
-                        {field.relation &&
-                          (store[field.relation] as unknown as ManagedRecord[])
-                            .filter(
-                              (r) =>
-                                (r.id === selection.row[field.key] ||
-                                  (!r.archived_at &&
-                                    (!r.unit_id ||
-                                      r.unit_id === selection.row.unit_id))) &&
-                                (field.key !== "teacher_id" ||
-                                  ([
-                                    "admin",
-                                    "coordenacao",
-                                    "professor",
-                                  ].includes(String(r.role)) &&
-                                    r.active !== false)),
+                recordFields[table]
+                  .filter(
+                    (field) => table !== "students" || field.key !== "class_id",
+                  )
+                  .map((field) => (
+                    <label key={field.key}>
+                      {field.label}
+                      {field.type === "textarea" ? (
+                        <textarea
+                          name={field.key}
+                          onChange={
+                            field.key === "status"
+                              ? (e) => setEditStatus(e.target.value)
+                              : undefined
+                          }
+                          defaultValue={String(selection.row[field.key] ?? "")}
+                          required={field.required}
+                        />
+                      ) : field.options || field.relation ? (
+                        <select
+                          name={field.key}
+                          onChange={
+                            field.key === "status"
+                              ? (e) => setEditStatus(e.target.value)
+                              : undefined
+                          }
+                          defaultValue={String(selection.row[field.key] ?? "")}
+                          required={field.required}
+                        >
+                          {!field.required && field.relation && (
+                            <option value="">Não informado</option>
+                          )}
+                          {field.options?.map((o) => (
+                            <option key={o} value={o}>
+                              {o === "true"
+                                ? "Sim"
+                                : o === "false"
+                                  ? "Não"
+                                  : labels[o] || o}
+                            </option>
+                          ))}
+                          {field.relation &&
+                            (
+                              store[
+                                field.relation
+                              ] as unknown as ManagedRecord[]
                             )
-                            .map((r) => (
-                              <option key={r.id} value={r.id}>
-                                {title(r, field.relation)}
-                              </option>
-                            ))}
-                      </select>
-                    ) : (
-                      <input
-                        name={field.key}
-                        type={field.type || "text"}
-                        defaultValue={String(selection.row[field.key] ?? "")}
-                        required={field.required}
-                        min={field.type === "number" ? 1 : undefined}
-                        max={field.key === "level" ? 5 : undefined}
-                      />
-                    )}
-                  </label>
-                ))}
+                              .filter(
+                                (r) =>
+                                  (r.id === selection.row[field.key] ||
+                                    (!r.archived_at &&
+                                      (!r.unit_id ||
+                                        r.unit_id ===
+                                          selection.row.unit_id))) &&
+                                  (field.key !== "teacher_id" ||
+                                    ([
+                                      "admin",
+                                      "coordenacao",
+                                      "professor",
+                                    ].includes(String(r.role)) &&
+                                      r.active !== false)),
+                              )
+                              .map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {title(r, field.relation)}
+                                </option>
+                              ))}
+                        </select>
+                      ) : (
+                        <input
+                          name={field.key}
+                          onChange={
+                            field.key === "status"
+                              ? (e) => setEditStatus(e.target.value)
+                              : undefined
+                          }
+                          type={field.type || "text"}
+                          defaultValue={String(selection.row[field.key] ?? "")}
+                          required={field.required}
+                          min={field.type === "number" ? 1 : undefined}
+                          max={field.key === "level" ? 5 : undefined}
+                        />
+                      )}
+                    </label>
+                  ))}
+              {table === "students" &&
+                (selection.action === "archive" ||
+                  (selection.action === "edit" &&
+                    selection.row.status === "ativo" &&
+                    editStatus &&
+                    editStatus !== "ativo")) && (
+                  <OffboardingChecklist key={selection.row.id} />
+                )}
               {selection.action === "archive" && (
                 <>
                   <p>

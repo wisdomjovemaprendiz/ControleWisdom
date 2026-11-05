@@ -1,3 +1,9 @@
+import {
+  studentPlacement,
+  lessonPlacement,
+  individualMinutes,
+  weekdays,
+} from "./individual";
 export type Role =
   "admin" | "coordenacao" | "secretaria" | "professor" | "comercial";
 export type Status =
@@ -49,6 +55,18 @@ export interface Offering {
   courses: string;
 }
 export interface Student {
+  enrollment_mode?: "class" | "individual";
+  individual_hours?: number | null;
+  individual_days?: number[];
+  individual_duration_minutes?: number | null;
+  individual_teacher_id?: string | null;
+  offboarding?: {
+    steps?: { id: string; label?: string; completed: boolean }[];
+    completed_by?: string;
+    completed_by_name?: string;
+    completed_at?: string;
+  };
+
   registration_stage?: "pre_enrollment" | "pending" | "complete";
   completed_by?: string | null;
   completed_at?: string | null;
@@ -72,11 +90,13 @@ export interface Student {
   archive_reason: string;
 }
 export interface Lesson {
+  student_id?: string | null;
+  duration_minutes?: number | null;
   archived_at?: string | null;
   record_archive_reason?: string;
   id: string;
   unit_id: string;
-  class_id: string;
+  class_id: string | null;
   teacher_id: string;
   teacher: string;
   date: string;
@@ -115,7 +135,7 @@ export interface Pedagogy {
   record_archive_reason?: string;
   id: string;
   unit_id: string;
-  class_id: string;
+  class_id: string | null;
   student_id: string | null;
   author_id: string;
   date: string;
@@ -222,7 +242,6 @@ export function attendanceDescription(row: Attendance) {
   );
 }
 export function attendanceMessage(store: Store, lesson: Lesson) {
-  const group = store.classes.find((c) => c.id === lesson.class_id);
   const rows = store.attendance.filter((a) => a.lesson_id === lesson.id);
   const section = (status: AttendanceStatus, title: string, icon: string) => {
     const selected = rows.filter((a) => a.status === status);
@@ -238,7 +257,7 @@ export function attendanceMessage(store: Store, lesson: Lesson) {
         : "• Nenhum registro")
     );
   };
-  return `*WISDOM CURSOS*\n_Acompanhamento da aula_\n━━━━━━━━━━━━━━━━━━\n*Turma:* ${group?.name || ""}\n*Data:* ${displayDate(lesson.date)}\n*Professor(a):* ${lesson.teacher}\n\n*Conteúdo trabalhado*\n${lesson.topic}\n\n${section("presente", "PRESENTES", "✅")}\n\n${section("atrasado", "ATRASADOS", "🕒")}\n\n${section("falta", "AUSENTES", "❌")}\n\n${section("justificado", "FALTAS JUSTIFICADAS", "📋")}\n━━━━━━━━━━━━━━━━━━\n_Equipe Wisdom • Aprender transforma o futuro._`;
+  return `*WISDOM CURSOS*\n_Acompanhamento da aula_\n━━━━━━━━━━━━━━━━━━\n${lesson.student_id ? "*Modalidade:* " : "*Turma:* "}${lessonPlacement(store, lesson)}\n*Data:* ${displayDate(lesson.date)}\n*Professor(a):* ${lesson.teacher}\n\n*Conteúdo trabalhado*\n${lesson.topic}\n\n${section("presente", "PRESENTES", "✅")}\n\n${section("atrasado", "ATRASADOS", "🕒")}\n\n${section("falta", "AUSENTES", "❌")}\n\n${section("justificado", "FALTAS JUSTIFICADAS", "📋")}\n━━━━━━━━━━━━━━━━━━\n_Equipe Wisdom • Aprender transforma o futuro._`;
 }
 export function frequencyReportLines(
   store: Store,
@@ -253,6 +272,7 @@ export function frequencyReportLines(
       (s) =>
         (unitId === "all" || s.unit_id === unitId) &&
         (classId === "all" ||
+          (classId === "individual" && s.enrollment_mode === "individual") ||
           s.class_id === classId ||
           attendance.some((a) => a.student_id === s.id)),
     )
@@ -261,14 +281,14 @@ export function frequencyReportLines(
       const label =
         store.classes.find(
           (c) => c.id === (classId === "all" ? s.class_id : classId),
-        )?.name || (s.class_id ? "Turma não localizada" : "Sem turma");
+        )?.name || studentPlacement(store, s);
       return `${studentDisplayName(s)} | ${label} | Presenças: ${rows.filter((a) => a.status === "presente").length} | Faltas: ${rows.filter((a) => a.status === "falta").length} | Atrasos: ${rows.filter((a) => a.status === "atrasado").length} | Justificadas: ${rows.filter((a) => a.status === "justificado").length}`;
     });
 }
 export function attendanceReportLines(store: Store, lesson: Lesson) {
   return [
     `Data: ${displayDate(lesson.date)}`,
-    `Turma: ${store.classes.find((c) => c.id === lesson.class_id)?.name || ""}`,
+    `Turma: ${lessonPlacement(store, lesson)}`,
     `Professor(a): ${lesson.teacher}`,
     `Conteúdo: ${lesson.topic}`,
     ...store.attendance
@@ -292,7 +312,11 @@ export function evolutionMessage(store: Store, student: Student) {
     .sort(comparePedagogy);
   const latest = records[0];
   const f = frequency(store, student.id);
-  return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${studentDisplayName(student)}\nTurma: ${store.classes.find((c) => c.id === student.class_id)?.name || "—"}\nFrequência: ${f === null ? "Sem registros" : f + "%"}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}\n\nEquipe Wisdom`;
+  const individualDetails =
+    student.enrollment_mode === "individual"
+      ? `\nCarga horária realizada: ${(individualMinutes(store, student.id) / 60).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} h${student.individual_hours ? ` de ${student.individual_hours} h` : ""}\nDias: ${student.individual_days?.map((d) => weekdays[d]).join(", ") || "A definir"}\nDuração por aula: ${student.individual_duration_minutes ? `${student.individual_duration_minutes} minutos` : "A definir"}`
+      : "";
+  return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${studentDisplayName(student)}\n${student.enrollment_mode === "individual" ? "Modalidade" : "Turma"}: ${studentPlacement(store, student)}\nFrequência: ${f === null ? "Sem registros" : f + "%"}${individualDetails}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}\n\nEquipe Wisdom`;
 }
 export function whatsappUrl(phone: string, message: string) {
   const number = phone.replace(/\D/g, "");

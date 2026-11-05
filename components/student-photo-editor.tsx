@@ -12,7 +12,7 @@ import {
   type PhotoCrop,
 } from "@/lib/photos";
 import { CameraCapture } from "./camera-capture";
-import { StudentAvatar } from "./student-avatar";
+import { StudentAvatar, PhotoZoom } from "./student-avatar";
 export function StudentPhotoEditor({
   student,
   onChange,
@@ -22,6 +22,7 @@ export function StudentPhotoEditor({
   onChange: (photo: CompressedPhoto | null, remove: boolean) => void;
   onBusy: (busy: boolean) => void;
 }) {
+  const [previewZoom, setPreviewZoom] = useState(0);
   const [preview, setPreview] = useState(""),
     [error, setError] = useState(""),
     [removed, setRemoved] = useState(false),
@@ -110,9 +111,26 @@ export function StudentPhotoEditor({
   }
   return (
     <div className="student-photo-editor">
+      {preview && previewZoom > 0 && (
+        <PhotoZoom
+          url={preview}
+          student={student || { id: "novo", name: "Foto do aluno" }}
+          size={previewZoom}
+          onClose={() => setPreviewZoom(0)}
+        />
+      )}
       <div className="photo-editor-preview">
         {preview ? (
-          <img src={preview} alt="Prévia da foto comprimida" />
+          <button
+            type="button"
+            className="photo-preview-button"
+            aria-label="Ampliar prévia da foto"
+            onClick={(e) =>
+              setPreviewZoom(e.currentTarget.getBoundingClientRect().width)
+            }
+          >
+            <img src={preview} alt="Prévia da foto comprimida" />
+          </button>
         ) : student && !removed ? (
           <StudentAvatar student={student} size={76} />
         ) : (

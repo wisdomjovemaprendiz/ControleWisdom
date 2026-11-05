@@ -155,7 +155,11 @@ export function operationalStore(source: Store): Store {
     studentIds = visible(students);
   const lessons = source.lessons.filter(
       (r) =>
-        !r.archived_at && classIds.has(r.class_id) && unitIds.has(r.unit_id),
+        !r.archived_at &&
+        (r.class_id
+          ? classIds.has(r.class_id)
+          : !!r.student_id && studentIds.has(r.student_id)) &&
+        unitIds.has(r.unit_id),
     ),
     lessonIds = visible(lessons);
   return {
@@ -176,7 +180,9 @@ export function operationalStore(source: Store): Store {
     pedagogy: source.pedagogy.filter(
       (r) =>
         !r.archived_at &&
-        classIds.has(r.class_id) &&
+        (r.class_id
+          ? classIds.has(r.class_id)
+          : !!r.student_id && studentIds.has(r.student_id)) &&
         (!r.student_id || studentIds.has(r.student_id)) &&
         unitIds.has(r.unit_id),
     ),
