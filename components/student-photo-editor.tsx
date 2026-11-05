@@ -22,7 +22,7 @@ export function StudentPhotoEditor({
   onChange: (photo: CompressedPhoto | null, remove: boolean) => void;
   onBusy: (busy: boolean) => void;
 }) {
-  const [previewZoom, setPreviewZoom] = useState(0);
+  const [previewZoom, setPreviewZoom] = useState<HTMLElement | null>(null);
   const [preview, setPreview] = useState(""),
     [error, setError] = useState(""),
     [removed, setRemoved] = useState(false),
@@ -111,12 +111,12 @@ export function StudentPhotoEditor({
   }
   return (
     <div className="student-photo-editor">
-      {preview && previewZoom > 0 && (
+      {preview && previewZoom && (
         <PhotoZoom
           url={preview}
           student={student || { id: "novo", name: "Foto do aluno" }}
-          size={previewZoom}
-          onClose={() => setPreviewZoom(0)}
+          anchor={previewZoom}
+          onClose={() => setPreviewZoom(null)}
         />
       )}
       <div className="photo-editor-preview">
@@ -125,9 +125,7 @@ export function StudentPhotoEditor({
             type="button"
             className="photo-preview-button"
             aria-label="Ampliar prévia da foto"
-            onClick={(e) =>
-              setPreviewZoom(e.currentTarget.getBoundingClientRect().width)
-            }
+            onClick={(e) => setPreviewZoom(e.currentTarget)}
           >
             <img src={preview} alt="Prévia da foto comprimida" />
           </button>

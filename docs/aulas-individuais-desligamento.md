@@ -12,7 +12,7 @@ Os mesmos alertas de ausência, aniversário, contato e acompanhamento pedagógi
 
 ## Identificação
 
-As fotos continuam privadas, comprimidas e com enquadramento ajustável. A exibição passa a ser circular, inclusive nas fotos dos relatórios PDF. Clicar ou usar Enter/Espaço na foto abre a ampliação de 2×. Escape ou o botão Fechar retorna à tela sem executar a ação da linha do aluno.
+As fotos continuam privadas, comprimidas e com enquadramento ajustável. A exibição passa a ser circular, inclusive nas fotos dos relatórios PDF. Clicar ou usar Enter/Espaço amplia a foto em 2× sobre a própria miniatura, sem modal, textos ou fundo escurecido. Clicar em qualquer ponto da tela, inclusive na foto, ou pressionar Escape fecha a ampliação sem executar a ação da linha do aluno.
 
 ## Checklist
 

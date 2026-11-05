@@ -1419,18 +1419,49 @@ test("foto redonda amplia duas vezes sem abrir a ficha do aluno", async ({
   );
   const box = await avatar.boundingBox();
   await avatar.click();
-  const zoom = page.getByRole("dialog", {
+  const zoom = page.getByRole("img", {
     name: `Foto de ${student.name} ampliada 2 vezes`,
     exact: true,
   });
   await expect(zoom).toBeVisible();
-  const image = await zoom
-    .getByRole("img", { name: student.name, exact: true })
-    .boundingBox();
+  const image = await zoom.boundingBox();
   expect(image!.width).toBeCloseTo(box!.width * 2, 0);
-  await expect(
-    page.getByRole("dialog", { name: "Ficha do aluno", exact: true }),
-  ).toHaveCount(0);
+  expect(image!.x + image!.width / 2).toBeCloseTo(box!.x + box!.width / 2, 0);
+  expect(image!.y + image!.height / 2).toBeCloseTo(box!.y + box!.height / 2, 0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await page.locator(".photo-zoom-overlay").textContent()).toBe("");
+  expect(
+    await page
+      .locator(".photo-zoom-overlay")
+      .evaluate((el) => getComputedStyle(el).backgroundColor),
+  ).toBe("rgba(0, 0, 0, 0)");
+  await zoom.click();
+  await expect(zoom).toHaveCount(0);
+  await avatar.click();
+  await expect(zoom).toBeVisible();
+  await page.mouse.click(5, 5);
+  await expect(zoom).toHaveCount(0);
+  await avatar.focus();
+  await page.keyboard.press("Enter");
+  await expect(zoom).toBeVisible();
   await page.keyboard.press("Escape");
+  await expect(zoom).toHaveCount(0);
+  await expect(avatar).toBeFocused();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await avatar.scrollIntoViewIfNeeded();
+  const mobileBox = await avatar.boundingBox();
+  await avatar.click();
+  await expect(zoom).toBeVisible();
+  const mobileImage = await zoom.boundingBox();
+  expect(mobileImage!.width).toBeCloseTo(mobileBox!.width * 2, 0);
+  expect(mobileImage!.x + mobileImage!.width / 2).toBeCloseTo(
+    mobileBox!.x + mobileBox!.width / 2,
+    0,
+  );
+  expect(mobileImage!.y + mobileImage!.height / 2).toBeCloseTo(
+    mobileBox!.y + mobileBox!.height / 2,
+    0,
+  );
+  await page.mouse.click(5, 5);
   await expect(zoom).toHaveCount(0);
 });

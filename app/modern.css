@@ -4200,36 +4200,14 @@ button.secondary {
   position: fixed;
   inset: 0;
   z-index: 250;
-  background: #102238a8;
-  display: grid;
-  place-items: center;
-  padding: 20px;
+  background: transparent;
+  cursor: zoom-out;
 }
-.photo-zoom-dialog {
-  background: white;
-  border-radius: 18px;
-  padding: 24px;
-  max-width: 100%;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 12px;
-  color: #23364f;
-}
-.photo-zoom-dialog > button {
-  align-self: flex-end;
-  min-width: 44px;
-  min-height: 44px;
-}
-.photo-zoom-dialog img {
+.photo-zoom-image {
+  position: absolute;
+  display: block;
   border-radius: 50%;
   object-fit: cover;
-  max-width: 75vw;
-  max-height: 65dvh;
-}
-.photo-zoom-dialog strong {
-  overflow-wrap: anywhere;
-  text-align: center;
 }
 .individual-fields,
 .offboarding-checklist,

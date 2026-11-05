@@ -1,76 +1,93 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
 import type { Student } from "@/lib/domain";
 import { studentDisplayName } from "@/lib/domain";
 import { studentPhotoUrl } from "@/lib/photos";
 export function PhotoZoom({
   url,
   student,
-  size,
+  anchor,
   onClose,
 }: {
   url: string;
   student: Pick<Student, "id" | "name">;
-  size: number;
+  anchor: HTMLElement;
   onClose: () => void;
 }) {
-  const close = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    close.current?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
+  const [bounds, setBounds] = useState(() => anchor.getBoundingClientRect());
+  useLayoutEffect(() => {
+    const reposition = () => {
+      const next = anchor.getBoundingClientRect();
+      if (
+        !anchor.isConnected ||
+        next.bottom <= 0 ||
+        next.top >= innerHeight ||
+        next.right <= 0 ||
+        next.left >= innerWidth
+      ) {
         onClose();
+        return;
       }
-      if (e.key === "Tab") {
-        e.preventDefault();
-        close.current?.focus();
-      }
+      setBounds((previous) =>
+        previous.x === next.x &&
+        previous.y === next.y &&
+        previous.width === next.width &&
+        previous.height === next.height
+          ? previous
+          : next,
+      );
+    };
+    reposition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [anchor, onClose]);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopImmediatePropagation();
+        onClose();
+      } else if (event.key === "Tab") onClose();
     };
     document.addEventListener("keydown", key, true);
-    return () => {
-      document.removeEventListener("keydown", key, true);
-      document.body.style.overflow = overflow;
-      previous?.focus();
-    };
+    return () => document.removeEventListener("keydown", key, true);
   }, [onClose]);
   return createPortal(
     <div
       className="photo-zoom-overlay"
-      onClick={(e) => {
-        e.stopPropagation();
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
         onClose();
       }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Foto de ${studentDisplayName(student)} ampliada 2 vezes`}
-        className="photo-zoom-dialog"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          ref={close}
-          type="button"
-          className="icon-button"
-          aria-label="Fechar foto ampliada"
-          onClick={onClose}
-        >
-          <X size={20} />
-        </button>
-        <img
-          src={url}
-          alt={studentDisplayName(student)}
-          style={{ width: size * 2, height: size * 2 }}
-        />
-        <strong>{studentDisplayName(student)}</strong>
-        <small>Foto ampliada · 2×</small>
-      </div>
+      <img
+        className="photo-zoom-image"
+        src={url}
+        alt={`Foto de ${studentDisplayName(student)} ampliada 2 vezes`}
+        style={{
+          width: bounds.width * 2,
+          height: bounds.height * 2,
+          left: Math.max(
+            0,
+            Math.min(
+              bounds.left - bounds.width / 2,
+              window.innerWidth - bounds.width * 2,
+            ),
+          ),
+          top: Math.max(
+            0,
+            Math.min(
+              bounds.top - bounds.height / 2,
+              window.innerHeight - bounds.height * 2,
+            ),
+          ),
+        }}
+      />
     </div>,
     document.body,
   );
@@ -83,12 +100,11 @@ export function StudentAvatar({
   size?: number;
 }) {
   const [url, setUrl] = useState<string | null>(null),
-    [zoom, setZoom] = useState(false),
-    [zoomSize, setZoomSize] = useState(size);
+    [zoom, setZoom] = useState<HTMLElement | null>(null);
   useEffect(() => {
     let current = true;
     setUrl(null);
-    setZoom(false);
+    setZoom(null);
     const path = student.photo_path;
     if (!path) return;
     const refresh = () =>
@@ -107,8 +123,7 @@ export function StudentAvatar({
     e.preventDefault();
     e.stopPropagation();
     (e.currentTarget as HTMLElement).focus();
-    setZoomSize(e.currentTarget.getBoundingClientRect().width);
-    setZoom(true);
+    setZoom(e.currentTarget as HTMLElement);
   };
   return (
     <>
@@ -132,7 +147,7 @@ export function StudentAvatar({
             alt=""
             onError={() => {
               setUrl(null);
-              setZoom(false);
+              setZoom(null);
             }}
           />
         ) : (
@@ -148,8 +163,8 @@ export function StudentAvatar({
         <PhotoZoom
           url={url}
           student={student}
-          size={zoomSize}
-          onClose={() => setZoom(false)}
+          anchor={zoom}
+          onClose={() => setZoom(null)}
         />
       )}
     </>
