@@ -55,6 +55,7 @@ export function FollowUpCenter({
             ["all", "Todos"],
             ["absence", "Faltas"],
             ["registration", "Cadastro"],
+            ["enrollment", "Pré-matrículas"],
             ["contact", "Retornos"],
             ["pedagogy", "Intervenções"],
           ].map(([key, label]) => (
@@ -89,7 +90,7 @@ export function FollowUpCenter({
               <span>
                 {task.kind === "absence"
                   ? "FREQUÊNCIA"
-                  : task.kind === "registration"
+                  : task.kind === "registration" || task.kind === "enrollment"
                     ? "CADASTRO"
                     : task.kind === "contact"
                       ? "CONTATO"
@@ -118,13 +119,17 @@ export function FollowUpCenter({
                       store.pedagogy.find((p) => p.id === task.pedagogy_id),
                     )
                   : onAction(
-                      task.kind === "registration" ? "student" : "contact",
+                      task.kind === "registration" || task.kind === "enrollment"
+                        ? "student"
+                        : "contact",
                       task.student,
                     )
               }
             >
-              {task.kind === "registration"
-                ? "Completar cadastro"
+              {task.kind === "registration" || task.kind === "enrollment"
+                ? task.kind === "enrollment"
+                  ? "Concluir pré-matrícula"
+                  : "Completar cadastro"
                 : task.kind === "pedagogy"
                   ? "Registrar evolução"
                   : "Registrar contato"}

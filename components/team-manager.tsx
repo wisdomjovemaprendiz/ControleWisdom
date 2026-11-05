@@ -244,6 +244,7 @@ export function TeamManager({
                         defaultValue={selected?.role || "professor"}
                       >
                         {[
+                          "comercial",
                           "professor",
                           "secretaria",
                           "coordenacao",

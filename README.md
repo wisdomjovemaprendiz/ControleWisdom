@@ -24,9 +24,9 @@ npm run admin:bootstrap
 npm run dev
 ```
 
-`db:provision` aplica as migrações 001 a 009, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
+`db:provision` aplica as migrações 001 a 010, registra as versões aplicadas e desativa inscrições públicas no Supabase Auth. Não apaga alunos. Recusa um esquema parcial ou existente sem registro. Para um banco que já tenha recebido integralmente 001/002, revise as migrações anteriores e use `npm run db:provision -- --adopt-existing`; essa opção adota a base existente e aplica as restantes. Não reexecute 001 manualmente em um banco existente. Em ambientes com proxy HTTP, use `NODE_USE_ENV_PROXY=1` nesses comandos.
 
-Como alternativa ao provisionador, em um projeto vazio execute os nove arquivos `supabase/00*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
+Como alternativa ao provisionador, em um projeto vazio execute os dez arquivos `supabase/0*.sql`, em ordem, no SQL Editor e desative novos cadastros públicos em Authentication. Execute depois o bootstrap com a chave de servidor configurada.
 
 `admin:bootstrap` cria o login **admin**, na **Unidade Principal**, com troca obrigatória da senha no primeiro acesso. Não cria outro administrador se já existir um. É possível definir previamente `WISDOM_BOOTSTRAP_ADMIN_LOGIN` e `WISDOM_BOOTSTRAP_UNIT_NAME`. A senha vem exclusivamente do campo seguro; `1710` não é aceita porque o Supabase exige pelo menos seis caracteres. Não existe senha padrão embutida no código.
 
@@ -120,3 +120,11 @@ Em matrícula e edição do aluno, **Usar câmera** abre a câmera do celular ou
 Nenhum campo preenchido pelo usuário é obrigatório no cadastro do aluno. Pode salvar nome, turma, curso e contatos vazios e completar depois. O banco mantém unidade, identificador, autoria e data de cadastro gerados pelo sistema. Sem nome, a interface mostra `Cadastro ABC123`, usando parte do identificador; esse texto não é gravado como nome. Sem turma, o aluno aparece no cadastro e nas pendências, mas não entra em uma chamada até ser vinculado. Formatos de dados efetivamente informados, vagas e isolamento por unidade continuam validados.
 
 Na chamada, marcar **Atrasado** mostra horário de chegada opcional; **Justificado** mostra motivo opcional. Esses dados são salvos com a chamada e aparecem no resumo de WhatsApp, PDF da aula e histórico do aluno. Alterar apenas o horário ou motivo exige salvar novamente antes de compartilhar. Trocar de situação limpa a informação que não se aplica. Chamadas antigas sem esses campos continuam funcionando. A migração `009_camera_attendance_optional_students.sql` aplica essas mudanças preservando os registros existentes.
+
+## Comercial e pré-matrículas
+
+O perfil **Comercial** possui mesa de vendas com vagas, ocupação, prioridades da secretaria, suas matrículas e alertas de faltas. Trabalha apenas na própria unidade, registra pré-matrícula com foto/câmera, dados básicos e turma, e encaminha a conferência para a secretaria. A secretaria recebe o alerta na Central de atenção e sinaliza a conclusão no formulário. Turmas permitem abertura/fechamento de matrículas, prioridade de 1ª a 3ª opção, link de grupo e imagem opcional do QR code. Após a matrícula, o Comercial apresenta o QR e prepara convites diferentes para aluno e responsável.
+
+O administrador cria o usuário com papel **Comercial** em Equipe e acesso. Aplique `010_commercial_enrollment.sql` pelo provisionador antes de disponibilizar a versão. As restrições de unidade, autoria, turma aberta, vaga e conferência são aplicadas no PostgreSQL. O Comercial não tem acesso a registros pedagógicos. A ficha foi reorganizada com cabeçalho compacto e espaço proporcional para as abas.
+
+Fluxos e permissões estão em [docs/modulo-comercial.md](docs/modulo-comercial.md).

@@ -40,15 +40,13 @@ export async function POST(request: Request) {
           409,
           "Não foi possível excluir. O usuário pode ter turmas ou registros vinculados, ou ser o último administrador. Transfira os vínculos ou arquive a conta.",
         );
-      const logged = await client
-        .from("audit_log")
-        .insert({
-          actor_id: profile.id,
-          unit_id: target.unit_id,
-          entity: "profiles",
-          entity_id: id,
-          operation: "MANAGE_DELETE",
-        });
+      const logged = await client.from("audit_log").insert({
+        actor_id: profile.id,
+        unit_id: target.unit_id,
+        entity: "profiles",
+        entity_id: id,
+        operation: "MANAGE_DELETE",
+      });
       if (logged.error) console.error("USER_DELETE_AUDIT_FAILED");
     } else {
       const result = await client.rpc("manage_record", {
@@ -84,6 +82,24 @@ export async function POST(request: Request) {
               ok: true,
               warning:
                 "Aluno excluído. A limpeza da foto no armazenamento ficou pendente.",
+            },
+            { headers: { "Cache-Control": "no-store" } },
+          );
+      }
+      if (
+        table === "classes" &&
+        action === "delete" &&
+        result.data?.whatsapp_qr_path
+      ) {
+        const removed = await client.storage
+          .from("class-qr-codes")
+          .remove([result.data.whatsapp_qr_path]);
+        if (removed.error)
+          return Response.json(
+            {
+              ok: true,
+              warning:
+                "Turma excluída. A limpeza da imagem do QR code ficou pendente.",
             },
             { headers: { "Cache-Control": "no-store" } },
           );

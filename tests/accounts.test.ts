@@ -88,7 +88,7 @@ test("login usa nome de usuário e não exige e-mail real; senha com quatro cara
   assert.equal(validPassword("UmaSenhaInicial123"), true);
 });
 test("API valida o token no Auth e rejeita coordenação, professor, sessão inválida e usuário desativado", async () => {
-  for (const role of ["coordenacao", "professor", "secretaria"]) {
+  for (const role of ["coordenacao", "professor", "secretaria", "comercial"]) {
     const { client } = fakeClient(role);
     await assert.rejects(authorizedProfile(request("valid-token"), client), {
       status: 403,

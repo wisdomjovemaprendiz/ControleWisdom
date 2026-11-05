@@ -447,7 +447,8 @@ export function OperationsBoard({
                     <span>
                       {task.kind === "absence"
                         ? "FREQUÊNCIA"
-                        : task.kind === "registration"
+                        : task.kind === "registration" ||
+                            task.kind === "enrollment"
                           ? "SECRETARIA"
                           : task.kind === "contact"
                             ? "RESPONSÁVEL"
@@ -467,7 +468,7 @@ export function OperationsBoard({
                   <button
                     className="task-action"
                     onClick={() =>
-                      task.kind === "registration"
+                      task.kind === "registration" || task.kind === "enrollment"
                         ? onAction("student", task.student)
                         : task.kind === "pedagogy"
                           ? onAction(
@@ -477,7 +478,7 @@ export function OperationsBoard({
                           : onAction("contact", task.student)
                     }
                   >
-                    {task.kind === "registration"
+                    {task.kind === "registration" || task.kind === "enrollment"
                       ? "Completar cadastro"
                       : task.kind === "pedagogy"
                         ? "Abrir acompanhamento"

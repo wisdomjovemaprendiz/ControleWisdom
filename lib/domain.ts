@@ -1,4 +1,5 @@
-export type Role = "admin" | "coordenacao" | "secretaria" | "professor";
+export type Role =
+  "admin" | "coordenacao" | "secretaria" | "professor" | "comercial";
 export type Status =
   "ativo" | "conclusao" | "inadimplencia" | "abandono" | "cancelamento";
 export type AttendanceStatus =
@@ -22,6 +23,9 @@ export interface Profile {
   unit_id: string;
 }
 export interface CourseClass {
+  enrollment_open?: boolean;
+  enrollment_priority?: number;
+  whatsapp_qr_path?: string | null;
   archived_at?: string | null;
   record_archive_reason?: string;
   id: string;
@@ -45,6 +49,9 @@ export interface Offering {
   courses: string;
 }
 export interface Student {
+  registration_stage?: "pre_enrollment" | "pending" | "complete";
+  completed_by?: string | null;
+  completed_at?: string | null;
   archived_at?: string | null;
   record_archive_reason?: string;
   photo_path?: string | null;
@@ -144,6 +151,10 @@ export interface Store {
 }
 export const labels: Record<string, string> = {
   admin: "Administrador",
+  comercial: "Comercial",
+  pre_enrollment: "Pré-matrícula",
+  pending: "Em conferência",
+  complete: "Cadastro concluído",
   ativo: "Ativo",
   conclusao: "Conclusão",
   inadimplencia: "Inadimplência",

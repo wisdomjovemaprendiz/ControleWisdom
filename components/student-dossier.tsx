@@ -20,6 +20,9 @@ export function StudentDossier({
   onEdit,
   onMessage,
   onPdf,
+  canViewPedagogy = true,
+  canEdit = true,
+  onGroup,
 }: {
   student: Student;
   store: Store;
@@ -27,6 +30,9 @@ export function StudentDossier({
   onEdit: () => void;
   onMessage: () => void;
   onPdf: () => void;
+  canViewPedagogy?: boolean;
+  canEdit?: boolean;
+  onGroup?: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -104,7 +110,7 @@ export function StudentDossier({
         </header>
         <div className="dossier-identity">
           <div className="dossier-photo">
-            <StudentAvatar student={s} size={68} />
+            <StudentAvatar student={s} size={52} />
           </div>
           <span
             className={`attendance-state ${s.status === "ativo" ? "done" : "pending"}`}
@@ -145,22 +151,28 @@ export function StudentDossier({
             ["attendance", "Frequência"],
             ["pedagogy", "Pedagógico"],
             ["contacts", "Contatos"],
-          ].map(([key, name]) => (
-            <button
-              role="tab"
-              key={key}
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-            >
-              {name}
-            </button>
-          ))}
+          ]
+            .filter(([key]) => key !== "pedagogy" || canViewPedagogy)
+            .map(([key, name]) => (
+              <button
+                role="tab"
+                key={key}
+                aria-selected={tab === key}
+                onClick={() => setTab(key)}
+              >
+                {name}
+              </button>
+            ))}
         </div>
         <div className="dossier-content" role="tabpanel">
           {tab === "summary" && (
             <>
               <dl className="student-details">
                 {[
+                  [
+                    "Etapa cadastral",
+                    labels[s.registration_stage || "complete"],
+                  ],
                   [
                     "Formação contratada",
                     store.offerings.find((o) => o.id === s.offering_id)?.name,
@@ -287,15 +299,24 @@ export function StudentDossier({
           )}
         </div>
         <footer>
-          <button className="secondary" onClick={onEdit}>
+          <button className="secondary" onClick={onEdit} disabled={!canEdit}>
             <Pencil size={15} /> Editar matrícula
           </button>
-          <button className="secondary" onClick={onPdf}>
-            <Download size={15} /> PDF
-          </button>
-          <button className="primary" onClick={onMessage}>
-            <MessageCircle size={16} /> Evolução ao responsável
-          </button>
+          {onGroup && (
+            <button className="secondary" onClick={onGroup}>
+              Grupo da turma
+            </button>
+          )}
+          {canViewPedagogy && (
+            <button className="secondary" onClick={onPdf}>
+              <Download size={15} /> PDF
+            </button>
+          )}
+          {canViewPedagogy && (
+            <button className="primary" onClick={onMessage}>
+              <MessageCircle size={16} /> Evolução ao responsável
+            </button>
+          )}
         </footer>
       </section>
     </div>

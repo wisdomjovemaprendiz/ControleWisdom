@@ -731,5 +731,175 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       );
     },
   );
+  await t.test(
+    "comercial só vende na própria unidade, sem acesso pedagógico; secretaria conclui",
+    async () => {
+      await db.exec("reset role");
+      await db.exec(
+        readFileSync(
+          new URL("../supabase/010_commercial_enrollment.sql", import.meta.url),
+          "utf8",
+        ),
+      );
+      await db.exec(
+        `insert into auth.users(id) values('${id(120)}'),('${id(121)}'),('${id(124)}');insert into public.profiles(id,name,username,role,unit_id) values('${id(120)}','Comercial Centro','sales.centro','comercial','${id(11)}'),('${id(121)}','Comercial Vila','sales.vila','comercial','${id(12)}');`,
+      );
+      await as(120);
+      await db.query(
+        "insert into public.students(id,unit_id,class_id,name,guardian,phone,guardian_phone,registration_stage) values($1,$2,$3,'Nova venda','Responsável','5511999999999','5511888888888','complete')",
+        [id(122), id(11), id(21)],
+      );
+      const pre = (
+        await db.query<{ registration_stage: string; created_by: string }>(
+          "select registration_stage,created_by from public.students where id=$1",
+          [id(122)],
+        )
+      ).rows[0];
+      assert.equal(pre.registration_stage, "pre_enrollment");
+      assert.equal(pre.created_by, id(120));
+      assert.equal(
+        (await db.query("select id from public.pedagogy")).rows.length,
+        0,
+      );
+      assert.equal(
+        (
+          await db.query("select id from public.students where unit_id=$1", [
+            id(12),
+          ])
+        ).rows.length,
+        0,
+      );
+      await assert.rejects(
+        db.query(
+          "insert into public.students(id,unit_id,class_id) values($1,$2,$3)",
+          [id(123), id(12), id(22)],
+        ),
+        /row-level security/,
+      );
+      await assert.rejects(
+        db.query(
+          "update public.students set registration_stage='complete' where id=$1",
+          [id(122)],
+        ),
+        /conferência/,
+      );
+      await assert.rejects(
+        db.query(
+          "update public.students set birth_date='2008-01-01' where id=$1",
+          [id(122)],
+        ),
+        /conferência/,
+      );
+      await assert.rejects(
+        db.query(
+          "update public.students set phone='5511777777777' where id=$1",
+          [id(31)],
+        ),
+        /próprias pré-matrículas/,
+      );
+      await assert.rejects(
+        db.query(
+          "insert into storage.objects(bucket_id,name) values('class-qr-codes',$1)",
+          [`${id(11)}/${id(21)}/${id(126)}.png`],
+        ),
+        /row-level security/,
+      );
+      await db.query(
+        "update public.classes set enrollment_open=false where id=$1",
+        [id(21)],
+      );
+      assert.equal(
+        (
+          await db.query<{ enrollment_open: boolean }>(
+            "select enrollment_open from public.classes where id=$1",
+            [id(21)],
+          )
+        ).rows[0].enrollment_open,
+        true,
+      );
+      await as(3);
+      await db.query(
+        "update public.classes set enrollment_open=false,enrollment_priority=1,whatsapp='https://chat.whatsapp.com/ValidInvite123456' where id=$1",
+        [id(21)],
+      );
+      await db.query(
+        "insert into storage.objects(bucket_id,name) values('class-qr-codes',$1)",
+        [`${id(11)}/${id(21)}/${id(126)}.png`],
+      );
+      await db.query(
+        "update public.classes set whatsapp_qr_path=$1 where id=$2",
+        [`${id(11)}/${id(21)}/${id(126)}.png`, id(21)],
+      );
+      await db.query(
+        "update public.classes set whatsapp='https://chat.whatsapp.com/NewInvite12345678' where id=$1",
+        [id(21)],
+      );
+      assert.equal(
+        (
+          await db.query<{ whatsapp_qr_path: string | null }>(
+            "select whatsapp_qr_path from public.classes where id=$1",
+            [id(21)],
+          )
+        ).rows[0].whatsapp_qr_path,
+        null,
+      );
+      await as(120);
+      await assert.rejects(
+        db.query(
+          "insert into public.students(id,unit_id,class_id) values($1,$2,$3)",
+          [id(125), id(11), id(21)],
+        ),
+        /não está aberta/,
+      );
+      await db.query(
+        "update public.students set phone='5511777777777' where id=$1",
+        [id(122)],
+      );
+      assert.equal(
+        (
+          await db.query(
+            "select id from storage.objects where bucket_id='class-qr-codes'",
+          )
+        ).rows.length,
+        1,
+      );
+      await as(121);
+      assert.equal(
+        (
+          await db.query(
+            "select id from storage.objects where bucket_id='class-qr-codes'",
+          )
+        ).rows.length,
+        0,
+      );
+      await as(3);
+      await db.query(
+        "update public.students set registration_stage='complete',address='Endereço conferido' where id=$1",
+        [id(122)],
+      );
+      const complete = (
+        await db.query<{ completed_by: string; completed_at: string }>(
+          "select completed_by,completed_at from public.students where id=$1",
+          [id(122)],
+        )
+      ).rows[0];
+      assert.equal(complete.completed_by, id(3));
+      assert.ok(complete.completed_at);
+      await as(120);
+      await assert.rejects(
+        db.query(
+          "update public.students set name='Alterar concluído' where id=$1",
+          [id(122)],
+        ),
+        /próprias pré-matrículas/,
+      );
+      await service();
+      await db.query(
+        "select public.admin_create_profile($1,$2,'novo.comercial','Novo Comercial','comercial',$3)",
+        [id(1), id(124), id(11)],
+      );
+      await db.exec("select public.run_daily_analytics()");
+    },
+  );
   await db.close();
 });

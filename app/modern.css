@@ -3593,3 +3593,468 @@ button.secondary {
 .attendance-detail textarea {
   min-height: 76px;
 }
+/* Sales desk: actionable capacity, a clear handoff, and a readable dossier. */
+.sales-workspace {
+  display: grid;
+  gap: 22px;
+}
+.sales-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  border-radius: 20px;
+  color: white;
+  background: linear-gradient(125deg, #183a66, #0d4a93);
+}
+.sales-intro .eyebrow {
+  color: #c7daf2;
+  font-size: 12px;
+}
+.sales-intro h2 {
+  font-size: 24px;
+  max-width: 650px;
+  margin: 10px 0;
+  line-height: 1.3;
+}
+.sales-intro p {
+  color: #d9e5f4;
+  max-width: 650px;
+}
+.sales-intro > .primary {
+  background: white;
+  color: #16427e;
+  border-color: white;
+  flex-shrink: 0;
+}
+.sales-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.sales-metrics > div {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+.sales-metrics svg {
+  color: #496c97;
+  grid-column: 2;
+  grid-row: 1;
+}
+.sales-metrics strong {
+  font-size: 30px;
+  color: #183a66;
+  grid-column: 1;
+  grid-row: 1;
+}
+.sales-metrics span {
+  grid-column: 1/-1;
+  color: #61718a;
+  font-size: 14px;
+}
+.sales-filters {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 16px;
+  padding: 18px 22px;
+}
+.sales-class-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 22px 22px;
+}
+.sales-class-grid article {
+  padding: 20px;
+  border: 1px solid #dce5ee;
+  border-radius: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sales-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.sales-card-top > span:last-child {
+  color: #194e85;
+  font-weight: 600;
+}
+.sales-class-grid h3 {
+  font-size: 18px;
+  line-height: 1.4;
+  margin: 16px 0 6px;
+}
+.sales-class-grid p {
+  color: #60718a;
+}
+.sales-class-grid small {
+  color: #65758a;
+  line-height: 1.6;
+}
+.sales-capacity {
+  margin: 20px 0;
+}
+.sales-capacity > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+.sales-capacity progress {
+  width: 100%;
+  height: 7px;
+  accent-color: #1a5399;
+  display: block;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 20px;
+}
+.sales-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+.sales-card-actions button {
+  white-space: normal;
+  font-size: 13px;
+  padding: 10px 12px;
+}
+.sales-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.sales-student-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 16px 20px;
+  border-top: 1px solid #e5ebf2;
+}
+.sales-student-row > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.sales-student-row small {
+  display: block;
+  color: #64748b;
+  margin-top: 4px;
+}
+.sales-absence {
+  padding: 18px 22px;
+  border-top: 1px solid #e5ebf2;
+}
+.sales-absence p {
+  color: #62738b;
+  margin: 8px 0 12px;
+}
+.class-qr-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: #f2f6fb;
+  border: 1px solid #dbe5f1;
+  border-radius: 14px;
+}
+.class-qr-editor > div > svg {
+  vertical-align: middle;
+  margin-right: 8px;
+  color: #194c8d;
+}
+.class-qr-editor p {
+  color: #596c84;
+  line-height: 1.6;
+}
+.class-qr-editor > img {
+  max-width: 180px;
+  max-height: 180px;
+  object-fit: contain;
+  background: white;
+  border-radius: 8px;
+}
+.class-welcome .welcome-body {
+  padding: 24px;
+  overflow: auto;
+  min-height: 0;
+}
+.welcome-qr {
+  max-width: 320px;
+  margin: 0 auto 15px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #dae4f0;
+  border-radius: 16px;
+}
+.welcome-qr img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.welcome-instruction {
+  color: #5e7189;
+  text-align: center;
+  line-height: 1.7;
+}
+.welcome-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  margin: 18px 0;
+  background: #f0f5fb;
+  border-radius: 12px;
+}
+.welcome-link a {
+  color: #164c90;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
+  text-decoration: underline;
+}
+.welcome-recipients {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+.welcome-recipients small {
+  color: #65768d;
+}
+.dossier-overlay {
+  padding: 20px;
+  align-items: center;
+}
+.dossier-overlay .dossier {
+  height: min(840px, calc(100dvh - 40px));
+  max-height: calc(100dvh - 40px);
+  width: min(940px, 100%);
+  max-width: 940px;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  border-radius: 20px;
+  border-top: 0;
+  overflow: hidden;
+}
+.dossier-overlay .dossier > header {
+  padding: 12px 20px;
+  min-height: 48px;
+}
+.dossier-overlay .dossier-identity {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-areas: "photo name status" "photo meta status";
+  column-gap: 14px;
+  row-gap: 4px;
+  padding: 18px 22px;
+  align-items: center;
+}
+.dossier-overlay .dossier-photo {
+  grid-area: photo;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+}
+.dossier-overlay .dossier-identity > .attendance-state {
+  grid-area: status;
+  position: static;
+  align-self: start;
+  margin: 0;
+}
+.dossier-overlay .dossier-identity h2 {
+  grid-area: name;
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 0;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.3px;
+}
+.dossier-overlay .dossier-identity p {
+  grid-area: meta;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+.dossier-overlay .dossier-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 12px 22px;
+  gap: 16px;
+  margin: 0;
+}
+.dossier-overlay .dossier-stats > div {
+  padding: 0;
+  min-width: 0;
+}
+.dossier-overlay .dossier-stats span {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.dossier-overlay .dossier-stats strong {
+  font-size: 20px;
+  line-height: 1.4;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.dossier-overlay .dossier-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0 18px;
+  margin: 0;
+  min-height: 46px;
+}
+.dossier-overlay .dossier-tabs button {
+  font-size: 14px;
+  padding: 12px 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dossier-overlay .dossier-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 22px;
+  margin: 0;
+}
+.dossier-overlay .dossier > footer {
+  padding: 12px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dossier-overlay .dossier > footer button {
+  min-height: 40px;
+  font-size: 13px;
+  padding: 10px 12px;
+}
+.dossier-overlay .student-details {
+  margin: 0;
+}
+.dossier-overlay .dossier-empty {
+  padding: 18px 0;
+}
+@media (max-width: 1150px) {
+  .sales-class-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sales-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sales-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 700px) {
+  .sales-bottom,
+  .sales-class-grid,
+  .sales-filters {
+    grid-template-columns: 1fr;
+  }
+  .sales-intro {
+    padding: 20px;
+  }
+  .sales-intro h2 {
+    font-size: 21px;
+  }
+  .sales-class-grid {
+    padding-inline: 14px;
+  }
+  .sales-filters {
+    padding-inline: 14px;
+  }
+  .sales-metrics {
+    gap: 10px;
+  }
+  .sales-metrics > div {
+    padding: 15px;
+  }
+  .sales-metrics strong {
+    font-size: 26px;
+  }
+  .sales-student-row {
+    flex-wrap: wrap;
+  }
+  .sales-student-row .badge {
+    margin-left: 42px;
+  }
+  .welcome-link {
+    flex-wrap: wrap;
+  }
+  .dossier-overlay {
+    padding: 8px;
+  }
+  .dossier-overlay .dossier {
+    width: 100%;
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 16px;
+  }
+  .dossier-overlay .dossier-identity {
+    padding: 14px;
+    gap: 5px 10px;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+  }
+  .dossier-overlay .dossier-photo {
+    width: 46px;
+    height: 46px;
+  }
+  .dossier-overlay .dossier-photo .student-avatar {
+    width: 46px !important;
+    min-width: 46px !important;
+    height: 46px !important;
+  }
+  .dossier-overlay .dossier-identity h2 {
+    font-size: 18px;
+  }
+  .dossier-overlay .dossier-stats {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .dossier-overlay .dossier-stats strong {
+    font-size: 17px;
+  }
+  .dossier-overlay .dossier-tabs {
+    padding-inline: 8px;
+  }
+  .dossier-overlay .dossier-tabs button {
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+  .dossier-overlay .dossier-content {
+    padding: 16px;
+  }
+  .dossier-overlay .dossier > footer {
+    padding: 10px 12px;
+  }
+}
+.sales-capacity progress::-webkit-progress-bar {
+  background: #e5edf7;
+  border-radius: 20px;
+}
+.sales-capacity progress::-webkit-progress-value {
+  background: #1a5399;
+  border-radius: 20px;
+}
+.sales-capacity progress::-moz-progress-bar {
+  background: #1a5399;
+  border-radius: 20px;
+}
+.sales-card-top .badge.red {
+  background: #fbecee;
+  color: #a62e3d;
+}
+.sales-card-top .badge.amber {
+  background: #fff4df;
+  color: #886221;
+}

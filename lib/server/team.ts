@@ -45,7 +45,7 @@ function checkProfile(input: Record<string, unknown>) {
   )
     throw new ApiError(400, "Informe o nome completo.");
   if (
-    !["admin", "coordenacao", "secretaria", "professor"].includes(
+    !["admin", "coordenacao", "secretaria", "professor", "comercial"].includes(
       String(input.role),
     )
   )

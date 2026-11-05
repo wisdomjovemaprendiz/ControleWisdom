@@ -527,6 +527,7 @@ export function pendingPedagogy(
   unit = "all",
   asOf = today(),
 ) {
+  if (profile.role === "comercial") return [];
   const completed = new Set(
     store.pedagogy
       .filter((p) => !p.archived_at && p.parent_record_id)

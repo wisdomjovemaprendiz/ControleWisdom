@@ -1,3 +1,4 @@
+import { enrollmentStage, needsAbsenceOutreach, lastAbsence } from "./sales";
 import { pendingPedagogy } from "./pedagogy";
 import { isManager } from "@/lib/accounts";
 import {
@@ -11,7 +12,7 @@ import {
 export interface FollowUp {
   id: string;
   student: Student;
-  kind: "absence" | "registration" | "contact" | "pedagogy";
+  kind: "absence" | "registration" | "contact" | "pedagogy" | "enrollment";
   priority: number;
   title: string;
   detail: string;
@@ -32,13 +33,14 @@ export function followUps(
   const items: FollowUp[] = [];
   for (const s of students) {
     const count = absenceCount(store, s.id);
-    if (count >= 3)
+    if (needsAbsenceOutreach(store, s))
       items.push({
         id: `absence-${s.id}`,
         student: s,
         kind: "absence",
         priority: 1,
-        title: `${count} faltas acumuladas`,
+        title:
+          count >= 3 ? `${count} faltas acumuladas` : "Ausente na última aula",
         detail: store.contacts.some((c) => c.student_id === s.id)
           ? "Consulte os contatos anteriores antes de retomar."
           : "Nenhum contato registrado com o responsável.",
@@ -51,7 +53,21 @@ export function followUps(
       !s.birth_date && "nascimento",
       !s.address && "endereço",
     ].filter(Boolean);
-    if (missing.length)
+    if (enrollmentStage(s) !== "complete" && profile.role !== "comercial")
+      items.push({
+        id: `enrollment-${s.id}`,
+        student: s,
+        kind: "enrollment",
+        priority: 1,
+        title: "Concluir pré-matrícula",
+        detail:
+          "Pré-matrícula recebida. Confira os dados, complete o cadastro e sinalize a conclusão para o comercial.",
+      });
+    if (
+      missing.length &&
+      enrollmentStage(s) === "complete" &&
+      profile.role !== "comercial"
+    )
       items.push({
         id: `registration-${s.id}`,
         student: s,

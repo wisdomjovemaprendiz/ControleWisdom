@@ -4,6 +4,19 @@ import { canAccess, type Store, type Profile } from "../../lib/domain";
 const base = "http://127.0.0.1:54321";
 export async function installSchoolApi(page: Page) {
   const store = schoolFixture();
+  store.profiles.push({
+    id: "p5",
+    name: "Carla Comercial",
+    username: "comercial",
+    role: "comercial",
+    unit_id: "u1",
+    active: true,
+    must_change_password: false,
+  });
+  for (const c of store.classes) {
+    c.enrollment_open = true;
+    c.enrollment_priority = c.id === "c1" ? 1 : 3;
+  }
   let actor = store.profiles[0];
   const objects = new Map<string, { body: Buffer; type: string }>();
   const user = () => ({
@@ -117,6 +130,54 @@ export async function installSchoolApi(page: Page) {
       for (const key of req.postDataJSON().prefixes || []) objects.delete(key);
       return json(route, []);
     }
+    if (
+      path.startsWith("/storage/v1/object/sign/class-qr-codes/") &&
+      req.method() === "POST"
+    ) {
+      const key = decodeURIComponent(
+        path.slice("/storage/v1/object/sign/class-qr-codes/".length),
+      );
+      return json(route, {
+        signedURL: `/object/sign/class-qr-codes/${key}?token=mock`,
+      });
+    }
+    if (
+      path.startsWith("/storage/v1/object/class-qr-codes/") &&
+      req.method() === "POST"
+    ) {
+      const key = decodeURIComponent(
+        path.slice("/storage/v1/object/class-qr-codes/".length),
+      );
+      const form = await new Response(
+        new Uint8Array(req.postDataBuffer()!).buffer,
+        { headers: { "Content-Type": req.headers()["content-type"] } },
+      ).formData();
+      const file = [...form.values()].find(
+        (value) => value instanceof Blob,
+      ) as Blob;
+      objects.set("qr:" + key, {
+        body: Buffer.from(await file.arrayBuffer()),
+        type: file.type,
+      });
+      return json(route, { Key: "class-qr-codes/" + key, Id: "mock-qr" });
+    }
+    if (
+      path.startsWith("/storage/v1/object/sign/class-qr-codes/") &&
+      req.method() === "GET"
+    ) {
+      const key = decodeURIComponent(
+          path.slice("/storage/v1/object/sign/class-qr-codes/".length),
+        ),
+        object = objects.get("qr:" + key);
+      return object
+        ? route.fulfill({
+            status: 200,
+            body: object.body,
+            contentType: object.type,
+            headers: { "Access-Control-Allow-Origin": "*" },
+          })
+        : json(route, {}, 404);
+    }
     if (path === "/rest/v1/daily_analytics") return json(route, []);
     if (path === "/rest/v1/rpc/save_pedagogical_record") {
       const record = req.postDataJSON().record_data;
@@ -153,6 +214,13 @@ export async function installSchoolApi(page: Page) {
         const incoming = req.postDataJSON(),
           records = Array.isArray(incoming) ? incoming : [incoming];
         for (const record of records) {
+          if (table === "students" && !values.some((v) => v.id === record.id)) {
+            record.created_by = actor.id;
+            record.registration_stage =
+              actor.role === "comercial"
+                ? "pre_enrollment"
+                : record.registration_stage || "complete";
+          }
           const index = values.findIndex((v) => v.id === record.id);
           if (index >= 0) values[index] = { ...values[index], ...record };
           else values.push(record);
@@ -178,7 +246,8 @@ export async function installSchoolApi(page: Page) {
           ? canAccess(actor, row.id)
           : table === "profiles"
             ? row.id === actor.id || canAccess(actor, row.unit_id)
-            : canAccess(actor, row.unit_id),
+            : canAccess(actor, row.unit_id) &&
+              !(table === "pedagogy" && actor.role === "comercial"),
       );
       for (const [key, value] of url.searchParams)
         if (value.startsWith("eq."))
@@ -275,9 +344,13 @@ export async function login(page: Page, username = "admin") {
   await page
     .getByRole("heading", {
       name:
-        username === "ana.oliveira"
-          ? "Meu diário de classe"
-          : "Operação das unidades",
+        username === "comercial"
+          ? "Minha mesa comercial"
+          : username === "secretaria"
+            ? "Mesa da secretaria"
+            : username === "ana.oliveira"
+              ? "Meu diário de classe"
+              : "Operação das unidades",
       exact: true,
     })
     .waitFor();

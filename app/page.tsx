@@ -35,7 +35,17 @@ import {
   RefreshCw,
   Upload,
   Cake,
+  QrCode,
 } from "lucide-react";
+import { SalesDashboard } from "@/components/sales-dashboard";
+import { ClassWelcome } from "@/components/class-welcome";
+import { ClassQrEditor } from "@/components/class-qr-editor";
+import {
+  validGroupLink,
+  canEditStudent,
+  enrollmentStage,
+  needsAbsenceOutreach,
+} from "@/lib/sales";
 import { WhatsAppPreview } from "@/components/whatsapp-preview";
 import { StudentImporter } from "@/components/student-importer";
 import { birthdaysThisWeek } from "@/lib/birthdays";
@@ -117,6 +127,7 @@ type Modal = {
   kind: string;
   data?: Student | CourseClass | Offering;
   parentRecord?: Pedagogy;
+  classPreset?: string;
 } | null;
 function initials(name: string) {
   return name
@@ -176,6 +187,13 @@ export default function App() {
       window.removeEventListener("focus", tick);
     };
   }, []);
+  const [welcome, setWelcome] = useState<{
+    course: CourseClass;
+    student?: Student;
+  } | null>(null);
+  const [qrDraft, setQrDraft] = useState<Blob | null>(null),
+    [removeQr, setRemoveQr] = useState(false),
+    [qrBusy, setQrBusy] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
@@ -195,6 +213,9 @@ export default function App() {
     [removePhoto, setRemovePhoto] = useState(false),
     [photoBusy, setPhotoBusy] = useState(false);
   useEffect(() => {
+    setQrDraft(null);
+    setRemoveQr(false);
+    setQrBusy(false);
     setPhotoDraft(null);
     setRemovePhoto(false);
     setPhotoBusy(false);
@@ -287,7 +308,7 @@ export default function App() {
   const students = store?.students.filter((s) => scoped(s.unit_id)) || [],
     classes = store?.classes.filter((c) => scoped(c.unit_id)) || [],
     active = students.filter((s) => s.status === "ativo"),
-    alerts = active.filter((s) => absenceCount(store!, s.id) >= 3),
+    alerts = active.filter((s) => needsAbsenceOutreach(store!, s)),
     filtered = students.filter(
       (s) =>
         `${studentDisplayName(s)} ${s.guardian}`
@@ -611,16 +632,26 @@ export default function App() {
         class_id: v("class_id") || null,
         offering_id: v("offering_id") || null,
         name: v("name"),
-        birth_date: v("birth_date"),
+        birth_date: fd.has("birth_date")
+          ? v("birth_date")
+          : previous?.birth_date || "",
         phone: v("phone"),
         guardian: v("guardian"),
         guardian_phone: v("guardian_phone"),
-        email: v("email"),
-        address: v("address"),
+        email: fd.has("email") ? v("email") : previous?.email || "",
+        address: fd.has("address") ? v("address") : previous?.address || "",
         created_by: previous?.created_by || profile.id,
         enrollment_date: previous?.enrollment_date || today(),
         status: previous?.status || "ativo",
         archive_reason: previous?.archive_reason || "",
+        registration_stage:
+          profile.role === "comercial"
+            ? "pre_enrollment"
+            : fd.get("complete_registration") === "on"
+              ? "complete"
+              : previous?.registration_stage || "complete",
+        completed_by: previous?.completed_by || null,
+        completed_at: previous?.completed_at || null,
       };
       const invalid = validateStudent(record);
       if (invalid) {
@@ -654,6 +685,27 @@ export default function App() {
         ).length >= c.capacity
       ) {
         setError("Turma sem vagas. Escolha outra turma.");
+        return;
+      }
+      if (
+        profile.role === "comercial" &&
+        previous &&
+        !canEditStudent(profile, previous)
+      ) {
+        setError(
+          "O comercial pode editar somente suas próprias pré-matrículas pendentes.",
+        );
+        return;
+      }
+      if (
+        profile.role === "comercial" &&
+        c &&
+        c.enrollment_open === false &&
+        c.id !== previous?.class_id
+      ) {
+        setError(
+          "Esta turma está fechada para matrícula. Escolha outra opção.",
+        );
         return;
       }
       ok = await save("students", record);
@@ -707,6 +759,8 @@ export default function App() {
           setBusy(false);
         }
       }
+      if (ok && profile.role === "comercial" && c)
+        setWelcome({ course: c, student: record });
     }
     if (modal.kind === "class") {
       const p = store.profiles.find((p) => p.id === v("teacher_id"));
@@ -725,6 +779,18 @@ export default function App() {
         );
         return;
       }
+      if (!validGroupLink(v("whatsapp"))) {
+        setError(
+          "Informe um link HTTPS de convite do grupo em chat.whatsapp.com.",
+        );
+        return;
+      }
+      const groupLink = v("whatsapp") ? new URL(v("whatsapp")).href : "";
+      const previousClass = modal.data as CourseClass | undefined;
+      const oldQr = previousClass?.whatsapp_qr_path || null;
+      const qrChanged = Boolean(
+        qrDraft || removeQr || previousClass?.whatsapp !== groupLink,
+      );
       ok = await save("classes", {
         id,
         unit_id: targetUnit,
@@ -734,8 +800,54 @@ export default function App() {
         teacher: p.name,
         schedule: v("schedule"),
         capacity,
-        whatsapp: v("whatsapp"),
+        whatsapp: groupLink,
+        enrollment_open: fd.get("enrollment_open") === "on",
+        enrollment_priority: Number(v("enrollment_priority")) || 3,
+        whatsapp_qr_path: qrChanged ? null : oldQr,
       });
+      if (ok && qrChanged && supabase) {
+        let uploaded: string | null = null;
+        setBusy(true);
+        try {
+          if (qrDraft) {
+            uploaded = `${targetUnit}/${id}/${crypto.randomUUID()}.png`;
+            const upload = await supabase.storage
+              .from("class-qr-codes")
+              .upload(uploaded, qrDraft, {
+                contentType: "image/png",
+                upsert: false,
+              });
+            if (upload.error) throw upload.error;
+            const pointer = await supabase
+              .from("classes")
+              .update({ whatsapp_qr_path: uploaded })
+              .eq("id", id);
+            if (pointer.error) throw pointer.error;
+          }
+          setStore((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  classes: prev.classes.map((c) =>
+                    c.id === id ? { ...c, whatsapp_qr_path: uploaded } : c,
+                  ),
+                }
+              : prev,
+          );
+          if (oldQr)
+            await supabase.storage.from("class-qr-codes").remove([oldQr]);
+        } catch {
+          if (uploaded)
+            await supabase.storage.from("class-qr-codes").remove([uploaded]);
+          setModal(null);
+          setError(
+            "A turma foi salva, mas a imagem do QR code não foi atualizada. O link permite gerar o QR automaticamente.",
+          );
+          return;
+        } finally {
+          setBusy(false);
+        }
+      }
     }
     if (modal.kind === "offering") {
       ok = await save("offerings", {
@@ -907,7 +1019,14 @@ export default function App() {
     currentUnit,
     calendarDay,
   ).filter((item) => item.state !== "upcoming").length;
-  const attentionCount = alerts.length + interventionDueCount;
+  const attentionCount =
+    alerts.length +
+    interventionDueCount +
+    (profile.role !== "comercial"
+      ? students.filter(
+          (s) => s.status === "ativo" && enrollmentStage(s) !== "complete",
+        ).length
+      : 0);
   const reportSource = allRecords!;
   const reportLessons = reportSource.lessons.filter(
     (l) =>
@@ -1032,7 +1151,16 @@ export default function App() {
           .filter(
             (n) =>
               (n[0] !== "units" || isManager(profile.role)) &&
-              (n[0] !== "records" || profile.role === "admin"),
+              (n[0] !== "records" || profile.role === "admin") &&
+              (profile.role !== "comercial" ||
+                [
+                  "overview",
+                  "students",
+                  "classes",
+                  "offerings",
+                  "alerts",
+                  "settings",
+                ].includes(n[0])),
           )
           .map(([key, label, Icon], index) => (
             <button
@@ -1061,11 +1189,13 @@ export default function App() {
               </div>
               <h1>
                 {page === "overview"
-                  ? profile.role === "professor"
-                    ? "Meu diário de classe"
-                    : profile.role === "secretaria"
-                      ? "Mesa da secretaria"
-                      : "Operação das unidades"
+                  ? profile.role === "comercial"
+                    ? "Minha mesa comercial"
+                    : profile.role === "professor"
+                      ? "Meu diário de classe"
+                      : profile.role === "secretaria"
+                        ? "Mesa da secretaria"
+                        : "Operação das unidades"
                   : currentNav[1]}
               </h1>
               <p>
@@ -1073,7 +1203,9 @@ export default function App() {
                   (
                     {
                       overview:
-                        "Turmas, frequência e encaminhamentos da equipe no mesmo contexto.",
+                        profile.role === "comercial"
+                          ? "Vagas, pré-matrículas e relacionamento com alunos e responsáveis."
+                          : "Turmas, frequência e encaminhamentos da equipe no mesmo contexto.",
                       offerings:
                         "Formações para o primeiro emprego e para toda a trajetória.",
                       students:
@@ -1122,7 +1254,7 @@ export default function App() {
                     <Archive size={16} /> Gerenciar registros
                   </button>
                 )}
-              {page === "students" && (
+              {page === "students" && profile.role !== "comercial" && (
                 <button
                   className="secondary"
                   onClick={() => setImportOpen(true)}
@@ -1156,7 +1288,13 @@ export default function App() {
               {!["attendance", "reports", "settings", "records"].includes(
                 page,
               ) &&
-                !(page === "pedagogy" && profile.role === "secretaria") && (
+                !(page === "pedagogy" && profile.role === "secretaria") &&
+                !(
+                  profile.role === "comercial" &&
+                  ["classes", "offerings", "settings", "overview"].includes(
+                    page,
+                  )
+                ) && (
                   <button
                     className="primary"
                     onClick={() =>
@@ -1169,7 +1307,8 @@ export default function App() {
                             : page === "units"
                               ? "unit"
                               : page === "offerings" &&
-                                  profile.role !== "professor"
+                                  profile.role !== "professor" &&
+                                  profile.role !== "comercial"
                                 ? "offering"
                                 : page === "pedagogy"
                                   ? "pedagogy"
@@ -1178,15 +1317,21 @@ export default function App() {
                     }
                   >
                     <Plus size={17} />
-                    {page === "classes" && profile.role !== "professor"
+                    {page === "classes" &&
+                    profile.role !== "professor" &&
+                    profile.role !== "comercial"
                       ? "Nova turma"
                       : page === "units"
                         ? "Nova unidade"
-                        : page === "offerings" && profile.role !== "professor"
+                        : page === "offerings" &&
+                            profile.role !== "professor" &&
+                            profile.role !== "comercial"
                           ? "Novo curso ou pacote"
                           : page === "pedagogy"
                             ? "Novo registro"
-                            : "Nova matrícula"}
+                            : profile.role === "comercial"
+                              ? "Nova pré-matrícula"
+                              : "Nova matrícula"}
                   </button>
                 )}
             </div>
@@ -1199,7 +1344,21 @@ export default function App() {
               </button>
             </div>
           )}
-          {page === "overview" && (
+          {page === "overview" && profile.role === "comercial" && (
+            <SalesDashboard
+              store={store}
+              profile={profile}
+              onEnroll={(course) =>
+                setModal({ kind: "student", classPreset: course?.id })
+              }
+              onGroup={(course) => setWelcome({ course })}
+              onStudent={(student) => setDossierId(student.id)}
+              onContact={(student) =>
+                setModal({ kind: "contact", data: student })
+              }
+            />
+          )}
+          {page === "overview" && profile.role !== "comercial" && (
             <OperationsBoard
               store={store}
               profile={profile}
@@ -1342,67 +1501,91 @@ export default function App() {
                           >
                             {labels[s.status]}
                           </Badge>
+                          {enrollmentStage(s) !== "complete" && (
+                            <Badge tone="amber">
+                              {labels[enrollmentStage(s)]}
+                            </Badge>
+                          )}
                         </td>
                         <td>
                           <div className="row-actions">
                             <button
                               title="Editar matrícula"
+                              disabled={!canEditStudent(profile, s)}
                               onClick={() =>
                                 setModal({ kind: "student", data: s })
                               }
                             >
                               <Pencil size={16} />
                             </button>
-                            <button
-                              title="Evolução para responsável"
-                              onClick={() =>
-                                setMessage({
-                                  title: "Evolução do aluno",
-                                  text: evolutionMessage(store, s),
-                                  phone: s.guardian_phone,
-                                })
-                              }
-                            >
-                              <MessageCircle size={17} />
-                            </button>
-                            {profile.role !== "professor" && (
+                            {s.class_id && (
                               <button
-                                title={
-                                  s.status === "ativo"
-                                    ? "Arquivar aluno"
-                                    : "Reativar matrícula"
-                                }
-                                onClick={async () => {
-                                  if (s.status === "ativo")
-                                    setModal({ kind: "archive", data: s });
-                                  else {
-                                    const c = store.classes.find(
-                                      (c) => c.id === s.class_id,
-                                    );
-                                    if (
-                                      c &&
-                                      active.filter((a) => a.class_id === c.id)
-                                        .length >= c.capacity
-                                    ) {
-                                      setError(
-                                        "Turma sem vagas para reativação.",
-                                      );
-                                      return;
-                                    }
-                                    if (
-                                      await save("students", {
-                                        ...s,
-                                        status: "ativo",
-                                        archive_reason: "",
-                                      })
-                                    )
-                                      notify("Matrícula reativada.");
-                                  }
+                                title="Grupo da turma"
+                                onClick={() => {
+                                  const course = store.classes.find(
+                                    (c) => c.id === s.class_id,
+                                  );
+                                  if (course)
+                                    setWelcome({ course, student: s });
                                 }}
                               >
-                                <Archive size={16} />
+                                <QrCode size={17} />
                               </button>
                             )}
+                            {profile.role !== "comercial" && (
+                              <button
+                                title="Evolução para responsável"
+                                onClick={() =>
+                                  setMessage({
+                                    title: "Evolução do aluno",
+                                    text: evolutionMessage(store, s),
+                                    phone: s.guardian_phone,
+                                  })
+                                }
+                              >
+                                <MessageCircle size={17} />
+                              </button>
+                            )}
+                            {profile.role !== "professor" &&
+                              profile.role !== "comercial" && (
+                                <button
+                                  title={
+                                    s.status === "ativo"
+                                      ? "Arquivar aluno"
+                                      : "Reativar matrícula"
+                                  }
+                                  onClick={async () => {
+                                    if (s.status === "ativo")
+                                      setModal({ kind: "archive", data: s });
+                                    else {
+                                      const c = store.classes.find(
+                                        (c) => c.id === s.class_id,
+                                      );
+                                      if (
+                                        c &&
+                                        active.filter(
+                                          (a) => a.class_id === c.id,
+                                        ).length >= c.capacity
+                                      ) {
+                                        setError(
+                                          "Turma sem vagas para reativação.",
+                                        );
+                                        return;
+                                      }
+                                      if (
+                                        await save("students", {
+                                          ...s,
+                                          status: "ativo",
+                                          archive_reason: "",
+                                        })
+                                      )
+                                        notify("Matrícula reativada.");
+                                    }
+                                  }}
+                                >
+                                  <Archive size={16} />
+                                </button>
+                              )}
                           </div>
                         </td>
                       </tr>
@@ -1445,6 +1628,20 @@ export default function App() {
                           <td>
                             <strong>{c.name}</strong>
                             <small>{c.course}</small>
+                            <Badge
+                              tone={
+                                c.enrollment_open !== false
+                                  ? "green"
+                                  : "neutral"
+                              }
+                            >
+                              {c.enrollment_open !== false
+                                ? "Matrículas abertas"
+                                : "Matrículas fechadas"}
+                            </Badge>{" "}
+                            <Badge tone="neutral">
+                              {c.enrollment_priority || 3}ª opção
+                            </Badge>
                           </td>
                           <td>
                             {c.teacher}
@@ -1480,7 +1677,26 @@ export default function App() {
                             <div className="row-actions">
                               <button
                                 className="secondary"
+                                onClick={() => setWelcome({ course: c })}
+                              >
+                                <QrCode size={16} />
+                                Grupo
+                              </button>
+                              <button
+                                className="secondary"
+                                disabled={
+                                  profile.role === "comercial" &&
+                                  (c.enrollment_open === false ||
+                                    count >= c.capacity)
+                                }
                                 onClick={() => {
+                                  if (profile.role === "comercial") {
+                                    setModal({
+                                      kind: "student",
+                                      classPreset: c.id,
+                                    });
+                                    return;
+                                  }
                                   setClassId(c.id);
                                   goto(
                                     profile.role === "secretaria"
@@ -1489,22 +1705,25 @@ export default function App() {
                                   );
                                 }}
                               >
-                                {profile.role === "secretaria"
-                                  ? "Ver frequência"
-                                  : "Abrir diário"}{" "}
+                                {profile.role === "comercial"
+                                  ? "Pré-matricular"
+                                  : profile.role === "secretaria"
+                                    ? "Ver frequência"
+                                    : "Abrir diário"}{" "}
                                 <ArrowRight size={15} />
                               </button>
-                              {profile.role !== "professor" && (
-                                <button
-                                  className="icon-button"
-                                  title="Editar turma"
-                                  onClick={() =>
-                                    setModal({ kind: "class", data: c })
-                                  }
-                                >
-                                  <Pencil size={16} />
-                                </button>
-                              )}
+                              {profile.role !== "professor" &&
+                                profile.role !== "comercial" && (
+                                  <button
+                                    className="icon-button"
+                                    title="Editar turma"
+                                    onClick={() =>
+                                      setModal({ kind: "class", data: c })
+                                    }
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                )}
                             </div>
                           </td>
                         </tr>
@@ -1553,17 +1772,18 @@ export default function App() {
                         }{" "}
                         alunos ativos
                       </small>
-                      {profile.role !== "professor" && (
-                        <button
-                          className="icon-button"
-                          title="Editar formação"
-                          onClick={() =>
-                            setModal({ kind: "offering", data: o })
-                          }
-                        >
-                          <Pencil size={16} />
-                        </button>
-                      )}
+                      {profile.role !== "professor" &&
+                        profile.role !== "comercial" && (
+                          <button
+                            className="icon-button"
+                            title="Editar formação"
+                            onClick={() =>
+                              setModal({ kind: "offering", data: o })
+                            }
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
                     </footer>
                   </section>
                 ))}
@@ -1587,242 +1807,254 @@ export default function App() {
               </div>
             </div>
           )}
-          {page === "attendance" && profile.role !== "secretaria" && (
-            <form onSubmit={saveAttendance}>
-              <section className="panel lesson-config">
-                <label>
-                  Turma
-                  <select
-                    aria-label="Turma"
-                    value={selectedClass?.id || ""}
-                    onChange={(e) => setClassId(e.target.value)}
-                    required
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    {writableClasses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
+          {page === "attendance" &&
+            profile.role !== "secretaria" &&
+            profile.role !== "comercial" && (
+              <form onSubmit={saveAttendance}>
+                <section className="panel lesson-config">
+                  <label>
+                    Turma
+                    <select
+                      aria-label="Turma"
+                      value={selectedClass?.id || ""}
+                      onChange={(e) => setClassId(e.target.value)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecione
                       </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Data da aula
-                  <input
-                    type="date"
-                    required
-                    max={today()}
-                    value={lessonDate}
-                    onChange={(e) => setLessonDate(e.target.value)}
-                  />
-                </label>
-                <label className="topic">
-                  Conteúdo trabalhado
-                  <input
-                    required
-                    placeholder="O que os alunos aprenderam hoje?"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                  />
-                </label>
-              </section>
-              <div
-                className="attendance-totals"
-                aria-label="Resumo das marcações"
-              >
-                {(
-                  [
-                    "presente",
-                    "falta",
-                    "atrasado",
-                    "justificado",
-                  ] as AttendanceStatus[]
-                ).map((status) => (
-                  <div key={status} className={status}>
-                    <span>{labels[status]}</span>
-                    <strong>
-                      {Object.values(marks).filter((v) => v === status).length}
-                    </strong>
-                  </div>
-                ))}
-                <div>
-                  <span>Sem marcação</span>
-                  <strong>
-                    {
-                      active.filter(
-                        (s) => s.class_id === selectedClass?.id && !marks[s.id],
-                      ).length
-                    }
-                  </strong>
-                </div>
-              </div>
-              <section className="panel">
-                <div className="panel-header">
-                  <div>
-                    <h2>Lista de presença</h2>
-                    <p>
-                      {selectedLesson
-                        ? "Chamada registrada • você pode atualizar as marcações"
-                        : "Marque a situação de cada aluno para finalizar"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => {
-                      setAttendanceDetails({});
-                      setMarks(
-                        Object.fromEntries(
-                          active
-                            .filter((s) => s.class_id === selectedClass?.id)
-                            .map((s) => [s.id, "presente"]),
-                        ),
-                      );
-                    }}
-                  >
-                    <Check size={16} /> Todos presentes
-                  </button>
-                </div>
-                {active
-                  .filter((s) => s.class_id === selectedClass?.id)
-                  .map((s) => (
-                    <div className="attendance-row" key={s.id}>
-                      <div className="person">
-                        <StudentAvatar student={s} />
-                        <button
-                          className="student-link"
-                          type="button"
-                          onClick={() => setDossierId(s.id)}
-                        >
-                          {studentDisplayName(s)}
-                        </button>
-                      </div>
-                      <div className="attendance-options">
-                        {(
-                          [
-                            "presente",
-                            "falta",
-                            "atrasado",
-                            "justificado",
-                          ] as AttendanceStatus[]
-                        ).map((status) => (
-                          <button
-                            type="button"
-                            key={status}
-                            aria-pressed={marks[s.id] === status}
-                            className={
-                              marks[s.id] === status ? `chosen ${status}` : ""
-                            }
-                            onClick={() => {
-                              setMarks({ ...marks, [s.id]: status });
-                              setAttendanceDetails((prev) => ({
-                                ...prev,
-                                [s.id]: {
-                                  arrival_time:
-                                    status === "atrasado"
-                                      ? prev[s.id]?.arrival_time || ""
-                                      : "",
-                                  justification:
-                                    status === "justificado"
-                                      ? prev[s.id]?.justification || ""
-                                      : "",
-                                },
-                              }));
-                            }}
-                          >
-                            {marks[s.id] === status && <Check size={14} />}{" "}
-                            {labels[status]}
-                          </button>
-                        ))}
-                      </div>
-                      {marks[s.id] === "atrasado" && (
-                        <label className="attendance-detail">
-                          Horário de chegada (opcional)
-                          <input
-                            type="time"
-                            aria-label={`Horário de chegada de ${studentDisplayName(s)}`}
-                            value={attendanceDetails[s.id]?.arrival_time || ""}
-                            onChange={(e) =>
-                              setAttendanceDetails((prev) => ({
-                                ...prev,
-                                [s.id]: {
-                                  arrival_time: e.target.value,
-                                  justification: "",
-                                },
-                              }))
-                            }
-                          />
-                        </label>
-                      )}
-                      {marks[s.id] === "justificado" && (
-                        <label className="attendance-detail">
-                          Motivo da justificativa (opcional)
-                          <textarea
-                            maxLength={2000}
-                            aria-label={`Justificativa de ${studentDisplayName(s)}`}
-                            value={attendanceDetails[s.id]?.justification || ""}
-                            onChange={(e) =>
-                              setAttendanceDetails((prev) => ({
-                                ...prev,
-                                [s.id]: {
-                                  arrival_time: "",
-                                  justification: e.target.value,
-                                },
-                              }))
-                            }
-                          />
-                        </label>
-                      )}
+                      {writableClasses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Data da aula
+                    <input
+                      type="date"
+                      required
+                      max={today()}
+                      value={lessonDate}
+                      onChange={(e) => setLessonDate(e.target.value)}
+                    />
+                  </label>
+                  <label className="topic">
+                    Conteúdo trabalhado
+                    <input
+                      required
+                      placeholder="O que os alunos aprenderam hoje?"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                    />
+                  </label>
+                </section>
+                <div
+                  className="attendance-totals"
+                  aria-label="Resumo das marcações"
+                >
+                  {(
+                    [
+                      "presente",
+                      "falta",
+                      "atrasado",
+                      "justificado",
+                    ] as AttendanceStatus[]
+                  ).map((status) => (
+                    <div key={status} className={status}>
+                      <span>{labels[status]}</span>
+                      <strong>
+                        {
+                          Object.values(marks).filter((v) => v === status)
+                            .length
+                        }
+                      </strong>
                     </div>
                   ))}
-                {!active.some((s) => s.class_id === selectedClass?.id) && (
-                  <Empty text="Nenhum aluno ativo nesta turma." />
-                )}
-                <div className="form-footer">
-                  <span>
-                    {Object.keys(marks).length} alunos com situação registrada
-                  </span>
-                  <div className="attendance-footer-actions">
-                    {selectedLesson?.closed && (
-                      <button
-                        type="button"
-                        className="whatsapp-share"
-                        disabled={busy || attendanceDirty}
-                        title={
-                          attendanceDirty
-                            ? "Salve as alterações da chamada antes de compartilhar."
-                            : "Preparar mensagem para o grupo da turma"
-                        }
-                        onClick={() =>
-                          setMessage({
-                            title: "Compartilhar chamada no grupo",
-                            text: attendanceMessage(
-                              allRecords!,
-                              selectedLesson,
-                            ),
-                            phone: "",
-                          })
-                        }
-                      >
-                        <MessageCircle size={17} /> Compartilhar chamada no
-                        grupo
-                      </button>
-                    )}
-                    <button
-                      className="primary"
-                      disabled={busy || !selectedClass}
-                    >
-                      <CheckCircle2 size={17} />
-                      {busy ? "Salvando…" : "Finalizar chamada e gerar resumo"}
-                    </button>
+                  <div>
+                    <span>Sem marcação</span>
+                    <strong>
+                      {
+                        active.filter(
+                          (s) =>
+                            s.class_id === selectedClass?.id && !marks[s.id],
+                        ).length
+                      }
+                    </strong>
                   </div>
                 </div>
-              </section>
-            </form>
-          )}
-          {page === "pedagogy" && (
+                <section className="panel">
+                  <div className="panel-header">
+                    <div>
+                      <h2>Lista de presença</h2>
+                      <p>
+                        {selectedLesson
+                          ? "Chamada registrada • você pode atualizar as marcações"
+                          : "Marque a situação de cada aluno para finalizar"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        setAttendanceDetails({});
+                        setMarks(
+                          Object.fromEntries(
+                            active
+                              .filter((s) => s.class_id === selectedClass?.id)
+                              .map((s) => [s.id, "presente"]),
+                          ),
+                        );
+                      }}
+                    >
+                      <Check size={16} /> Todos presentes
+                    </button>
+                  </div>
+                  {active
+                    .filter((s) => s.class_id === selectedClass?.id)
+                    .map((s) => (
+                      <div className="attendance-row" key={s.id}>
+                        <div className="person">
+                          <StudentAvatar student={s} />
+                          <button
+                            className="student-link"
+                            type="button"
+                            onClick={() => setDossierId(s.id)}
+                          >
+                            {studentDisplayName(s)}
+                          </button>
+                        </div>
+                        <div className="attendance-options">
+                          {(
+                            [
+                              "presente",
+                              "falta",
+                              "atrasado",
+                              "justificado",
+                            ] as AttendanceStatus[]
+                          ).map((status) => (
+                            <button
+                              type="button"
+                              key={status}
+                              aria-pressed={marks[s.id] === status}
+                              className={
+                                marks[s.id] === status ? `chosen ${status}` : ""
+                              }
+                              onClick={() => {
+                                setMarks({ ...marks, [s.id]: status });
+                                setAttendanceDetails((prev) => ({
+                                  ...prev,
+                                  [s.id]: {
+                                    arrival_time:
+                                      status === "atrasado"
+                                        ? prev[s.id]?.arrival_time || ""
+                                        : "",
+                                    justification:
+                                      status === "justificado"
+                                        ? prev[s.id]?.justification || ""
+                                        : "",
+                                  },
+                                }));
+                              }}
+                            >
+                              {marks[s.id] === status && <Check size={14} />}{" "}
+                              {labels[status]}
+                            </button>
+                          ))}
+                        </div>
+                        {marks[s.id] === "atrasado" && (
+                          <label className="attendance-detail">
+                            Horário de chegada (opcional)
+                            <input
+                              type="time"
+                              aria-label={`Horário de chegada de ${studentDisplayName(s)}`}
+                              value={
+                                attendanceDetails[s.id]?.arrival_time || ""
+                              }
+                              onChange={(e) =>
+                                setAttendanceDetails((prev) => ({
+                                  ...prev,
+                                  [s.id]: {
+                                    arrival_time: e.target.value,
+                                    justification: "",
+                                  },
+                                }))
+                              }
+                            />
+                          </label>
+                        )}
+                        {marks[s.id] === "justificado" && (
+                          <label className="attendance-detail">
+                            Motivo da justificativa (opcional)
+                            <textarea
+                              maxLength={2000}
+                              aria-label={`Justificativa de ${studentDisplayName(s)}`}
+                              value={
+                                attendanceDetails[s.id]?.justification || ""
+                              }
+                              onChange={(e) =>
+                                setAttendanceDetails((prev) => ({
+                                  ...prev,
+                                  [s.id]: {
+                                    arrival_time: "",
+                                    justification: e.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                          </label>
+                        )}
+                      </div>
+                    ))}
+                  {!active.some((s) => s.class_id === selectedClass?.id) && (
+                    <Empty text="Nenhum aluno ativo nesta turma." />
+                  )}
+                  <div className="form-footer">
+                    <span>
+                      {Object.keys(marks).length} alunos com situação registrada
+                    </span>
+                    <div className="attendance-footer-actions">
+                      {selectedLesson?.closed && (
+                        <button
+                          type="button"
+                          className="whatsapp-share"
+                          disabled={busy || attendanceDirty}
+                          title={
+                            attendanceDirty
+                              ? "Salve as alterações da chamada antes de compartilhar."
+                              : "Preparar mensagem para o grupo da turma"
+                          }
+                          onClick={() =>
+                            setMessage({
+                              title: "Compartilhar chamada no grupo",
+                              text: attendanceMessage(
+                                allRecords!,
+                                selectedLesson,
+                              ),
+                              phone: "",
+                            })
+                          }
+                        >
+                          <MessageCircle size={17} /> Compartilhar chamada no
+                          grupo
+                        </button>
+                      )}
+                      <button
+                        className="primary"
+                        disabled={busy || !selectedClass}
+                      >
+                        <CheckCircle2 size={17} />
+                        {busy
+                          ? "Salvando…"
+                          : "Finalizar chamada e gerar resumo"}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </form>
+            )}
+          {page === "pedagogy" && profile.role !== "comercial" && (
             <>
               <PedagogyAgenda
                 store={store}
@@ -1941,14 +2173,16 @@ export default function App() {
           )}
           {page === "alerts" && (
             <>
-              <PedagogyAgenda
-                store={store}
-                profile={profile}
-                unit={currentUnit}
-                onFollowUp={(record) =>
-                  setModal({ kind: "pedagogy", parentRecord: record })
-                }
-              />
+              {profile.role !== "comercial" && (
+                <PedagogyAgenda
+                  store={store}
+                  profile={profile}
+                  unit={currentUnit}
+                  onFollowUp={(record) =>
+                    setModal({ kind: "pedagogy", parentRecord: record })
+                  }
+                />
+              )}
               <FollowUpCenter
                 store={store}
                 profile={profile}
@@ -2007,7 +2241,7 @@ export default function App() {
               </section>
             </>
           )}
-          {page === "reports" && (
+          {page === "reports" && profile.role !== "comercial" && (
             <>
               {isManager(profile.role) && (
                 <DailyAnalysis unit={currentUnit} units={store.units} />
@@ -2281,6 +2515,25 @@ export default function App() {
           key={dossierId}
           student={students.find((s) => s.id === dossierId)!}
           store={store}
+          canViewPedagogy={profile.role !== "comercial"}
+          canEdit={canEditStudent(
+            profile,
+            students.find((s) => s.id === dossierId)!,
+          )}
+          onGroup={
+            students.find((s) => s.id === dossierId)?.class_id
+              ? () => {
+                  const student = students.find((s) => s.id === dossierId)!;
+                  const course = store.classes.find(
+                    (c) => c.id === student.class_id,
+                  );
+                  if (course) {
+                    setDossierId(null);
+                    setWelcome({ course, student });
+                  }
+                }
+              : undefined
+          }
           onClose={() => setDossierId(null)}
           onEdit={() => {
             setModal({
@@ -2316,6 +2569,17 @@ export default function App() {
           }}
         />
       )}
+      {welcome && (
+        <ClassWelcome
+          course={welcome.course}
+          student={welcome.student}
+          onClose={() => setWelcome(null)}
+          onMessage={(text, phone, title) => {
+            setWelcome(null);
+            setMessage({ text, phone, title });
+          }}
+        />
+      )}
       {importOpen && (
         <StudentImporter
           store={store}
@@ -2329,7 +2593,7 @@ export default function App() {
         <div
           className="modal-overlay"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget && !busy && !photoBusy)
+            if (e.target === e.currentTarget && !busy && !photoBusy && !qrBusy)
               setModal(null);
           }}
         >
@@ -2348,7 +2612,9 @@ export default function App() {
                       {
                         student: modal.data
                           ? "Editar matrícula"
-                          : "Nova matrícula",
+                          : profile.role === "comercial"
+                            ? "Nova pré-matrícula"
+                            : "Nova matrícula",
                         class: modal.data ? "Editar turma" : "Nova turma",
                         unit: "Nova unidade",
                         archive: "Arquivar matrícula",
@@ -2366,7 +2632,7 @@ export default function App() {
                 className="icon-button"
                 type="button"
                 aria-label="Fechar"
-                disabled={busy || photoBusy}
+                disabled={busy || photoBusy || qrBusy}
                 onClick={() => setModal(null)}
               >
                 <X size={21} />
@@ -2398,18 +2664,20 @@ export default function App() {
                     />
                   </label>
                   <div className="form-grid">
-                    <label>
-                      Nascimento
-                      <input
-                        name="birth_date"
-                        type="date"
-                        max={today()}
-                        defaultValue={(modal.data as Student)?.birth_date}
-                      />
-                      <small>
-                        Exibe alertas de aniversário do dia e da semana.
-                      </small>
-                    </label>
+                    {profile.role !== "comercial" && (
+                      <label>
+                        Nascimento
+                        <input
+                          name="birth_date"
+                          type="date"
+                          max={today()}
+                          defaultValue={(modal.data as Student)?.birth_date}
+                        />
+                        <small>
+                          Exibe alertas de aniversário do dia e da semana.
+                        </small>
+                      </label>
+                    )}
                     <label>
                       Telefone do aluno
                       <input
@@ -2424,13 +2692,20 @@ export default function App() {
                     <select
                       name="class_id"
                       aria-label="Turma"
-                      defaultValue={(modal.data as Student)?.class_id || ""}
+                      defaultValue={
+                        (modal.data as Student)?.class_id ||
+                        modal.classPreset ||
+                        ""
+                      }
                     >
                       <option value="">Selecionar turma depois</option>
                       {classes
                         .filter(
                           (c) =>
-                            !modal.data || c.unit_id === modal.data.unit_id,
+                            (!modal.data || c.unit_id === modal.data.unit_id) &&
+                            (profile.role !== "comercial" ||
+                              c.enrollment_open !== false ||
+                              c.id === (modal.data as Student)?.class_id),
                         )
                         .map((c) => (
                           <option key={c.id} value={c.id}>
@@ -2477,23 +2752,34 @@ export default function App() {
                       defaultValue={(modal.data as Student)?.guardian_phone}
                     />
                   </label>
-                  <div className="form-grid">
-                    <label>
-                      E-mail
-                      <input
-                        type="email"
-                        name="email"
-                        defaultValue={(modal.data as Student)?.email}
-                      />
-                    </label>
-                    <label>
-                      Endereço
-                      <input
-                        name="address"
-                        defaultValue={(modal.data as Student)?.address}
-                      />
-                    </label>
-                  </div>
+                  {profile.role !== "comercial" && (
+                    <div className="form-grid">
+                      <label>
+                        E-mail
+                        <input
+                          type="email"
+                          name="email"
+                          defaultValue={(modal.data as Student)?.email}
+                        />
+                      </label>
+                      <label>
+                        Endereço
+                        <input
+                          name="address"
+                          defaultValue={(modal.data as Student)?.address}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  {profile.role !== "comercial" &&
+                    profile.role !== "professor" &&
+                    modal.data &&
+                    enrollmentStage(modal.data as Student) !== "complete" && (
+                      <label className="checkbox-label">
+                        <input type="checkbox" name="complete_registration" />
+                        Concluir conferência da pré-matrícula
+                      </label>
+                    )}
                   <small>
                     Todos os campos são opcionais. O cadastro recebe um
                     identificador e fica vinculado à unidade selecionada ou à
@@ -2595,6 +2881,39 @@ export default function App() {
                       defaultValue={(modal.data as CourseClass)?.whatsapp}
                     />
                   </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="enrollment_open"
+                      defaultChecked={
+                        (modal.data as CourseClass)?.enrollment_open !== false
+                      }
+                    />
+                    Turma aberta para matrícula
+                  </label>
+                  <label>
+                    Prioridade para o comercial
+                    <select
+                      name="enrollment_priority"
+                      defaultValue={
+                        (modal.data as CourseClass)?.enrollment_priority || 3
+                      }
+                    >
+                      <option value="1">1ª opção — foco principal</option>
+                      <option value="2">
+                        2ª opção — alternativa prioritária
+                      </option>
+                      <option value="3">3ª opção — demais opções</option>
+                    </select>
+                  </label>
+                  <ClassQrEditor
+                    path={(modal.data as CourseClass)?.whatsapp_qr_path}
+                    onChange={(blob, remove) => {
+                      setQrDraft(blob);
+                      setRemoveQr(remove);
+                    }}
+                    onBusy={setQrBusy}
+                  />
                 </>
               )}
               {modal.kind === "offering" && (
@@ -2764,12 +3083,15 @@ export default function App() {
                 <button
                   type="button"
                   className="secondary"
-                  disabled={busy || photoBusy}
+                  disabled={busy || photoBusy || qrBusy}
                   onClick={() => setModal(null)}
                 >
                   Cancelar
                 </button>
-                <button className="primary" disabled={busy || photoBusy}>
+                <button
+                  className="primary"
+                  disabled={busy || photoBusy || qrBusy}
+                >
                   {busy ? "Salvando…" : "Salvar registro"}
                   <Check size={16} />
                 </button>

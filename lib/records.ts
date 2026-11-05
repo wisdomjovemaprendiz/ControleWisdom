@@ -81,7 +81,7 @@ export const recordFields: Record<RecordTable, RecordField[]> = {
     {
       key: "role",
       label: "Perfil",
-      options: ["admin", "coordenacao", "secretaria", "professor"],
+      options: ["admin", "coordenacao", "secretaria", "professor", "comercial"],
     },
     { key: "unit_id", label: "Unidade", relation: "units", required: true },
     { key: "active", label: "Acesso ativo", options: ["true", "false"] },

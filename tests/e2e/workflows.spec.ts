@@ -979,3 +979,176 @@ test("câmera negada informa como continuar e não impede cadastro sem foto", as
     .click();
   await expect(dialog).toHaveCount(0);
 });
+
+test("comercial faz pré-matrícula, apresenta QR e prepara convites separados", async ({
+  page,
+}) => {
+  schoolApi.store.classes[0].whatsapp =
+    "https://chat.whatsapp.com/ValidInvite123456";
+  schoolApi.store.classes[1].enrollment_open = false;
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "comercial");
+  await expect(
+    page.getByRole("heading", { name: "Minha mesa comercial", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator("nav")
+      .getByRole("button", { name: "Pedagógico", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".sales-class-grid")).not.toContainText(
+    schoolApi.store.classes[1].name,
+  );
+  const card = page
+    .locator(".sales-class-grid article")
+    .filter({ hasText: schoolApi.store.classes[0].name });
+  await card
+    .getByRole("button", { name: "Pré-matricular nesta turma", exact: true })
+    .click();
+  const form = page.getByRole("dialog");
+  await form.getByLabel("Nome completo").fill("Aluno de Venda");
+  await form.getByLabel("Nome do responsável").fill("Responsável de Venda");
+  await form.getByLabel("Telefone do aluno").fill("5511999999999");
+  await form.getByLabel("WhatsApp do responsável").fill("5511888888888");
+  await expect(form.getByLabel("Nascimento", { exact: true })).toHaveCount(0);
+  await form
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  const welcome = page.getByRole("dialog", { name: "Grupo da turma" });
+  await expect(welcome.getByAltText(/QR code do grupo/)).toBeVisible();
+  const pre = schoolApi.store.students.find(
+    (s) => s.name === "Aluno de Venda",
+  )!;
+  expect(pre.registration_stage).toBe("pre_enrollment");
+  expect(pre.class_id).toBe("c1");
+  await welcome
+    .getByRole("button", { name: "Enviar convite ao aluno", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").locator(".whatsapp-bubble"),
+  ).toContainText("interagir com seus colegas");
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  const row = page.locator("tbody tr").filter({ hasText: "Aluno de Venda" });
+  await row
+    .getByRole("button", { name: "Grupo da turma", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Grupo da turma" })
+    .getByRole("button", { name: "Enviar convite ao responsável", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").locator(".whatsapp-bubble"),
+  ).toContainText("acompanhar a frequência");
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "secretaria");
+  await page
+    .getByRole("button", { name: "Central de atenção", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Pré-matrículas/ }).click();
+  const pending = page
+    .locator(".followup-list article")
+    .filter({ hasText: "Aluno de Venda" });
+  await pending
+    .getByRole("button", { name: "Concluir pré-matrícula", exact: true })
+    .click();
+  const editing = page.getByRole("dialog");
+  await editing
+    .getByLabel("Endereço", { exact: true })
+    .fill("Endereço conferido pela secretaria");
+  await editing.getByLabel("Concluir conferência da pré-matrícula").check();
+  await editing
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(editing).toHaveCount(0);
+  expect(
+    schoolApi.store.students.find((s) => s.id === pre.id)?.registration_stage,
+  ).toBe("complete");
+  await expect(page.locator(".followup-list")).not.toContainText(
+    "Aluno de Venda",
+  );
+});
+
+test("secretaria configura inscrições, prioridade e grupo da turma", async ({
+  page,
+}) => {
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "secretaria");
+  await page.getByRole("button", { name: "Turmas", exact: true }).click();
+  const row = page
+    .locator("tbody tr")
+    .filter({ hasText: schoolApi.store.classes[0].name });
+  await row.getByRole("button", { name: "Editar turma", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Turma aberta para matrícula").uncheck();
+  await dialog.getByLabel("Prioridade para o comercial").selectOption("2");
+  await dialog
+    .getByLabel("Link do grupo de WhatsApp")
+    .fill("https://chat.whatsapp.com/ValidInvite123456");
+  const qr = await import("qrcode");
+  const png = await qr.toBuffer("https://chat.whatsapp.com/ValidInvite123456", {
+    width: 256,
+  });
+  await dialog
+    .getByLabel("Imagem do QR code da turma", { exact: true })
+    .setInputFiles({ name: "grupo.png", mimeType: "image/png", buffer: png });
+  await expect(
+    dialog.getByAltText("Prévia do QR code da turma", { exact: true }),
+  ).toBeVisible();
+
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(row).toContainText("Matrículas fechadas");
+  await expect(row).toContainText("2ª opção");
+  await row.getByRole("button", { name: "Grupo", exact: true }).click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "Grupo da turma" })
+      .getByAltText(/QR code do grupo/),
+  ).toBeVisible();
+});
+
+test("ficha do aluno mantém área de leitura proporcional em computador e celular", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Gabriel Almeida", exact: true })
+    .click();
+  const dossier = page.getByRole("dialog", {
+    name: "Gabriel Almeida",
+    exact: true,
+  });
+  const dimensions = await dossier.evaluate((e) => ({
+    height: e.getBoundingClientRect().height,
+    content: e.querySelector(".dossier-content")!.getBoundingClientRect()
+      .height,
+    identity: e.querySelector(".dossier-identity")!.getBoundingClientRect()
+      .height,
+  }));
+  expect(dimensions.content / dimensions.height).toBeGreaterThan(0.35);
+  expect(dimensions.identity).toBeLessThan(150);
+  await dossier.getByRole("tab", { name: "Contatos", exact: true }).click();
+  await expect(dossier.locator(".dossier-content")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 700 });
+  expect(
+    await dossier
+      .locator(".dossier-content")
+      .evaluate((e) => e.getBoundingClientRect().height),
+  ).toBeGreaterThan(200);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
