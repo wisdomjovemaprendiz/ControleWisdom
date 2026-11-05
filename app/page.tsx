@@ -1,4 +1,7 @@
 "use client";
+import { classFrame, occupancyInfo } from "@/lib/class-appearance";
+import { OccupancyBar, OccupancyLegend } from "@/components/occupancy-bar";
+import { CustomReportBuilder } from "@/components/custom-report-builder";
 import {
   INDIVIDUAL,
   isIndividual,
@@ -510,8 +513,8 @@ export default function App() {
       {
         const { data, error } = await (table === "pedagogy"
           ? supabase.rpc("save_pedagogical_record", { record_data: record })
-          : table === "students"
-            ? allRecords?.students.some((s) => s.id === record.id)
+          : table === "students" || table === "classes"
+            ? allRecords?.[table].some((s) => s.id === record.id)
               ? supabase
                   .from(table)
                   .update(record)
@@ -528,7 +531,12 @@ export default function App() {
               ? "Este acompanhamento já foi registrado. Atualize os dados para consultar a evolução."
               : error.message,
           );
-        if ((table === "pedagogy" || table === "students") && data)
+        if (
+          (table === "pedagogy" ||
+            table === "students" ||
+            table === "classes") &&
+          data
+        )
           persisted = data as Store[K][number];
       }
       setStore((prev) =>
@@ -1732,9 +1740,7 @@ export default function App() {
                   <span className="index-label">DISTRIBUIÇÃO DAS TURMAS</span>
                   <h2>{classes.length} turmas cadastradas</h2>
                 </div>
-                <span className="directory-note">
-                  Baixa ocupação: menos de 40% das vagas
-                </span>
+                <OccupancyLegend />
               </div>
               <div className="table-scroll">
                 <table>
@@ -1753,7 +1759,11 @@ export default function App() {
                         (s) => s.class_id === c.id,
                       ).length;
                       return (
-                        <tr key={c.id}>
+                        <tr
+                          key={c.id}
+                          className="class-colored-row"
+                          style={classFrame(c)}
+                        >
                           <td>
                             <strong>{c.name}</strong>
                             <small>{c.course}</small>
@@ -1787,19 +1797,15 @@ export default function App() {
                               {count}
                               <small> / {c.capacity}</small>
                             </span>
-                            <span className="capacity-line">
-                              <i
-                                style={{
-                                  width:
-                                    Math.min(100, (count / c.capacity) * 100) +
-                                    "%",
-                                }}
-                              />
-                            </span>
+                            <OccupancyBar
+                              enrolled={count}
+                              capacity={c.capacity}
+                            />
                             <small>
-                              {count / c.capacity < 0.4
-                                ? "Baixa ocupação"
-                                : `${c.capacity - count} vagas disponíveis`}
+                              {occupancyInfo(count, c.capacity).percent}% ·{" "}
+                              {count >= c.capacity
+                                ? "Lotada"
+                                : `${Math.max(0, c.capacity - count)} vagas`}
                             </small>
                           </td>
                           <td>
@@ -1940,7 +1946,14 @@ export default function App() {
             profile.role !== "secretaria" &&
             profile.role !== "comercial" && (
               <form onSubmit={saveAttendance}>
-                <section className="panel lesson-config">
+                <section
+                  className={`panel lesson-config ${classId !== INDIVIDUAL && selectedClass ? "class-frame" : ""}`}
+                  style={
+                    classId !== INDIVIDUAL && selectedClass
+                      ? classFrame(selectedClass)
+                      : undefined
+                  }
+                >
                   <label>
                     Turma
                     <select
@@ -2441,6 +2454,14 @@ export default function App() {
                   />
                 </label>
               </section>
+              <CustomReportBuilder
+                store={reportSource}
+                profile={profile}
+                unit={currentUnit}
+                classId={reportClass}
+                from={reportFrom}
+                to={reportTo}
+              />
               <div className="class-grid">
                 {[
                   {

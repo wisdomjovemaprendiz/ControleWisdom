@@ -1,4 +1,6 @@
 "use client";
+import { classFrame } from "@/lib/class-appearance";
+import { OccupancyBar } from "./occupancy-bar";
 import { studentPlacement } from "@/lib/individual";
 import { useState } from "react";
 import {
@@ -124,7 +126,11 @@ export function SalesDashboard({
         </div>
         <div className="sales-class-grid">
           {rows.map((row) => (
-            <article key={row.course.id}>
+            <article
+              key={row.course.id}
+              className="class-frame"
+              style={classFrame(row.course)}
+            >
               <div className="sales-card-top">
                 <span
                   className={`badge ${row.priority === 1 ? "red" : row.priority === 2 ? "amber" : "neutral"}`}
@@ -145,7 +151,10 @@ export function SalesDashboard({
                   </span>
                   <strong>{row.occupancy}%</strong>
                 </div>
-                <progress max="100" value={row.occupancy} />
+                <OccupancyBar
+                  enrolled={row.enrolled}
+                  capacity={row.course.capacity}
+                />
               </div>
               <div className="sales-card-actions">
                 <button

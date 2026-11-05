@@ -69,6 +69,7 @@ try {
     "009_camera_attendance_optional_students.sql",
     "010_commercial_enrollment.sql",
     "011_individual_lifecycle_audit.sql",
+    "012_class_identity.sql",
   ]) {
     const version = file.slice(0, 3);
     if (done.some((row) => row.version === version)) {

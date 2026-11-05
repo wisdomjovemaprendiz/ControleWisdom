@@ -4361,3 +4361,194 @@ button.secondary {
   display: block;
   border-radius: 50%;
 }
+/* Class identity is fixed; occupancy colors always reflect capacity. */
+.class-frame,
+.sales-class-grid article.class-frame {
+  border: 2px solid var(--class-color);
+  border-radius: 14px;
+}
+.class-colored-row > td {
+  border-top: 1px solid var(--class-color);
+  border-bottom: 1px solid var(--class-color);
+}
+.class-colored-row > td:first-child {
+  border-left: 4px solid var(--class-color);
+}
+.class-colored-row > td:last-child {
+  border-right: 2px solid var(--class-color);
+}
+.class-colored-row .row-number {
+  border: 1px solid var(--class-color);
+  color: var(--class-color);
+  background: white;
+}
+.occupancy-meter {
+  display: block;
+  height: 6px;
+  width: 100%;
+  min-width: 48px;
+  margin-top: 6px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--occupancy-color) 18%, white);
+  overflow: hidden;
+}
+.occupancy-meter > span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  background: var(--occupancy-color);
+  border-radius: inherit;
+  transition: width 180ms ease;
+}
+.occupancy-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: #52657b;
+  font-size: 13px;
+}
+.occupancy-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.occupancy-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.custom-report {
+  margin-block: 20px;
+  min-width: 0;
+}
+.custom-report-content {
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.custom-report-selection {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.custom-report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+.custom-report-filters > label:first-child {
+  min-width: 180px;
+}
+.custom-field-groups {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.custom-field-groups fieldset {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #e0e7f0;
+  border-radius: 10px;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+.custom-field-groups legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+.custom-report label.report-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 32px;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #40536c;
+}
+.custom-report .report-check input {
+  min-height: 18px;
+  max-height: 18px;
+  padding: 0;
+  flex: 0 0 18px;
+  min-width: 18px;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0;
+}
+.custom-report-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+}
+.custom-report-actions small {
+  display: block;
+  margin-top: 4px;
+}
+.custom-report-preview {
+  min-width: 0;
+  max-height: 420px;
+}
+.custom-report-preview table {
+  min-width: max-content;
+}
+.custom-report-preview caption {
+  text-align: left;
+  padding: 0 0 12px;
+  font-size: 13px;
+  color: #62768d;
+}
+.custom-report-preview th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f5f8fc;
+}
+.custom-report-preview td {
+  max-width: 300px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1100px) {
+  .custom-field-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .custom-report-content {
+    padding: 14px;
+  }
+  .custom-report .panel-header {
+    display: grid;
+    gap: 12px;
+  }
+  .custom-report-actions > * {
+    width: 100%;
+  }
+  .class-directory .panel-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .custom-report-filters {
+    align-items: stretch;
+  }
+  .custom-report-filters > label:first-child {
+    width: 100%;
+  }
+}
+@media (max-width: 400px) {
+  .custom-field-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.class-directory td:nth-child(4) {
+  min-width: 140px;
+}

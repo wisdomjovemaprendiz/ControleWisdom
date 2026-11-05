@@ -1,4 +1,6 @@
 "use client";
+import { classFrame } from "@/lib/class-appearance";
+import { OccupancyBar } from "./occupancy-bar";
 import { studentDisplayName } from "@/lib/domain";
 import { StudentAvatar } from "./student-avatar";
 import { BirthdaysPanel } from "./birthdays-panel";
@@ -227,7 +229,8 @@ export function OperationsBoard({
                   return (
                     <tr
                       key={c.id}
-                      className={focus?.id === c.id ? "focused" : ""}
+                      className={`class-colored-row ${focus?.id === c.id ? "focused" : ""}`}
+                      style={classFrame(c)}
                     >
                       <td>
                         <button
@@ -255,14 +258,7 @@ export function OperationsBoard({
                           {count}
                           <small> / {c.capacity}</small>
                         </span>
-                        <span className="capacity-line">
-                          <i
-                            style={{
-                              width:
-                                Math.min(100, (count / c.capacity) * 100) + "%",
-                            }}
-                          />
-                        </span>
+                        <OccupancyBar enrolled={count} capacity={c.capacity} />
                       </td>
                       <td>
                         <span
@@ -303,7 +299,10 @@ export function OperationsBoard({
             )}
           </div>
           {focus && (
-            <div className="class-journal">
+            <div
+              className="class-journal class-frame"
+              style={classFrame(focus)}
+            >
               <div className="journal-heading">
                 <div>
                   <span className="index-label">TURMA SELECIONADA</span>

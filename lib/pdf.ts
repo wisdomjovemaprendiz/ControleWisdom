@@ -52,6 +52,7 @@ export async function createInstitutionalPdf({
   author,
   photos = [],
   featuredStudent,
+  table,
 }: {
   title: string;
   lines: string[];
@@ -59,10 +60,14 @@ export async function createInstitutionalPdf({
   author: string;
   photos?: ReportPhoto[];
   featuredStudent?: Student;
+  table?: { headers: string[]; rows: string[][] };
 }) {
   const logo = await logoData();
   const doc = new jsPDF({
-    orientation: title === "Atividade da equipe" ? "landscape" : "portrait",
+    orientation:
+      title === "Atividade da equipe" || (table && table.headers.length > 5)
+        ? "landscape"
+        : "portrait",
   });
   const width = doc.internal.pageSize.getWidth(),
     height = doc.internal.pageSize.getHeight();
@@ -145,13 +150,18 @@ export async function createInstitutionalPdf({
     }
   }
 
-  const segments: { table: boolean; lines: string[] }[] = [];
+  const segments: {
+    table: boolean;
+    lines: string[];
+    structured?: { headers: string[]; rows: string[][] };
+  }[] = [];
   for (const line of lines.filter(Boolean)) {
     const isTable = line.includes(" | "),
       last = segments.at(-1);
     if (last && last.table === isTable) last.lines.push(line);
     else segments.push({ table: isTable, lines: [line] });
   }
+  if (table) segments.push({ table: true, lines: [], structured: table });
   if (!segments.length)
     segments.push({
       table: false,
@@ -184,28 +194,36 @@ export async function createInstitutionalPdf({
       y += Math.ceil(cards.length / 3) * 25 + 7;
       continue;
     }
-    const count = segment.table
-      ? Math.max(...segment.lines.map((l) => l.split(" | ").length))
-      : 1;
+    const count =
+      segment.structured?.headers.length ||
+      (segment.table
+        ? Math.max(...segment.lines.map((l) => l.split(" | ").length))
+        : 1);
     autoTable(doc, {
       startY: y,
       margin: { top: 64, left: 16, right: 16, bottom: 20 },
       head: [
-        segment.table ? headers(title, count) : ["INFORMAÇÕES DO RELATÓRIO"],
+        segment.structured?.headers ||
+          (segment.table
+            ? headers(title, count)
+            : ["INFORMAÇÕES DO RELATÓRIO"]),
       ],
-      body: segment.lines.map((line) =>
-        segment.table
-          ? line
-              .split(" | ")
-              .map((cell, i) =>
-                clean(i >= 2 ? cell.replace(/^[^:]+:\s*/, "") : cell),
-              )
-          : [clean(line)],
-      ),
+      body:
+        segment.structured?.rows ||
+        segment.lines.map((line) =>
+          segment.table
+            ? line
+                .split(" | ")
+                .map((cell, i) =>
+                  clean(i >= 2 ? cell.replace(/^[^:]+:\s*/, "") : cell),
+                )
+            : [clean(line)],
+        ),
       theme: "plain",
       styles: {
         font: "Wisdom",
-        fontSize: segment.table ? 8.5 : 9,
+        fontSize:
+          segment.structured && count > 12 ? 6.5 : segment.table ? 8.5 : 9,
         cellPadding: segment.table
           ? { top: 1.3, bottom: 1.3, left: 3, right: 3 }
           : 4,

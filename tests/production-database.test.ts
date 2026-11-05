@@ -1127,5 +1127,44 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       );
     },
   );
+  await t.test("turmas novas e existentes mantêm cor na edição", async () => {
+    await db.exec(
+      "reset role;select set_config('request.jwt.claim.sub','',false)",
+    );
+    await db.exec(
+      readFileSync(
+        new URL("../supabase/012_class_identity.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    await as(1);
+    const existing = (
+      await db.query<{ color: string }>("select color from public.classes")
+    ).rows;
+    assert.ok(existing.every((c) => /^#[0-9A-Fa-f]{6}$/.test(c.color)));
+    await db.query(
+      "insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values($1,$2,'Turma com cor','Curso',$3,'Ana','Segunda',10)",
+      [id(230), id(11), id(2)],
+    );
+    const color = (
+      await db.query<{ color: string }>(
+        "select color from public.classes where id=$1",
+        [id(230)],
+      )
+    ).rows[0].color;
+    await db.query(
+      "update public.classes set name='Turma com nome novo',color='#FFFFFF' where id=$1",
+      [id(230)],
+    );
+    assert.equal(
+      (
+        await db.query<{ color: string }>(
+          "select color from public.classes where id=$1",
+          [id(230)],
+        )
+      ).rows[0].color,
+      color,
+    );
+  });
   await db.close();
 });

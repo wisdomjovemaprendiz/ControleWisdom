@@ -29,6 +29,7 @@ export interface Profile {
   unit_id: string;
 }
 export interface CourseClass {
+  color?: string;
   enrollment_open?: boolean;
   enrollment_priority?: number;
   whatsapp_qr_path?: string | null;

@@ -49,6 +49,23 @@ test("relatório institucional inclui imagem da marca, tabelas e paginação de 
     assert.ok(
       (photographed.output().match(/\/Subtype \/Image/g) || []).length >= 2,
     );
+    const custom = await createInstitutionalPdf({
+      title: "Relatório personalizado",
+      unit: "Centro",
+      author: "Equipe",
+      lines: [],
+      table: {
+        headers: ["Telefone do responsável"],
+        rows: [["0011999999999"], ["Texto | com: símbolos"]],
+      },
+    });
+    const customTable = (custom as typeof custom & { lastAutoTable: Table })
+      .lastAutoTable;
+    assert.deepEqual(customTable.head[0].raw, ["Telefone do responsável"]);
+    assert.deepEqual(
+      customTable.body.map((r) => r.raw),
+      [["0011999999999"], ["Texto | com: símbolos"]],
+    );
   } finally {
     globalThis.fetch = original;
   }

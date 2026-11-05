@@ -1465,3 +1465,121 @@ test("foto redonda amplia duas vezes sem abrir a ficha do aluno", async ({
   await page.mouse.click(5, 5);
   await expect(zoom).toHaveCount(0);
 });
+
+test("relatório personalizado exporta somente as colunas marcadas em XLS e PDF", async ({
+  page,
+}) => {
+  const student = schoolApi.store.students[0];
+  student.guardian = "Responsável de teste";
+  student.guardian_phone = "0011999999999";
+  student.phone = "11911111111";
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Operação das unidades", exact: true }),
+  ).toBeVisible();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Relatórios", exact: true })
+    .click();
+  const report = page.getByRole("region", {
+    name: "Relatório personalizado",
+    exact: true,
+  });
+  await report
+    .getByRole("button", { name: "Limpar seleção", exact: true })
+    .click();
+  await expect(
+    report.getByRole("button", { name: "Baixar relatório", exact: true }),
+  ).toBeDisabled();
+  await report.getByLabel("Responsável", { exact: true }).check();
+  await report.getByLabel("Telefone do responsável", { exact: true }).check();
+  await expect(report.locator("thead th")).toHaveText([
+    "Responsável",
+    "Telefone do responsável",
+  ]);
+  await report
+    .getByLabel("Formato do arquivo", { exact: true })
+    .selectOption("xls");
+  const downloading = page.waitForEvent("download");
+  await report
+    .getByRole("button", { name: "Baixar relatório", exact: true })
+    .click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(/\.xls$/);
+  const { readFile } = await import("node:fs/promises"),
+    XLSX = await import("xlsx");
+  const bytes = await readFile((await download.path())!);
+  expect([...bytes.subarray(0, 4)]).toEqual([0xd0, 0xcf, 0x11, 0xe0]);
+  const wb = XLSX.read(bytes, { type: "buffer" }),
+    rows = XLSX.utils.sheet_to_json(wb.Sheets.Alunos, {
+      header: 1,
+      raw: true,
+    }) as unknown[][];
+  expect(rows[0]).toEqual(["Responsável", "Telefone do responsável"]);
+  expect(
+    rows.some(
+      (row) => row[0] === "Responsável de teste" && row[1] === "0011999999999",
+    ),
+  ).toBe(true);
+  expect(rows.flat()).not.toContain(student.name);
+  expect(rows.flat()).not.toContain(student.phone);
+  await report
+    .getByLabel("Formato do arquivo", { exact: true })
+    .selectOption("pdf");
+  const pdfDownload = page.waitForEvent("download");
+  await report
+    .getByRole("button", { name: "Baixar relatório", exact: true })
+    .click();
+  const pdf = await pdfDownload;
+  expect(pdf.suggestedFilename()).toMatch(/\.pdf$/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("turmas mantêm a moldura e a ocupação muda de cor por faixa", async ({
+  page,
+}) => {
+  const course = schoolApi.store.classes[0];
+  const count = schoolApi.store.students.filter(
+    (s) => s.class_id === course.id && s.status === "ativo",
+  ).length;
+  for (const [capacity, tone] of [
+    [count * 4, "low"],
+    [count * 2, "moderate"],
+    [Math.ceil(count / 0.8), "balanced"],
+    [count, "near-full"],
+  ] as const) {
+    course.capacity = capacity;
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Operação das unidades", exact: true }),
+    ).toBeVisible();
+    await page
+      .locator("nav")
+      .getByRole("button", { name: "Turmas", exact: true })
+      .click();
+    const row = page
+      .locator(".class-directory tbody tr")
+      .filter({ hasText: course.name });
+    await expect(row.locator(".occupancy-meter")).toHaveClass(new RegExp(tone));
+    expect(
+      await row
+        .locator("td")
+        .first()
+        .evaluate((el) => getComputedStyle(el).borderLeftColor),
+    ).toBe(
+      await page.evaluate((color) => {
+        const e = document.createElement("span");
+        e.style.color = color;
+        document.body.appendChild(e);
+        const value = getComputedStyle(e).color;
+        e.remove();
+        return value;
+      }, course.color!),
+    );
+  }
+});

@@ -1,3 +1,4 @@
+import { classPalette } from "../../lib/class-appearance";
 import type { Page } from "@playwright/test";
 import { schoolFixture } from "../fixtures/school";
 import { canAccess, type Store, type Profile } from "../../lib/domain";
@@ -25,6 +26,9 @@ export async function installSchoolApi(page: Page) {
     c.enrollment_open = true;
     c.enrollment_priority = c.id === "c1" ? 1 : 3;
   }
+  store.classes.forEach((course, index) => {
+    course.color = classPalette[index % classPalette.length];
+  });
   let actor = store.profiles[0];
   const objects = new Map<string, { body: Buffer; type: string }>();
   const user = () => ({
@@ -246,6 +250,12 @@ export async function installSchoolApi(page: Page) {
         const incoming = req.postDataJSON(),
           records = Array.isArray(incoming) ? incoming : [incoming];
         for (const record of records) {
+          if (table === "classes" && !record.color)
+            record.color =
+              classPalette[
+                values.filter((c) => c.unit_id === record.unit_id).length %
+                  classPalette.length
+              ];
           if (table === "students" && !values.some((v) => v.id === record.id)) {
             record.created_by = actor.id;
             record.registration_stage =
