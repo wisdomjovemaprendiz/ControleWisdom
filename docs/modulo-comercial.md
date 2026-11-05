@@ -12,7 +12,7 @@ O Comercial pode corrigir os dados básicos de suas próprias pré-matrículas e
 
 ## Passagem para a secretaria
 
-Uma pré-matrícula pendente aparece na **Central de atenção → Pré-matrículas**, na fila de operação e no contador de alertas da secretaria e da gestão. A secretaria abre o cadastro, completa ou confere os dados e marca **Concluir conferência da pré-matrícula** antes de salvar. Os campos opcionais continuam opcionais; o ato de conferência é uma sinalização explícita da equipe, não uma afirmação automática de que todos os dados foram preenchidos.
+Uma pré-matrícula pendente aparece na **Central de atenção → Pré-matrículas**, na fila de operação e no contador de alertas da secretaria e da gestão. As filas se atualizam automaticamente a cada minuto com a aba ativa e ao retornar à janela; a edição de formulários não é interrompida. A secretaria abre o cadastro, completa ou confere os dados e marca **Concluir conferência da pré-matrícula** antes de salvar. Os campos opcionais continuam opcionais; o ato de conferência é uma sinalização explícita da equipe, não uma afirmação automática de que todos os dados foram preenchidos.
 
 A conclusão guarda usuário e horário no banco, retira o alerta de pré-matrícula e atualiza a situação exibida ao Comercial. Os registros anteriores não são apagados. As pendências comuns de qualidade cadastral podem continuar aparecendo à secretaria se ainda houver informações opcionais em aberto.
 

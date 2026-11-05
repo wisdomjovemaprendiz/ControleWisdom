@@ -296,6 +296,75 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => {
+    if (
+      !supabase ||
+      !profile ||
+      profile.must_change_password ||
+      profile.role === "professor" ||
+      !["overview", "students", "classes", "alerts"].includes(page) ||
+      modal ||
+      importOpen ||
+      welcome ||
+      message
+    )
+      return;
+    let active = true,
+      inFlight = false;
+    const client = supabase;
+    async function refreshQueues() {
+      if (!active || inFlight || document.hidden) return;
+      inFlight = true;
+      try {
+        const updates: Partial<Store> = {};
+        for (const table of [
+          "students",
+          "classes",
+          "contacts",
+          "lessons",
+          "attendance",
+        ] as const) {
+          const rows: unknown[] = [];
+          for (let offset = 0; ; offset += 1000) {
+            const result = await client
+              .from(table)
+              .select("*")
+              .order("id")
+              .range(offset, offset + 999);
+            if (result.error) return;
+            rows.push(...result.data);
+            if (result.data.length < 1000) break;
+          }
+          (updates[table] as unknown[]) = rows;
+        }
+        if (active)
+          setStore((previous) =>
+            previous ? { ...previous, ...updates } : previous,
+          );
+      } finally {
+        inFlight = false;
+      }
+    }
+    const refresh = () => {
+      void refreshQueues().catch(() => {});
+    };
+    const timer = setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [
+    profile?.id,
+    profile?.role,
+    profile?.must_change_password,
+    page,
+    modal,
+    importOpen,
+    welcome,
+    message,
+  ]);
+  useEffect(() => {
     if (notice) {
       const timer = setTimeout(() => setNotice(""), 5000);
       return () => clearTimeout(timer);

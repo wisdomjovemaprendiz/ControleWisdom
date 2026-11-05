@@ -1152,3 +1152,30 @@ test("ficha do aluno mantém área de leitura proporcional em computador e celul
     ),
   ).toBe(true);
 });
+
+test("secretaria recebe nova pré-matrícula automaticamente sem recarregar a página", async ({
+  page,
+}) => {
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "secretaria");
+  await page.clock.install();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Mesa da secretaria", exact: true }),
+  ).toBeVisible();
+  const original = schoolApi.store.students[0];
+  schoolApi.store.students.push({
+    ...original,
+    id: "pre-auto",
+    name: "Atualização Comercial",
+    created_by: "p5",
+    registration_stage: "pre_enrollment",
+  });
+  await expect(page.locator(".queue-list")).not.toContainText(
+    "Atualização Comercial",
+  );
+  await page.clock.fastForward(61000);
+  await expect(page.locator(".queue-list")).toContainText(
+    "Atualização Comercial",
+  );
+});
