@@ -65,20 +65,6 @@ export function SalesDashboard({
     );
   return (
     <div className="sales-workspace">
-      <div className="sales-intro">
-        <div>
-          <span className="eyebrow">RELACIONAMENTO QUE VIRA OPORTUNIDADE</span>
-          <h2>Uma nova matrícula começa com a turma certa.</h2>
-          <p>
-            Priorize as opções indicadas pela secretaria e acompanhe cada
-            pré-matrícula até a conferência.
-          </p>
-        </div>
-        <button className="primary" onClick={() => onEnroll()}>
-          <UserPlus size={18} />
-          Nova pré-matrícula
-        </button>
-      </div>
       <div className="sales-metrics">
         {[
           { icon: UserPlus, label: "Minhas matrículas", value: own.length },
@@ -110,12 +96,7 @@ export function SalesDashboard({
       <section className="panel sales-classes">
         <div className="panel-header">
           <div>
-            <span className="index-label">ONDE FOCAR AS VENDAS</span>
-            <h2>Turmas disponíveis para matrícula</h2>
-            <p>
-              As pré-matrículas já reservam vaga. Turmas fechadas e sem vagas
-              não são ofertadas aqui.
-            </p>
+            <h2>Turmas com vagas</h2>
           </div>
         </div>
         <div className="sales-filters">
@@ -196,7 +177,6 @@ export function SalesDashboard({
           <div className="panel-header">
             <div>
               <h2>Minhas pré-matrículas</h2>
-              <p>Retome os dados ou acompanhe a conclusão pela secretaria.</p>
             </div>
           </div>
           {own
@@ -210,7 +190,7 @@ export function SalesDashboard({
                 onClick={() => onStudent(s)}
               >
                 <StudentAvatar student={s} />
-                <span>
+                <span className="sales-student-identity">
                   <strong>{studentDisplayName(s)}</strong>
                   <small>
                     {store.classes.find((c) => c.id === s.class_id)?.name ||
@@ -218,7 +198,7 @@ export function SalesDashboard({
                   </small>
                 </span>
                 <span
-                  className={`badge ${enrollmentStage(s) === "complete" ? "green" : "amber"}`}
+                  className={`sales-student-status badge ${enrollmentStage(s) === "complete" ? "green" : "amber"}`}
                 >
                   {enrollmentStage(s) === "complete"
                     ? "Concluído"
@@ -227,18 +207,12 @@ export function SalesDashboard({
                 <ArrowUpRight size={16} />
               </button>
             ))}
-          {!own.length && (
-            <div className="empty">Suas pré-matrículas aparecerão aqui.</div>
-          )}
+          {!own.length && <div className="empty">Nenhuma pré-matrícula.</div>}
         </section>
         <section className="panel">
           <div className="panel-header">
             <div>
-              <h2>Faltas pedem uma conversa</h2>
-              <p>
-                Alertas compartilhados com a secretaria; confira os contatos
-                anteriores para coordenar a intervenção.
-              </p>
+              <h2>Alertas de faltas</h2>
             </div>
           </div>
           {absent.slice(0, 12).map((s) => (
@@ -248,7 +222,7 @@ export function SalesDashboard({
                 onClick={() => onStudent(s)}
               >
                 <StudentAvatar student={s} />
-                {studentDisplayName(s)}
+                <span>{studentDisplayName(s)}</span>
               </button>
               <p>
                 {absenceCount(store, s.id)} falta(s) acumulada(s)

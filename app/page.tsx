@@ -1125,12 +1125,12 @@ export default function App() {
           </div>
         </a>
         <div className="header-greeting">
-          <strong>Olá, {profile.name.split(" ")[0]}!</strong>
+          <strong>{profile.name.split(" ")[0]}</strong>
           <span>
-            {labels[profile.role]} •{" "}
-            {isManager(profile.role)
-              ? "Visão das unidades"
-              : store.units.find((u) => u.id === profile.unit_id)?.name}
+            {labels[profile.role]}
+            {!isManager(profile.role) && (
+              <> • {store.units.find((u) => u.id === profile.unit_id)?.name}</>
+            )}
           </span>
         </div>
         <form
@@ -1204,7 +1204,7 @@ export default function App() {
           )}
           <button
             className="mobile-menu icon-button"
-            aria-label="Abrir menu"
+            aria-label={mobile ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobile}
             onClick={() => setMobile(!mobile)}
           >
@@ -1251,11 +1251,6 @@ export default function App() {
         <main className="content">
           <div className="page-heading">
             <div>
-              <div className="eyebrow">
-                {page === "overview"
-                  ? "CONTROLE ACADÊMICO / " + labels[profile.role].toUpperCase()
-                  : "WISDOM / " + currentNav[1].toUpperCase()}
-              </div>
               <h1>
                 {page === "overview"
                   ? profile.role === "comercial"
@@ -1267,38 +1262,6 @@ export default function App() {
                         : "Operação das unidades"
                   : currentNav[1]}
               </h1>
-              <p>
-                {
-                  (
-                    {
-                      overview:
-                        profile.role === "comercial"
-                          ? "Vagas, pré-matrículas e relacionamento com alunos e responsáveis."
-                          : "Turmas, frequência e encaminhamentos da equipe no mesmo contexto.",
-                      offerings:
-                        "Formações para o primeiro emprego e para toda a trajetória.",
-                      students:
-                        "Consulte matrículas e abra a ficha para acompanhar o histórico do aluno.",
-                      classes:
-                        "Distribuição de alunos, professores e vagas por turma.",
-                      attendance:
-                        "Selecione a turma e a data. Registre todos os alunos antes de finalizar.",
-                      pedagogy:
-                        "Diagnósticos, intervenções e retornos por aluno ou turma.",
-                      alerts:
-                        "Faltas e contatos com responsáveis, com histórico de encaminhamentos.",
-                      reports:
-                        "Relatórios de frequência, matrículas e atividade da equipe.",
-                      units:
-                        "Cadastro e acompanhamento das unidades da Wisdom Cursos.",
-                      records:
-                        "Edite, arquive, restaure e exclua registros com controle de vínculos.",
-                      settings:
-                        "Perfis da equipe e permissões de acesso por unidade.",
-                    } as Record<string, string>
-                  )[page]
-                }
-              </p>
             </div>
             <div className="heading-actions">
               {profile.role === "admin" &&
@@ -1331,38 +1294,38 @@ export default function App() {
                   <Upload size={16} /> Importar Excel
                 </button>
               )}
-              <label className="unit-picker">
-                <Building2 size={16} />
-                <select
-                  aria-label="Filtrar unidade"
-                  value={currentUnit}
-                  disabled={!isManager(profile.role)}
-                  onChange={(e) => {
-                    setUnit(e.target.value);
-                    setStudentClass("all");
-                    setReportClass("all");
-                    setDossierId(null);
-                  }}
-                >
-                  {isManager(profile.role) && (
-                    <option value="all">Todas as unidades</option>
-                  )}
-                  {unitOptions.map((u) => (
-                    <option value={u.id} key={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {isManager(profile.role) && (
+                <label className="unit-picker">
+                  <Building2 size={16} />
+                  <select
+                    aria-label="Filtrar unidade"
+                    value={currentUnit}
+                    disabled={!isManager(profile.role)}
+                    onChange={(e) => {
+                      setUnit(e.target.value);
+                      setStudentClass("all");
+                      setReportClass("all");
+                      setDossierId(null);
+                    }}
+                  >
+                    {isManager(profile.role) && (
+                      <option value="all">Todas as unidades</option>
+                    )}
+                    {unitOptions.map((u) => (
+                      <option value={u.id} key={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {!["attendance", "reports", "settings", "records"].includes(
                 page,
               ) &&
                 !(page === "pedagogy" && profile.role === "secretaria") &&
                 !(
                   profile.role === "comercial" &&
-                  ["classes", "offerings", "settings", "overview"].includes(
-                    page,
-                  )
+                  ["classes", "offerings", "settings"].includes(page)
                 ) && (
                   <button
                     className="primary"
@@ -2133,16 +2096,6 @@ export default function App() {
                   setModal({ kind: "pedagogy", parentRecord: record })
                 }
               />
-              <div className="info-banner">
-                <BookOpen size={22} />
-                <div>
-                  <strong>Aprender é uma trajetória.</strong>
-                  <p>
-                    Registre diagnósticos, evolução e intervenções individuais
-                    ou de toda a turma.
-                  </p>
-                </div>
-              </div>
               <div className="records-grid">
                 {store.pedagogy
                   .filter((p) => scoped(p.unit_id))

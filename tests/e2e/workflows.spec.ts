@@ -85,7 +85,7 @@ test("filtro de unidade e perfil restringem dados na interface", async ({
     .click();
   await page.getByTitle("Sair", { exact: true }).click();
   await login(page, "ana.oliveira");
-  await expect(page.getByLabel("Filtrar unidade")).toBeDisabled();
+  await expect(page.getByLabel("Filtrar unidade")).toHaveCount(0);
   await expect(
     page.locator("nav").getByRole("button", { name: "Unidades", exact: true }),
   ).toHaveCount(0);
@@ -1178,4 +1178,71 @@ test("secretaria recebe nova pré-matrícula automaticamente sem recarregar a p�
   await expect(page.locator(".queue-list")).toContainText(
     "Atualização Comercial",
   );
+});
+
+test("comercial no celular mantém ação inicial e identidade dos alunos legíveis", async ({
+  page,
+}) => {
+  Object.assign(schoolApi.store.students[0], {
+    name: "Marcos Palmeiras",
+    created_by: "p5",
+    registration_stage: "pre_enrollment",
+  });
+  schoolApi.store.classes[0].name = "01 – Ter e Qui – 8h";
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "comercial");
+  for (const width of [360, 390, 412]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const action = await page
+      .getByRole("button", { name: "Nova pré-matrícula", exact: true })
+      .boundingBox();
+    expect(action!.y + action!.height).toBeLessThan(320);
+    await expect(
+      page.getByText("Uma nova matrícula começa com a turma certa."),
+    ).toHaveCount(0);
+    const row = page
+      .locator(".sales-student-row")
+      .filter({ hasText: "Marcos Palmeiras" });
+    const identity = await row.locator(".sales-student-identity").boundingBox();
+    const status = await row.locator(".sales-student-status").boundingBox();
+    expect(identity!.width).toBeGreaterThan(180);
+    expect(identity!.height).toBeLessThan(100);
+    expect(status!.y).toBeGreaterThanOrEqual(identity!.y + identity!.height);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+});
+
+test("módulos administrativos cabem em tela pequena sem comprimir a página", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  const menu = page.locator("nav");
+  await page.getByRole("button", { name: "Abrir menu" }).click();
+  const names = await menu
+    .getByRole("button")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => button.getAttribute("aria-label")!),
+    );
+  await page.getByRole("button", { name: "Fechar menu" }).click();
+  for (const name of names) {
+    await page.getByRole("button", { name: "Abrir menu" }).click();
+    await menu.getByRole("button", { name: name.trim(), exact: true }).click();
+    await expect(page.locator(".page-heading h1")).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      name,
+    ).toBe(true);
+    expect(
+      await page
+        .locator(".page-heading h1")
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+    ).toBeLessThanOrEqual(24);
+  }
 });

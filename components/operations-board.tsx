@@ -94,7 +94,7 @@ export function OperationsBoard({
     <div className="operations-board">
       <div className="register-metrics">
         <div>
-          <span>ALUNOS EM FORMAÇÃO</span>
+          <span>ALUNOS ATIVOS</span>
           <strong>
             {active.length.toString().padStart(2, "0")}
             <small>de {students.length} matrículas</small>
@@ -102,7 +102,7 @@ export function OperationsBoard({
         </div>
         <div>
           <span>
-            TURMAS {profile.role === "professor" ? "ATRIBUÍDAS" : "NA REDE"}
+            {profile.role === "professor" ? "MINHAS TURMAS" : "TURMAS"}
           </span>
           <strong>
             {scopeClasses.length.toString().padStart(2, "0")}
@@ -119,7 +119,7 @@ export function OperationsBoard({
           </strong>
         </div>
         <div>
-          <span>PRESENÇA REGISTRADA</span>
+          <span>FREQUÊNCIA</span>
           <strong>
             {ownFrequency === null ? "—" : ownFrequency + "%"}
             <small>atrasos contam como presença</small>
@@ -153,9 +153,6 @@ export function OperationsBoard({
                   ? "Minhas turmas"
                   : "Quadro de turmas"}
               </h2>
-              <p>
-                Selecione uma turma para consultar o diário ou abrir a chamada.
-              </p>
             </div>
             <label className="board-date">
               <span>Data de referência</span>
@@ -437,9 +434,7 @@ export function OperationsBoard({
               <span className="queue-count">{tasks.length}</span>
             </div>
             <h2>Próximas ações</h2>
-            <p className="queue-intro">
-              Pendências do cadastro e acompanhamentos que precisam de retorno.
-            </p>
+
             <div className="queue-list">
               {tasks.slice(0, 3).map((task, i) => (
                 <article className={`queue-task ${task.kind}`} key={task.id}>

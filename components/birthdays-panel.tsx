@@ -29,7 +29,7 @@ export function BirthdaysPanel({
           <p>
             {today.length
               ? `${today.length} ${today.length === 1 ? "aluno faz" : "alunos fazem"} aniversário hoje`
-              : "Celebre cada nova etapa."}
+              : "Nenhum aniversário hoje."}
           </p>
         </div>
       </div>
