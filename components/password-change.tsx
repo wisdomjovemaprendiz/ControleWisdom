@@ -5,9 +5,13 @@ import { supabase } from "@/lib/supabase";
 export function PasswordChange({
   required = false,
   onDone,
+  onCancel,
+  onBusyChange,
 }: {
   required?: boolean;
   onDone: () => void;
+  onCancel?: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -19,6 +23,7 @@ export function PasswordChange({
       return;
     }
     setBusy(true);
+    onBusyChange?.(true);
     setError("");
     try {
       const { data: session } = await supabase!.auth.getSession();
@@ -40,6 +45,7 @@ export function PasswordChange({
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
     }
   }
   return (
@@ -87,6 +93,16 @@ export function PasswordChange({
       <button className="primary" disabled={busy}>
         {busy ? "Alterando…" : "Salvar nova senha e entrar novamente"}
       </button>
+      {onCancel && (
+        <button
+          className="secondary"
+          type="button"
+          disabled={busy}
+          onClick={onCancel}
+        >
+          Cancelar
+        </button>
+      )}
       {required && (
         <button
           className="text-link"

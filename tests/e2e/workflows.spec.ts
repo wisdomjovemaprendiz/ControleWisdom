@@ -1583,3 +1583,130 @@ test("turmas mantêm a moldura e a ocupação muda de cor por faixa", async ({
     );
   }
 });
+
+test("acessos ficam primeiro e auditoria inicia recolhida sem buscar movimentos", async ({
+  page,
+}) => {
+  let auditRequests = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/rest/v1/audit_log")
+      auditRequests++;
+  });
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Equipe e acesso", exact: true })
+    .click();
+  const team = await page
+      .getByRole("heading", { name: "Equipe e logins", exact: true })
+      .boundingBox(),
+    checklist = await page
+      .getByRole("heading", { name: "Checklist de desligamento", exact: true })
+      .boundingBox();
+  const audit = page.locator(".audit-panel"),
+    summary = audit.locator(":scope > summary");
+  const auditBox = await summary.boundingBox();
+  expect(team!.y).toBeLessThan(checklist!.y);
+  expect(checklist!.y).toBeLessThan(auditBox!.y);
+  await expect(audit).not.toHaveAttribute("open", "");
+  await expect(audit.locator("select").first()).toBeHidden();
+  expect(auditRequests).toBe(0);
+  await expect(page.locator(".password-change")).toHaveCount(0);
+  await summary.click();
+  await expect(audit).toHaveAttribute("open", "");
+  await expect(
+    audit.getByText("Nenhuma alteração nesta página.", { exact: true }),
+  ).toBeVisible();
+  await expect.poll(() => auditRequests).toBe(1);
+  await summary.click();
+  await expect(audit.locator("select").first()).toBeHidden();
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(audit.locator("select").first()).toBeVisible();
+});
+
+test("próprio usuário altera senha pelo botão da linha sem painel permanente", async ({
+  page,
+}) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Equipe e acesso", exact: true })
+    .click();
+  const actor = schoolApi.store.profiles[0],
+    row = page.locator("tbody tr").filter({ hasText: actor.name }),
+    ownButton = row.getByTitle("Alterar minha senha", { exact: true });
+  await expect(ownButton).toBeVisible();
+  await ownButton.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Alterar minha senha",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Nova senha", { exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(ownButton).toBeFocused();
+  await page.locator(".header-profile-name").click();
+  await expect(dialog).toBeVisible();
+  await dialog
+    .getByLabel("Nova senha", { exact: true })
+    .fill("MinhaSenhaNova123");
+  await dialog
+    .getByLabel("Confirmar nova senha", { exact: true })
+    .fill("OutraSenha123");
+  await dialog
+    .getByRole("button", {
+      name: "Salvar nova senha e entrar novamente",
+      exact: true,
+    })
+    .click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "As senhas não coincidem.",
+  );
+  await dialog
+    .getByLabel("Confirmar nova senha", { exact: true })
+    .fill("MinhaSenhaNova123");
+  const change = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/account/password",
+  );
+  await dialog
+    .getByRole("button", {
+      name: "Salvar nova senha e entrar novamente",
+      exact: true,
+    })
+    .click();
+  expect((await change).postDataJSON()).toEqual({
+    password: "MinhaSenhaNova123",
+  });
+  await expect(
+    page.getByRole("button", { name: "Entrar", exact: true }),
+  ).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+});
+
+test("funcionário acessa sua senha pelo cabeçalho no celular", async ({
+  page,
+}) => {
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "secretaria");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator(".header-profile-name").click();
+  const dialog = page.getByRole("dialog", {
+    name: "Alterar minha senha",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Nova senha", { exact: true })).toBeFocused();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Abrir menu" }).click();
+  await expect(
+    page
+      .locator("nav")
+      .getByRole("button", { name: "Equipe e acesso", exact: true }),
+  ).toHaveCount(0);
+});

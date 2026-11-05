@@ -42,6 +42,7 @@ import {
   MessageCircle,
   Download,
   LogOut,
+  KeyRound,
   Menu,
   Archive,
   CheckCircle2,
@@ -78,6 +79,7 @@ import {
 import { RecordManager } from "@/components/record-manager";
 import { operationalStore, type RecordTable } from "@/lib/records";
 import { TeamManager } from "@/components/team-manager";
+import { PasswordChangeDialog } from "@/components/password-change-dialog";
 import { PasswordChange } from "@/components/password-change";
 import { DailyAnalysis } from "@/components/daily-analysis";
 import { StudentAvatar } from "@/components/student-avatar";
@@ -179,6 +181,7 @@ export default function App() {
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [passwordOpen, setPasswordOpen] = useState(false),
     [mobile, setMobile] = useState(false),
     [message, setMessage] = useState<{
       text: string;
@@ -304,6 +307,7 @@ export default function App() {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       clearPhotoCache();
       if (event === "SIGNED_OUT") {
+        setPasswordOpen(false);
         setProfile(null);
         setStore(null);
         setPage("overview");
@@ -321,6 +325,7 @@ export default function App() {
       profile.role === "professor" ||
       !["overview", "students", "classes", "alerts"].includes(page) ||
       modal ||
+      passwordOpen ||
       importOpen ||
       welcome ||
       message
@@ -378,6 +383,7 @@ export default function App() {
     profile?.must_change_password,
     page,
     modal,
+    passwordOpen,
     importOpen,
     welcome,
     message,
@@ -1229,7 +1235,17 @@ export default function App() {
           </div>
         </a>
         <div className="header-greeting">
-          <strong>{profile.name.split(" ")[0]}</strong>
+          <button
+            type="button"
+            className="header-profile-name"
+            aria-label="Alterar minha senha"
+            title="Alterar minha senha"
+            aria-haspopup="dialog"
+            onClick={() => setPasswordOpen(true)}
+          >
+            <strong>{profile.name.split(" ")[0]}</strong>
+            <KeyRound size={14} aria-hidden="true" />
+          </button>
           <span>
             {labels[profile.role]}
             {!isManager(profile.role) && (
@@ -1324,6 +1340,7 @@ export default function App() {
           .filter(
             (n) =>
               (n[0] !== "units" || isManager(profile.role)) &&
+              (n[0] !== "settings" || isManager(profile.role)) &&
               (n[0] !== "records" || profile.role === "admin") &&
               (profile.role !== "comercial" ||
                 [
@@ -2652,25 +2669,20 @@ export default function App() {
               onSaved={load}
             />
           )}
-          {page === "settings" && isManager(profile.role) && (
-            <LifecycleSettings store={allRecords!} />
-          )}
           {page === "settings" && (
-            <div className="account-settings">
+            <div className="access-settings">
               {profile.role === "admin" && (
                 <TeamManager
                   profiles={store.profiles}
                   units={store.units}
                   actor={profile}
                   onSaved={load}
+                  onOwnPassword={() => setPasswordOpen(true)}
                 />
               )}
-              <PasswordChange
-                onDone={() => {
-                  setProfile(null);
-                  setStore(null);
-                }}
-              />
+              {isManager(profile.role) && (
+                <LifecycleSettings store={allRecords!} />
+              )}
             </div>
           )}
           <footer className="page-footer">
@@ -2768,6 +2780,16 @@ export default function App() {
           initialUnit={currentUnit}
           onClose={() => setImportOpen(false)}
           onImport={saveImportedStudents}
+        />
+      )}
+      {passwordOpen && (
+        <PasswordChangeDialog
+          onClose={() => setPasswordOpen(false)}
+          onDone={() => {
+            setPasswordOpen(false);
+            setProfile(null);
+            setStore(null);
+          }}
         />
       )}
       {modal && (

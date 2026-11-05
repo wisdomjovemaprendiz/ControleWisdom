@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { OffboardingStep } from "./offboarding-checklist";
 import {
@@ -17,10 +18,12 @@ export function LifecycleSettings({
   const [steps, setSteps] = useState<OffboardingStep[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [auditOpen, setAuditOpen] = useState(false),
+    [auditError, setAuditError] = useState(""),
     [audit, setAudit] = useState<AuditEntry[]>([]),
     [page, setPage] = useState(0),
     [entity, setEntity] = useState("students"),
-    [loading, setLoading] = useState(false),
+    [loading, setLoading] = useState(true),
     [studentId, setStudentId] = useState("");
   async function loadSteps() {
     const r = await supabase!
@@ -35,9 +38,10 @@ export function LifecycleSettings({
     void loadSteps();
   }, []);
   useEffect(() => {
+    if (!auditOpen) return;
     let active = true;
     setLoading(true);
-    setError("");
+    setAuditError("");
     void (async () => {
       let query = supabase!
         .from("audit_log")
@@ -51,7 +55,7 @@ export function LifecycleSettings({
         query = query.eq("entity_id", studentId);
       const r = await query;
       if (active) {
-        if (r.error) setError("Não foi possível carregar a auditoria.");
+        if (r.error) setAuditError("Não foi possível carregar a auditoria.");
         else setAudit(r.data);
         setLoading(false);
       }
@@ -59,10 +63,11 @@ export function LifecycleSettings({
     return () => {
       active = false;
     };
-  }, [page, entity, studentId]);
+  }, [auditOpen, page, entity, studentId]);
   async function add(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    setError("");
     const label = String(new FormData(form).get("label") || "").trim();
     setBusy(true);
     const r = await supabase!.from("offboarding_steps").insert({
@@ -96,6 +101,11 @@ export function LifecycleSettings({
         <div className="panel-header">
           <h2>Checklist de desligamento</h2>
         </div>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="lifecycle-content">
           <p>
             Alterações valem para os próximos desligamentos. O histórico mantém
@@ -159,9 +169,20 @@ export function LifecycleSettings({
           </form>
         </div>
       </section>
-      <section className="panel">
-        <div className="panel-header">
+      <details
+        className="panel audit-panel"
+        onToggle={(event) => {
+          if (event.target !== event.currentTarget) return;
+          const open = event.currentTarget.open;
+          if (open) setLoading(true);
+          setAuditOpen(open);
+        }}
+      >
+        <summary className="audit-summary">
           <h2>Auditoria de alterações</h2>
+          <ChevronDown size={20} aria-hidden="true" />
+        </summary>
+        <div className="panel-header">
           <label>
             Tipo de registro
             <select
@@ -203,9 +224,9 @@ export function LifecycleSettings({
             </label>
           </div>
         )}
-        {error && (
+        {auditError && (
           <p className="error" role="alert">
-            {error}
+            {auditError}
           </p>
         )}
         <div className="lifecycle-content">
@@ -287,7 +308,7 @@ export function LifecycleSettings({
             </button>
           </div>
         </div>
-      </section>
+      </details>
     </div>
   );
 }

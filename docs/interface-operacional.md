@@ -12,3 +12,5 @@ A interface mantém a marca Wisdom, com azul institucional, vermelho para destaq
 ## Verificação
 
 A suíte Playwright verifica a ação inicial do comercial e a largura da identidade do aluno em 360, 390 e 412 px. Também percorre os módulos administrativos em 360 px, confere a ausência de transbordamento da página e preserva testes de fontes, ficha do aluno, chamadas, fotos e permissões. Revisar visualmente os perfis administrativo, secretaria, professor e comercial no celular e no computador ao alterar a estrutura global.
+
+Na área Equipe e acesso, a administração de logins aparece primeiro, seguida do checklist de desligamento e da auditoria. A auditoria inicia recolhida e busca as movimentações apenas quando expandida. A alteração da própria senha é aberta pelo botão de chave na linha do usuário ou pelo nome do usuário no cabeçalho; o formulário não ocupa espaço permanente na página. Perfis sem administração de acessos usam o cabeçalho para alterar a senha, sem uma página de configurações vazia no menu.

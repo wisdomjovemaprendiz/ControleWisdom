@@ -4552,3 +4552,98 @@ button.secondary {
 .class-directory td:nth-child(4) {
   min-width: 140px;
 }
+.header-profile-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.header-profile-name svg {
+  flex-shrink: 0;
+  color: #6887aa;
+}
+.header-profile-name:hover strong {
+  color: #164b91;
+}
+.header-profile-name:focus-visible {
+  outline: 2px solid #164b91;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.access-settings {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.access-settings .lifecycle-settings {
+  margin-block: 0;
+}
+.audit-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.audit-summary::-webkit-details-marker {
+  display: none;
+}
+.audit-summary h2 {
+  font-size: 20px;
+  color: #496581;
+}
+.audit-summary svg {
+  color: #637e9c;
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.audit-panel[open] > .audit-summary {
+  border-bottom: 1px solid #e5ebf2;
+}
+.audit-panel[open] > .audit-summary svg {
+  transform: rotate(180deg);
+}
+.audit-summary:focus-visible {
+  outline: 2px solid #164b91;
+  outline-offset: -3px;
+}
+.password-dialog {
+  position: relative;
+  width: min(100%, 460px);
+}
+.password-dialog > .password-change {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  padding: 28px;
+  border: 0;
+  border-radius: inherit;
+}
+.password-dialog-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 1;
+  min-width: 40px;
+  min-height: 40px;
+}
+@media (max-width: 700px) {
+  .audit-summary {
+    padding: 16px;
+  }
+  .audit-summary h2 {
+    font-size: 19px;
+  }
+  .password-dialog > .password-change {
+    padding: 24px 18px;
+  }
+}

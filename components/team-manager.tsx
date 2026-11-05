@@ -8,11 +8,13 @@ export function TeamManager({
   units,
   actor,
   onSaved,
+  onOwnPassword,
 }: {
   profiles: Profile[];
   units: Unit[];
   actor: Profile;
   onSaved: () => Promise<void>;
+  onOwnPassword: () => void;
 }) {
   const [mode, setMode] = useState<"create" | "edit" | "password" | null>(null),
     [selected, setSelected] = useState<Profile | null>(null),
@@ -151,6 +153,16 @@ export function TeamManager({
                       >
                         <Pencil size={16} />
                       </button>
+                      {p.id === actor.id && (
+                        <button
+                          className="icon-button"
+                          type="button"
+                          title="Alterar minha senha"
+                          onClick={onOwnPassword}
+                        >
+                          <KeyRound size={16} />
+                        </button>
+                      )}
                       {p.id !== actor.id && (
                         <button
                           className="icon-button"
