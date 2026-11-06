@@ -3,6 +3,7 @@ import {
   EnrollmentPlanningFields,
   ClassPlanningFields,
 } from "@/components/course-planning-fields";
+import { CompactDialog } from "@/components/compact-dialog";
 import { courseProgress, formatHours } from "@/lib/course-progress";
 import { classFrame, occupancyInfo } from "@/lib/class-appearance";
 import { OccupancyBar, OccupancyLegend } from "@/components/occupancy-bar";
@@ -24,6 +25,7 @@ import { isManager, loginAddress } from "@/lib/accounts";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -235,6 +237,14 @@ export default function App() {
     >({}),
     [reportFrom, setReportFrom] = useState(""),
     [reportTo, setReportTo] = useState(today());
+  const [attendanceEditor, setAttendanceEditor] = useState<{
+    student: Student;
+    status: "atrasado" | "justificado";
+    arrival_time: string;
+    justification: string;
+  } | null>(null);
+  const [lessonBirthdays, setLessonBirthdays] = useState<Student[]>([]);
+  const birthdaySelection = useRef("");
   const [photoDraft, setPhotoDraft] = useState<CompressedPhoto | null>(null),
     [removePhoto, setRemovePhoto] = useState(false),
     [photoBusy, setPhotoBusy] = useState(false);
@@ -512,6 +522,48 @@ export default function App() {
     store?.lessons,
     store?.attendance,
   ]);
+  useEffect(() => {
+    const key =
+      page === "attendance" &&
+      selectedClass &&
+      profile?.role !== "secretaria" &&
+      profile?.role !== "comercial"
+        ? `${selectedClass.id}:${individualStudent?.id || ""}:${lessonDate}`
+        : "";
+    if (birthdaySelection.current === key) return;
+    birthdaySelection.current = key;
+    setAttendanceEditor(null);
+    setLessonBirthdays(
+      key && /^\d{4}-\d{2}-\d{2}$/.test(lessonDate)
+        ? active
+            .filter(isAttendanceStudent)
+            .filter(
+              (student) =>
+                student.birth_date &&
+                student.birth_date <= lessonDate &&
+                student.birth_date.slice(5) === lessonDate.slice(5),
+            )
+        : [],
+    );
+  }, [
+    page,
+    selectedClass?.id,
+    individualStudent?.id,
+    lessonDate,
+    profile?.role,
+    active,
+  ]);
+  function editAttendance(
+    student: Student,
+    status: "atrasado" | "justificado",
+  ) {
+    setAttendanceEditor({
+      student,
+      status,
+      arrival_time: attendanceDetails[student.id]?.arrival_time || "",
+      justification: attendanceDetails[student.id]?.justification || "",
+    });
+  }
   async function save<K extends keyof Store>(
     table: K,
     record: Store[K][number],
@@ -2168,7 +2220,10 @@ export default function App() {
                     </button>
                   </div>
                   {active.filter(isAttendanceStudent).map((s) => (
-                    <div className="attendance-row" key={s.id}>
+                    <div
+                      className={`attendance-row ${marks[s.id] ? `marked-${marks[s.id]}` : ""}`}
+                      key={s.id}
+                    >
                       <div className="person">
                         <StudentAvatar student={s} />
                         <button
@@ -2191,25 +2246,42 @@ export default function App() {
                           <button
                             type="button"
                             key={status}
+                            title={
+                              marks[s.id] === status &&
+                              (status === "atrasado" ||
+                                status === "justificado")
+                                ? status === "atrasado"
+                                  ? attendanceDetails[s.id]?.arrival_time
+                                    ? `Chegada: ${attendanceDetails[s.id].arrival_time} · Clique para editar`
+                                    : "Adicionar horário (opcional)"
+                                  : attendanceDetails[s.id]?.justification
+                                    ? `${attendanceDetails[s.id].justification} · Clique para editar`
+                                    : "Adicionar motivo (opcional)"
+                                : undefined
+                            }
                             aria-pressed={marks[s.id] === status}
                             className={
                               marks[s.id] === status ? `chosen ${status}` : ""
                             }
                             onClick={() => {
-                              setMarks({ ...marks, [s.id]: status });
-                              setAttendanceDetails((prev) => ({
-                                ...prev,
-                                [s.id]: {
-                                  arrival_time:
-                                    status === "atrasado"
-                                      ? prev[s.id]?.arrival_time || ""
-                                      : "",
-                                  justification:
-                                    status === "justificado"
-                                      ? prev[s.id]?.justification || ""
-                                      : "",
-                                },
-                              }));
+                              if (
+                                status === "atrasado" ||
+                                status === "justificado"
+                              ) {
+                                editAttendance(s, status);
+                              } else {
+                                setMarks((prev) => ({
+                                  ...prev,
+                                  [s.id]: status,
+                                }));
+                                setAttendanceDetails((prev) => ({
+                                  ...prev,
+                                  [s.id]: {
+                                    arrival_time: "",
+                                    justification: "",
+                                  },
+                                }));
+                              }
                             }}
                           >
                             {marks[s.id] === status && <Check size={14} />}{" "}
@@ -2217,44 +2289,6 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      {marks[s.id] === "atrasado" && (
-                        <label className="attendance-detail">
-                          Horário de chegada (opcional)
-                          <input
-                            type="time"
-                            aria-label={`Horário de chegada de ${studentDisplayName(s)}`}
-                            value={attendanceDetails[s.id]?.arrival_time || ""}
-                            onChange={(e) =>
-                              setAttendanceDetails((prev) => ({
-                                ...prev,
-                                [s.id]: {
-                                  arrival_time: e.target.value,
-                                  justification: "",
-                                },
-                              }))
-                            }
-                          />
-                        </label>
-                      )}
-                      {marks[s.id] === "justificado" && (
-                        <label className="attendance-detail">
-                          Motivo da justificativa (opcional)
-                          <textarea
-                            maxLength={2000}
-                            aria-label={`Justificativa de ${studentDisplayName(s)}`}
-                            value={attendanceDetails[s.id]?.justification || ""}
-                            onChange={(e) =>
-                              setAttendanceDetails((prev) => ({
-                                ...prev,
-                                [s.id]: {
-                                  arrival_time: "",
-                                  justification: e.target.value,
-                                },
-                              }))
-                            }
-                          />
-                        </label>
-                      )}
                     </div>
                   ))}
                   {!active.some(isAttendanceStudent) && (
@@ -2857,6 +2891,108 @@ export default function App() {
             setStore(null);
           }}
         />
+      )}
+      {lessonBirthdays.length > 0 && (
+        <CompactDialog
+          title="Aniversariantes da aula"
+          onClose={() => setLessonBirthdays([])}
+        >
+          <p className="compact-dialog-date">
+            {displayDate(lessonDate)} · {selectedClass?.name}
+          </p>
+          <ul className="lesson-birthdays">
+            {lessonBirthdays.map((student) => (
+              <li key={student.id}>
+                <StudentAvatar student={student} />
+                <strong>{studentDisplayName(student)}</strong>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="primary"
+            data-initial-focus
+            onClick={() => setLessonBirthdays([])}
+          >
+            Continuar chamada
+          </button>
+        </CompactDialog>
+      )}
+      {attendanceEditor && (
+        <CompactDialog
+          title={
+            attendanceEditor.status === "atrasado"
+              ? "Registrar atraso"
+              : "Justificar ausência"
+          }
+          onClose={() => setAttendanceEditor(null)}
+        >
+          <p className="compact-dialog-student">
+            {studentDisplayName(attendanceEditor.student)}
+          </p>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const { student, status, arrival_time, justification } =
+                attendanceEditor;
+              setMarks((prev) => ({ ...prev, [student.id]: status }));
+              setAttendanceDetails((prev) => ({
+                ...prev,
+                [student.id]: {
+                  arrival_time: status === "atrasado" ? arrival_time : "",
+                  justification:
+                    status === "justificado" ? justification.trim() : "",
+                },
+              }));
+              setAttendanceEditor(null);
+            }}
+          >
+            {attendanceEditor.status === "atrasado" ? (
+              <label>
+                Horário de chegada (opcional)
+                <input
+                  type="time"
+                  aria-label={`Horário de chegada de ${studentDisplayName(attendanceEditor.student)}`}
+                  value={attendanceEditor.arrival_time}
+                  onChange={(event) =>
+                    setAttendanceEditor({
+                      ...attendanceEditor,
+                      arrival_time: event.target.value,
+                    })
+                  }
+                />
+              </label>
+            ) : (
+              <label>
+                Motivo da justificativa (opcional)
+                <textarea
+                  rows={3}
+                  maxLength={2000}
+                  aria-label={`Justificativa de ${studentDisplayName(attendanceEditor.student)}`}
+                  value={attendanceEditor.justification}
+                  onChange={(event) =>
+                    setAttendanceEditor({
+                      ...attendanceEditor,
+                      justification: event.target.value,
+                    })
+                  }
+                />
+              </label>
+            )}
+            <footer>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setAttendanceEditor(null)}
+              >
+                Cancelar
+              </button>
+              <button className="primary" type="submit">
+                OK
+              </button>
+            </footer>
+          </form>
+        </CompactDialog>
       )}
       {modal && (
         <div

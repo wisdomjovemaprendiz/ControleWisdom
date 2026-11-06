@@ -3580,19 +3580,6 @@ button.secondary {
 .attendance-row {
   flex-wrap: wrap;
 }
-.attendance-detail {
-  flex: 0 0 100%;
-  display: grid;
-  gap: 8px;
-  padding: 12px 0 0;
-  color: #52657c;
-}
-.attendance-detail input {
-  max-width: 240px;
-}
-.attendance-detail textarea {
-  min-height: 76px;
-}
 /* Sales desk: actionable capacity, a clear handoff, and a readable dossier. */
 .sales-workspace {
   display: grid;
@@ -4780,5 +4767,242 @@ button.secondary {
   }
   .course-progress-dates {
     gap: 12px;
+  }
+}
+
+/* Compact attendance actions keep the roster in place. */
+.compact-dialog {
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  border: 1px solid #dbe3ed;
+  border-radius: 18px;
+  background: white;
+  color: #172b49;
+  box-shadow: 0 20px 65px #142c4b33;
+  overflow: auto;
+  margin: auto;
+}
+.compact-dialog::backdrop {
+  background: #15294266;
+}
+.compact-dialog-body {
+  padding: 22px;
+}
+.compact-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.compact-dialog h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.compact-dialog form,
+.compact-dialog label {
+  display: grid;
+  gap: 10px;
+}
+.compact-dialog input,
+.compact-dialog textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #c9d7e7;
+  border-radius: 9px;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+}
+.compact-dialog textarea {
+  resize: vertical;
+  max-height: 160px;
+}
+.compact-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+.compact-dialog-student,
+.compact-dialog-date {
+  margin: 0 0 18px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.lesson-birthdays {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 20px;
+  display: grid;
+  gap: 12px;
+}
+.lesson-birthdays li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.attendance-row.marked-presente {
+  background: #eef8f1;
+  box-shadow: inset 4px 0 #23834d;
+}
+.attendance-row.marked-falta {
+  background: #fff0f0;
+  box-shadow: inset 4px 0 #c63e48;
+}
+.attendance-row.marked-atrasado {
+  background: #fff8e6;
+  box-shadow: inset 4px 0 #bb8700;
+}
+.attendance-row.marked-justificado {
+  background: #edf4ff;
+  box-shadow: inset 4px 0 #2862b0;
+}
+.pedagogy-guide {
+  border: 1px solid #d9e4f1;
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  background: #fbfcfe;
+}
+.pedagogy-guide h3,
+.pedagogy-guide p {
+  margin: 0;
+}
+.pedagogy-guide h3 {
+  font-size: 18px;
+  outline: none;
+}
+.guide-progress {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+}
+.guide-progress > span {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  flex: 1;
+  font-size: 10px;
+  color: #617186;
+}
+.guide-progress b {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  background: #e9eef5;
+}
+.guide-progress .current b {
+  background: #12458a;
+  color: white;
+}
+.guide-progress .done b {
+  background: #dceee5;
+  color: #23613c;
+}
+.guide-choices {
+  display: grid;
+  gap: 9px;
+}
+.guide-choices.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.guide-choice {
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid #cdd9e8;
+  border-radius: 9px;
+  color: #233b59;
+  background: white;
+  font: inherit;
+  line-height: 1.4;
+}
+.guide-choice.selected,
+.guide-strategy.selected {
+  border-color: #255fa8;
+  background: #ecf3ff;
+  color: #123d76;
+}
+.guide-choice:focus-visible {
+  outline: 2px solid #255fa8;
+  outline-offset: 2px;
+}
+.pedagogy-guide fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.pedagogy-guide legend {
+  font-weight: 600;
+  padding: 0 0 10px;
+}
+.modal-form .guide-check {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #273e5b;
+}
+.modal-form .guide-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  min-height: 0;
+  margin: 2px 0 0;
+  accent-color: #12458a;
+  padding: 0;
+}
+.guide-strategy {
+  border: 1px solid #cdd9e8;
+  border-radius: 9px;
+  padding: 12px;
+  background: white;
+}
+.guide-strategy details {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.guide-strategy details p {
+  margin-top: 8px;
+}
+.guide-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.guide-review {
+  display: grid;
+  gap: 12px;
+}
+.guide-review h4 {
+  margin: 0;
+}
+.guide-review p {
+  white-space: pre-line;
+  line-height: 1.6;
+  font-size: 14px;
+}
+.guide-review small {
+  font-size: 12px;
+  color: #617186;
+}
+@media (max-width: 540px) {
+  .guide-progress > span > span {
+    display: none;
+  }
+  .pedagogy-guide {
+    padding: 14px;
+  }
+  .compact-dialog-body {
+    padding: 18px;
   }
 }

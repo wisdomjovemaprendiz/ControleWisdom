@@ -5,6 +5,14 @@ test.beforeEach(async ({ page }) => {
   schoolApi = await installSchoolApi(page);
   await page.goto("/");
   await login(page);
+  await page.addLocatorHandler(
+    page.getByRole("dialog", { name: "Aniversariantes da aula", exact: true }),
+    async (dialog) => {
+      await dialog
+        .getByRole("button", { name: "Continuar chamada", exact: true })
+        .click();
+    },
+  );
 });
 test("matrícula expressa persiste e busca encontra aluno", async ({ page }) => {
   await page
@@ -693,53 +701,46 @@ test("registro assistido gera rascunho revisável e evolução conclui somente o
   await dialog
     .getByRole("button", { name: "Preenchimento assistido", exact: true })
     .click();
-  await dialog
-    .getByLabel("Pontuação: Demora a iniciar após a orientação coletiva", {
-      exact: true,
-    })
-    .selectOption("2");
-  await dialog
-    .getByLabel("Dividir a tarefa em etapas observáveis", { exact: true })
-    .check();
-  await dialog
-    .getByLabel("Contexto e período observado", { exact: true })
-    .fill("Atividade de planejamento de currículo, em duas aulas.");
-  await dialog
-    .getByLabel("Situação inicial / linha de base", { exact: true })
-    .fill("Precisou de três lembretes para iniciar.");
-  await dialog
-    .getByLabel("Objetivo do acompanhamento", { exact: true })
-    .fill("Iniciar com apenas um lembrete.");
-  await dialog
-    .getByLabel("Critério para avaliar a evolução", { exact: true })
-    .fill("Comparar os apoios necessários em duas atividades equivalentes.");
-  await dialog
+  const guide = dialog.getByRole("region", {
+    name: "Guia de registro pedagógico",
+  });
+  await guide
+    .getByRole("button", { name: "Atenção e início da tarefa", exact: true })
+    .click();
+  await guide.getByRole("button", { name: "Continuar", exact: true }).click();
+  await guide
     .getByRole("button", {
-      name: "Preparar rascunho para revisão",
+      name: "Demora a iniciar após a orientação coletiva",
       exact: true,
     })
     .click();
-  await expect(dialog.getByLabel("Observações e evolução")).toHaveValue(
-    /três lembretes/,
+  await guide.getByRole("button", { name: "Frequente", exact: true }).click();
+  await guide.getByRole("button", { name: "Continuar", exact: true }).click();
+  await guide
+    .getByRole("button", { name: "Atividade individual", exact: true })
+    .click();
+  await guide.getByRole("button", { name: "Continuar", exact: true }).click();
+  await guide
+    .getByLabel("Dividir a tarefa em etapas observáveis", { exact: true })
+    .check();
+  await guide.getByRole("button", { name: "Continuar", exact: true }).click();
+  await guide.getByRole("button", { name: "Em 7 dias", exact: true }).click();
+  await guide
+    .getByRole("button", { name: "Revisar relatório", exact: true })
+    .click();
+  await expect(guide.locator(".guide-review")).toContainText("Frequente (2/3)");
+  await expect(guide.locator(".guide-review")).toContainText(
+    "Dividir a tarefa",
   );
-  await expect(dialog.getByLabel("Intervenção / próximo passo")).toHaveValue(
-    /Dividir a tarefa/,
-  );
-  const day = await page.evaluate(() =>
-    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
-      new Date(),
-    ),
-  );
-  await dialog
-    .getByLabel("Data para acompanhamento", { exact: true })
-    .fill(day);
+  await guide
+    .getByLabel("Revisei e confirmo o registro pedagógico", { exact: true })
+    .check();
   await dialog
     .getByRole("button", { name: "Salvar registro", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
   const parent = schoolApi.store.pedagogy.find(
-    (p) =>
-      p.support_plan?.baseline === "Precisou de três lembretes para iniciar.",
+    (p) => p.support_plan?.context === "Atividade individual",
   )!;
   expect(parent.support_plan?.sources).toContain("cast");
   const pending = page
@@ -831,11 +832,25 @@ test("chamada grava horário e motivo opcionais e inclui os detalhes no WhatsApp
   const first = page.locator(".attendance-row").first(),
     second = page.locator(".attendance-row").nth(1);
   await first.getByRole("button", { name: "Atrasado", exact: true }).click();
-  await first.getByLabel(/Horário de chegada de/).fill("14:25");
+  await page
+    .getByRole("dialog", { name: "Registrar atraso" })
+    .getByLabel(/Horário de chegada de/)
+    .fill("14:25");
+  await page
+    .getByRole("dialog", { name: "Registrar atraso" })
+    .getByRole("button", { name: "OK", exact: true })
+    .click();
   await second
     .getByRole("button", { name: "Justificado", exact: true })
     .click();
-  await second.getByLabel(/Justificativa de/).fill("Consulta médica");
+  await page
+    .getByRole("dialog", { name: "Justificar ausência" })
+    .getByLabel(/Justificativa de/)
+    .fill("Consulta médica");
+  await page
+    .getByRole("dialog", { name: "Justificar ausência" })
+    .getByRole("button", { name: "OK", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Finalizar chamada", exact: false })
     .click();
@@ -855,21 +870,28 @@ test("chamada grava horário e motivo opcionais e inclui os detalhes no WhatsApp
   ).toBeVisible();
   await page.getByRole("button", { name: "Chamada", exact: true }).click();
   await expect(
-    page
-      .locator(".attendance-row")
-      .first()
-      .getByLabel(/Horário de chegada de/),
-  ).toHaveValue("14:25");
+    first.getByRole("button", { name: "Atrasado", exact: true }),
+  ).toHaveAttribute("title", /Chegada: 14:25/);
+  await first.getByRole("button", { name: "Atrasado", exact: true }).click();
   await page
-    .locator(".attendance-row")
-    .first()
+    .getByRole("dialog", { name: "Registrar atraso" })
     .getByLabel(/Horário de chegada de/)
     .fill("");
   await page
-    .locator(".attendance-row")
-    .nth(1)
+    .getByRole("dialog", { name: "Registrar atraso" })
+    .getByRole("button", { name: "OK", exact: true })
+    .click();
+  await second
+    .getByRole("button", { name: "Justificado", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Justificar ausência" })
     .getByLabel(/Justificativa de/)
     .fill("");
+  await page
+    .getByRole("dialog", { name: "Justificar ausência" })
+    .getByRole("button", { name: "OK", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Finalizar chamada", exact: false })
     .click();
@@ -1874,4 +1896,237 @@ test("curso e turma registram carga horária e a chamada atualiza o progresso do
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+test("aniversariantes usam a data e a turma da chamada sem reabrir por marcação", async ({
+  page,
+}) => {
+  await page.removeLocatorHandler(
+    page.getByRole("dialog", { name: "Aniversariantes da aula", exact: true }),
+  );
+  for (const id of ["s1", "s2", "s3", "s8", "s14"])
+    schoolApi.store.students.find((s) => s.id === id)!.birth_date =
+      "2009-10-20";
+  schoolApi.store.students.find((s) => s.id === "s3")!.status = "abandono";
+  await page.reload();
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await page.getByLabel("Data da aula").fill("2026-10-20");
+  const birthday = page.getByRole("dialog", {
+    name: "Aniversariantes da aula",
+    exact: true,
+  });
+  await expect(birthday).toBeVisible();
+  await expect(birthday.locator("li")).toHaveCount(2);
+  await expect(birthday).toContainText("Gabriel Almeida");
+  await expect(birthday).toContainText("Isabela Santos");
+  await expect(birthday).not.toContainText("Helena Costa");
+  await birthday
+    .getByRole("button", { name: "Continuar chamada", exact: true })
+    .click();
+  await page
+    .locator(".attendance-row")
+    .first()
+    .getByRole("button", { name: "Presente", exact: true })
+    .click();
+  await expect(birthday).toHaveCount(0);
+  await page.getByLabel("Data da aula").fill("2026-10-19");
+  await expect(birthday).toHaveCount(0);
+  await page.getByLabel("Data da aula").fill("2026-10-20");
+  await expect(birthday).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByLabel("Turma", { exact: true }).selectOption("c2");
+  await expect(birthday).toBeVisible();
+  await expect(birthday.locator("li")).toHaveCount(1);
+  await expect(birthday).toContainText("Helena Costa");
+});
+
+test("chamada mobile usa cores, cancela detalhes sem alterar a marcação e aceita dados vazios", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await page.getByLabel("Data da aula").fill("2026-10-21");
+  const row = page.locator(".attendance-row").first();
+  await row.getByRole("button", { name: "Presente", exact: true }).click();
+  await expect(row).toHaveClass(/marked-presente/);
+  await expect(row).toHaveCSS("background-color", "rgb(238, 248, 241)");
+  await row.getByRole("button", { name: "Falta", exact: true }).click();
+  await expect(row).toHaveClass(/marked-falta/);
+  await expect(row).toHaveCSS("background-color", "rgb(255, 240, 240)");
+  const rowHeight = (await row.boundingBox())!.height;
+  await row.getByRole("button", { name: "Atrasado", exact: true }).click();
+  let dialog = page.getByRole("dialog", { name: "Registrar atraso" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveJSProperty("open", true);
+  await dialog.getByLabel(/Horário de chegada de/).fill("14:35");
+  await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(row).toHaveClass(/marked-falta/);
+  await row.getByRole("button", { name: "Atrasado", exact: true }).click();
+  await expect(dialog.getByLabel(/Horário de chegada de/)).toHaveValue("");
+  await dialog.getByRole("button", { name: "OK", exact: true }).click();
+  await expect(row).toHaveClass(/marked-atrasado/);
+  await expect(row).toHaveCSS("background-color", "rgb(255, 248, 230)");
+  expect((await row.boundingBox())!.height).toBe(rowHeight);
+  await row.getByRole("button", { name: "Justificado", exact: true }).click();
+  dialog = page.getByRole("dialog", { name: "Justificar ausência" });
+  await dialog.getByRole("button", { name: "OK", exact: true }).click();
+  await expect(row).toHaveClass(/marked-justificado/);
+  await expect(row).toHaveCSS("background-color", "rgb(237, 244, 255)");
+  await expect(row.locator("input,textarea")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("guia mobile ramifica e registra evolução sem digitar, com revisão obrigatória", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+  await page.getByRole("button", { name: "Pedagógico", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Novo registro", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Aluno (opcional)", { exact: true })
+    .selectOption("s1");
+  await dialog
+    .getByRole("button", { name: "Preenchimento assistido", exact: true })
+    .click();
+  const guide = dialog.getByRole("region", {
+    name: "Guia de registro pedagógico",
+  });
+  const next = () =>
+    guide.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(
+    guide.getByRole("button", { name: "Continuar", exact: true }),
+  ).toBeDisabled();
+  await guide
+    .getByRole("button", { name: "Organização e autonomia", exact: true })
+    .click();
+  await next();
+  await guide
+    .getByRole("button", {
+      name: "Perde etapas de instruções com várias ações",
+      exact: true,
+    })
+    .click();
+  await guide.getByRole("button", { name: "Frequente", exact: true }).click();
+  await expect(
+    guide.getByLabel("Precisa de apoio para compreender os enunciados", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await next();
+  await guide
+    .getByRole("button", { name: "Exercício prático", exact: true })
+    .click();
+  await next();
+  await expect(
+    guide.getByLabel("Dividir a tarefa em etapas observáveis", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    guide.getByLabel("Combinar uma rotina breve para retomar a atividade", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await guide
+    .getByLabel("Dividir a tarefa em etapas observáveis", { exact: true })
+    .check();
+  await next();
+  await guide
+    .getByRole("button", { name: "Revisar relatório", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toBeVisible();
+  expect(
+    schoolApi.store.pedagogy.filter(
+      (p) => p.support_plan?.context === "Exercício prático",
+    ),
+  ).toHaveLength(0);
+  await guide
+    .getByLabel("Revisei e confirmo o registro pedagógico", { exact: true })
+    .check();
+  await expect(
+    guide.locator("textarea,input:not([type=hidden]):not([type=checkbox])"),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const parent = schoolApi.store.pedagogy.find(
+    (p) => p.support_plan?.context === "Exercício prático",
+  )!;
+  await page
+    .locator(".pedagogy-agenda-list article")
+    .filter({ hasText: "Organização e autonomia" })
+    .getByRole("button", { name: "Registrar evolução", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Preenchimento assistido", exact: true })
+    .click();
+  await guide
+    .getByRole("button", { name: "Organização e autonomia", exact: true })
+    .click();
+  await next();
+  await guide
+    .getByRole("button", {
+      name: "Perde etapas de instruções com várias ações",
+      exact: true,
+    })
+    .click();
+  await guide.getByRole("button", { name: "Ocasional", exact: true }).click();
+  await next();
+  await guide
+    .getByRole("button", { name: "Exercício prático", exact: true })
+    .click();
+  await next();
+  await guide
+    .getByLabel("Dividir a tarefa em etapas observáveis", { exact: true })
+    .check();
+  await next();
+  await guide
+    .getByLabel("Resultado do acompanhamento", { exact: true })
+    .selectOption("progress");
+  await guide
+    .getByRole("button", {
+      name: "Concluiu mais etapas, ainda com apoio do professor.",
+      exact: true,
+    })
+    .click();
+  await guide
+    .getByRole("button", { name: "Sem novo lembrete", exact: true })
+    .click();
+  await guide
+    .getByRole("button", { name: "Revisar relatório", exact: true })
+    .click();
+  await guide
+    .getByLabel("Revisei e confirmo o registro pedagógico", { exact: true })
+    .check();
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const child = schoolApi.store.pedagogy.find(
+    (p) => p.parent_record_id === parent.id,
+  )!;
+  expect(child.support_plan?.outcome).toBe("progress");
+  expect(child.support_plan?.evidence).toContain("Concluiu mais etapas");
+  expect(child.follow_up).toBe("");
+  await expect(
+    page
+      .locator(".pedagogy-agenda-list article")
+      .filter({ hasText: "Organização e autonomia" }),
+  ).toHaveCount(0);
 });
