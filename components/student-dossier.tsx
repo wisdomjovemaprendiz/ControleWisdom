@@ -1,13 +1,9 @@
 "use client";
-import {
-  studentPlacement,
-  individualMinutes,
-  isIndividual,
-  weekdays,
-} from "@/lib/individual";
+import { studentPlacement, isIndividual, weekdays } from "@/lib/individual";
 import { studentDisplayName, attendanceDescription } from "@/lib/domain";
 import { comparePedagogy } from "@/lib/domain";
 import { outcomeLabels } from "@/lib/pedagogy";
+import { CourseProgressCard } from "./course-progress-card";
 import { StudentAvatar } from "./student-avatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Download, MessageCircle, Pencil, X } from "lucide-react";
@@ -22,6 +18,7 @@ import {
 export function StudentDossier({
   student: s,
   store,
+  progressStore,
   onClose,
   onEdit,
   onMessage,
@@ -32,6 +29,7 @@ export function StudentDossier({
 }: {
   student: Student;
   store: Store;
+  progressStore?: Store;
   onClose: () => void;
   onEdit: () => void;
   onMessage: () => void;
@@ -173,33 +171,13 @@ export function StudentDossier({
         <div className="dossier-content" role="tabpanel">
           {tab === "summary" && (
             <>
+              <CourseProgressCard store={progressStore || store} student={s} />
               <dl className="student-details">
                 {isIndividual(s) && (
                   <>
                     <div>
                       <dt>Modalidade</dt>
                       <dd>Aula individual</dd>
-                    </div>
-                    <div>
-                      <dt>Carga horária</dt>
-                      <dd>
-                        {(individualMinutes(store, s.id) / 60).toLocaleString(
-                          "pt-BR",
-                          { maximumFractionDigits: 1 },
-                        )}{" "}
-                        h realizadas
-                        {s.individual_hours
-                          ? ` de ${s.individual_hours} h`
-                          : ""}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Duração por aula</dt>
-                      <dd>
-                        {s.individual_duration_minutes
-                          ? `${s.individual_duration_minutes} minutos`
-                          : "A definir"}
-                      </dd>
                     </div>
                     <div>
                       <dt>Dias de aula</dt>
@@ -218,8 +196,16 @@ export function StudentDossier({
                     labels[s.registration_stage || "complete"],
                   ],
                   [
-                    "Formação contratada",
-                    store.offerings.find((o) => o.id === s.offering_id)?.name,
+                    s.offering_id
+                      ? "Formação contratada"
+                      : "Curso de referência da turma",
+                    store.offerings.find(
+                      (o) =>
+                        o.id ===
+                        (s.offering_id ||
+                          store.classes.find((c) => c.id === s.class_id)
+                            ?.offering_id),
+                    )?.name,
                   ],
                   ["Data de nascimento", displayDate(s.birth_date)],
                   ["Responsável", s.guardian],

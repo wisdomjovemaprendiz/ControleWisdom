@@ -14,6 +14,15 @@ export interface AuditEntry {
 }
 export const auditFieldLabels: Record<string, string> = {
   name: "Nome",
+  total_hours: "Carga horária do curso (h)",
+  offering_id: "Curso contratado",
+  lesson_duration_minutes: "Duração da aula da turma (min)",
+  duration_minutes: "Duração da aula registrada (min)",
+  lesson_days: "Dias previstos de aula",
+  course_start_date: "Início do curso",
+  last_installment_date: "Último boleto",
+  opening_hours: "Horas anteriores aos registros",
+  course_offering_id: "Curso no registro de presença",
   teacher_id: "Professor",
   teacher: "Professor",
   course: "Curso",
@@ -53,6 +62,10 @@ export const auditFieldLabels: Record<string, string> = {
 };
 export function auditValue(key: string, value: unknown, store: Store): string {
   if (value === null || value === undefined || value === "") return "—";
+  if (key === "offering_id" || key === "course_offering_id")
+    return store.offerings.find((o) => o.id === value)?.name || String(value);
+  if (["course_start_date", "last_installment_date"].includes(key))
+    return String(value).split("-").reverse().join("/");
   if (key === "class_id")
     return store.classes.find((c) => c.id === value)?.name || String(value);
   if (key === "student_id") {
@@ -63,7 +76,7 @@ export function auditValue(key: string, value: unknown, store: Store): string {
     return store.profiles.find((p) => p.id === value)?.name || String(value);
   if (key === "unit_id")
     return store.units.find((u) => u.id === value)?.name || String(value);
-  if (key === "individual_days" && Array.isArray(value))
+  if (["individual_days", "lesson_days"].includes(key) && Array.isArray(value))
     return value.map((d) => weekdays[Number(d)]).join(", ") || "—";
   if (key === "enrollment_mode")
     return value === "individual" ? "Aula individual" : "Turma";

@@ -1166,5 +1166,207 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       color,
     );
   });
+  await t.test(
+    "carga horária, duração histórica e curso da presença ficam protegidos",
+    async () => {
+      await db.exec(
+        "reset role;select set_config('request.jwt.claim.sub','',false)",
+      );
+      await db.exec(
+        readFileSync(
+          new URL("../supabase/013_course_progress.sql", import.meta.url),
+          "utf8",
+        ),
+      );
+      await as(1);
+      await db.query(
+        "insert into public.offerings(id,unit_id,name,kind,duration_months,courses,total_hours) values($1,$2,'Curso 200 horas','individual',null,'Conteúdo do curso',200)",
+        [id(300), id(11)],
+      );
+      await db.query(
+        "insert into public.classes(id,unit_id,name,course,offering_id,teacher_id,teacher,schedule,capacity,lesson_days) values($1,$2,'Turma planejada','Curso 200 horas',$3,$4,'Ana','Ter e Qui',10,array[2,4])",
+        [id(301), id(11), id(300), id(2)],
+      );
+      await db.query(
+        "insert into public.students(id,unit_id,class_id,offering_id,name,course_start_date,last_installment_date) values($1,$2,$3,$4,'Aluno planejado','2026-01-01','2026-12-01')",
+        [id(302), id(11), id(301), id(300)],
+      );
+      const lesson = (n: number, date: string) => ({
+        id: id(n),
+        unit_id: id(11),
+        class_id: id(301),
+        student_id: null,
+        teacher_id: id(2),
+        teacher: "Ana",
+        date,
+        topic: "Conteúdo",
+        closed: true,
+        duration_minutes: null,
+      });
+      const mark = (n: number) => [
+        {
+          id: id(n + 100),
+          unit_id: id(11),
+          lesson_id: id(n),
+          student_id: id(302),
+          status: "presente",
+        },
+      ];
+      await as(2);
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify(lesson(310, "2026-01-01")),
+        JSON.stringify(mark(310)),
+      ]);
+      await as(3);
+      await db.query(
+        "update public.classes set lesson_duration_minutes=120 where id=$1",
+        [id(301)],
+      );
+      assert.equal(
+        (
+          await db.query<any>(
+            "select duration_minutes from public.lessons where id=$1",
+            [id(310)],
+          )
+        ).rows[0].duration_minutes,
+        120,
+      );
+      await as(2);
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify({ ...lesson(311, "2026-01-02"), duration_minutes: 480 }),
+        JSON.stringify(mark(311)),
+      ]);
+      assert.equal(
+        (
+          await db.query<any>(
+            "select duration_minutes from public.lessons where id=$1",
+            [id(311)],
+          )
+        ).rows[0].duration_minutes,
+        120,
+      );
+      await as(3);
+      await db.query(
+        "update public.classes set lesson_duration_minutes=180 where id=$1",
+        [id(301)],
+      );
+      await as(2);
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify(lesson(311, "2026-01-02")),
+        JSON.stringify(mark(311)),
+      ]);
+      assert.equal(
+        (
+          await db.query<any>(
+            "select duration_minutes from public.lessons where id=$1",
+            [id(311)],
+          )
+        ).rows[0].duration_minutes,
+        120,
+      );
+      assert.equal(
+        (
+          await db.query("select * from public.attendance where lesson_id=$1", [
+            id(311),
+          ])
+        ).rows.length,
+        1,
+      );
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify(lesson(312, "2026-01-03")),
+        JSON.stringify(mark(312)),
+      ]);
+      assert.equal(
+        (
+          await db.query<any>(
+            "select duration_minutes from public.lessons where id=$1",
+            [id(312)],
+          )
+        ).rows[0].duration_minutes,
+        180,
+      );
+      assert.equal(
+        (
+          await db.query<any>(
+            "select course_offering_id from public.attendance where lesson_id=$1",
+            [id(312)],
+          )
+        ).rows[0].course_offering_id,
+        id(300),
+      );
+      await assert.rejects(
+        db.query("update public.students set opening_hours=10 where id=$1", [
+          id(302),
+        ]),
+        /horas anteriores/,
+      );
+      await assert.rejects(
+        db.query(
+          "update public.students set last_installment_date='2027-01-01' where id=$1",
+          [id(302)],
+        ),
+        /boleto/,
+      );
+      await as(3);
+      await db.query(
+        "insert into public.offerings(id,unit_id,name,kind,duration_months,courses,total_hours) values($1,$2,'Outro curso','individual',null,'Conteúdo',100)",
+        [id(303), id(11)],
+      );
+      await db.query("update public.students set offering_id=$2 where id=$1", [
+        id(302),
+        id(303),
+      ]);
+      await as(2);
+      await db.query(
+        "update public.attendance set status='atrasado',course_offering_id=$2 where lesson_id=$1",
+        [id(312), id(303)],
+      );
+      assert.equal(
+        (
+          await db.query<any>(
+            "select course_offering_id from public.attendance where lesson_id=$1",
+            [id(312)],
+          )
+        ).rows[0].course_offering_id,
+        id(300),
+      );
+      await service();
+      await db.query(
+        "select public.manage_record($1,'students',$2,'edit',$3)",
+        [
+          id(1),
+          id(302),
+          JSON.stringify({
+            opening_hours: 10,
+            course_start_date: "2026-01-01",
+            last_installment_date: "2026-12-01",
+          }),
+        ],
+      );
+      await db.query("select public.manage_record($1,'lessons',$2,'edit',$3)", [
+        id(1),
+        id(310),
+        JSON.stringify({ duration_minutes: 150 }),
+      ]);
+      await as(1);
+      const log = (
+        await db.query<any>(
+          "select * from public.audit_log where entity_id=$1 and operation='UPDATE' order by id desc limit 1",
+          [id(302)],
+        )
+      ).rows[0];
+      assert.equal(log.actor_id, id(1));
+      assert.equal(log.after_data.opening_hours, 10);
+      assert.equal(
+        (
+          await db.query<any>(
+            "select duration_minutes from public.lessons where id=$1",
+            [id(310)],
+          )
+        ).rows[0].duration_minutes,
+        150,
+      );
+    },
+  );
   await db.close();
 });

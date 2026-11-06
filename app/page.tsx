@@ -1,4 +1,9 @@
 "use client";
+import {
+  EnrollmentPlanningFields,
+  ClassPlanningFields,
+} from "@/components/course-planning-fields";
+import { courseProgress, formatHours } from "@/lib/course-progress";
 import { classFrame, occupancyInfo } from "@/lib/class-appearance";
 import { OccupancyBar, OccupancyLegend } from "@/components/occupancy-bar";
 import { CustomReportBuilder } from "@/components/custom-report-builder";
@@ -705,7 +710,10 @@ export default function App() {
       student_id: individualStudent?.id || null,
       duration_minutes: individualStudent
         ? Number(individualDuration) || null
-        : null,
+        : selectedLesson?.duration_minutes ||
+          store.classes.find((c) => c.id === selectedClass.id)
+            ?.lesson_duration_minutes ||
+          null,
       teacher_id: profile.id,
       teacher: profile.name,
       date: lessonDate,
@@ -720,6 +728,10 @@ export default function App() {
       unit_id: selectedClass.unit_id,
       lesson_id: lesson.id,
       student_id: s.id,
+      course_offering_id:
+        s.offering_id ||
+        store.classes.find((c) => c.id === s.class_id)?.offering_id ||
+        null,
       status: marks[s.id],
       arrival_time:
         marks[s.id] === "atrasado"
@@ -742,10 +754,15 @@ export default function App() {
         if (error) throw error;
       }
       const next = {
-        ...store,
-        lessons: [...store.lessons.filter((l) => l.id !== lesson.id), lesson],
+        ...allRecords!,
+        lessons: [
+          ...allRecords!.lessons.filter((l) => l.id !== lesson.id),
+          lesson,
+        ],
         attendance: [
-          ...store.attendance.filter((a) => !rows.some((r) => r.id === a.id)),
+          ...allRecords!.attendance.filter(
+            (a) => !rows.some((r) => r.id === a.id),
+          ),
           ...rows,
         ],
       };
@@ -775,7 +792,9 @@ export default function App() {
       const individualTeacher = store.profiles.find(
         (p) => p.id === v("individual_teacher_id"),
       );
-      const offering = store.offerings.find((o) => o.id === v("offering_id"));
+      const offering = allRecords!.offerings.find(
+        (o) => o.id === v("offering_id"),
+      );
       const record: Student = {
         id,
         unit_id:
@@ -815,6 +834,15 @@ export default function App() {
         address: fd.has("address") ? v("address") : previous?.address || "",
         created_by: previous?.created_by || profile.id,
         enrollment_date: previous?.enrollment_date || today(),
+        course_start_date: fd.has("course_start_date")
+          ? v("course_start_date") || null
+          : previous?.course_start_date || null,
+        last_installment_date: fd.has("last_installment_date")
+          ? v("last_installment_date") || null
+          : previous?.last_installment_date || null,
+        opening_hours: fd.has("opening_hours")
+          ? Number(v("opening_hours")) || 0
+          : previous?.opening_hours || 0,
         status: previous?.status || "ativo",
         archive_reason: previous?.archive_reason || "",
         registration_stage:
@@ -837,8 +865,11 @@ export default function App() {
       }
       if (
         record.offering_id &&
-        !store.offerings.some(
-          (o) => o.id === record.offering_id && o.unit_id === record.unit_id,
+        !allRecords!.offerings.some(
+          (o) =>
+            o.id === record.offering_id &&
+            o.unit_id === record.unit_id &&
+            (!o.archived_at || o.id === previous?.offering_id),
         )
       ) {
         setError("O curso ou pacote deve pertencer à unidade da turma.");
@@ -942,6 +973,19 @@ export default function App() {
         setError("Selecione um professor da mesma unidade.");
         return;
       }
+      if (
+        v("offering_id") &&
+        !allRecords!.offerings.some(
+          (o) =>
+            o.id === v("offering_id") &&
+            o.unit_id === targetUnit &&
+            (!o.archived_at ||
+              o.id === (modal.data as CourseClass | undefined)?.offering_id),
+        )
+      ) {
+        setError("O curso de referência deve pertencer à unidade da turma.");
+        return;
+      }
       const capacity = Number(v("capacity"));
       if (
         store.students.filter((s) => s.class_id === id && s.status === "ativo")
@@ -969,6 +1013,11 @@ export default function App() {
         unit_id: targetUnit,
         name: v("name"),
         course: v("course"),
+        offering_id: v("offering_id") || null,
+        lesson_duration_minutes: v("lesson_hours")
+          ? Math.round(Number(v("lesson_hours")) * 60)
+          : null,
+        lesson_days: fd.getAll("lesson_days").map(Number),
         teacher_id: p.id,
         teacher: p.name,
         schedule: v("schedule"),
@@ -1028,7 +1077,10 @@ export default function App() {
         unit_id: v("unit_id"),
         name: v("name"),
         kind: v("kind") as Offering["kind"],
-        duration_months: Number(v("duration_months")),
+        duration_months: v("duration_months")
+          ? Number(v("duration_months"))
+          : null,
+        total_hours: v("total_hours") ? Number(v("total_hours")) : null,
         courses: v("courses"),
       });
     }
@@ -1907,8 +1959,12 @@ export default function App() {
                     </div>
                     <h2>{o.name}</h2>
                     <p>
-                      {o.duration_months} meses de formação •{" "}
-                      {store.units.find((u) => u.id === o.unit_id)?.name}
+                      {o.total_hours
+                        ? `${formatHours(o.total_hours)} h de formação`
+                        : o.duration_months
+                          ? `${o.duration_months} meses de referência`
+                          : "Carga horária a definir"}{" "}
+                      • {store.units.find((u) => u.id === o.unit_id)?.name}
                     </p>
                     <div className="intervention">
                       <strong>Trilha de aprendizagem</strong>
@@ -2708,6 +2764,7 @@ export default function App() {
           key={dossierId}
           student={students.find((s) => s.id === dossierId)!}
           store={store}
+          progressStore={allRecords!}
           canViewPedagogy={profile.role !== "comercial"}
           canEdit={canEditStudent(
             profile,
@@ -2749,6 +2806,15 @@ export default function App() {
             void pdf("Ficha do aluno", [
               evolutionMessage(store, student),
               `Matrícula: ${displayDate(student.enrollment_date)}`,
+              ...(() => {
+                const p = courseProgress(reportSource, student);
+                return [
+                  `Progresso do curso: ${p.percent === null ? "Carga horária não definida" : `${p.percent}% — ${formatHours(p.completedHours)} h de ${formatHours(p.totalHours!)} h`}`,
+                  `Início do curso: ${p.startDate ? displayDate(p.startDate) : "A definir"}`,
+                  `Término estimado: ${p.estimatedEnd ? displayDate(p.estimatedEnd) : p.completed ? "Carga horária cumprida" : "Dados insuficientes"}`,
+                  `Último boleto: ${p.lastInstallment ? displayDate(p.lastInstallment) : "Não informado"}`,
+                ];
+              })(),
               `Situação: ${labels[student.status]}`,
               "Histórico pedagógico completo",
               ...reportSource.pedagogy
@@ -2909,8 +2975,15 @@ export default function App() {
                       defaultValue={(modal.data as Student)?.offering_id || ""}
                     >
                       <option value="">Selecionar depois</option>
-                      {store.offerings
-                        .filter((o) => scoped(o.unit_id))
+                      {allRecords!.offerings
+                        .filter(
+                          (o) =>
+                            scoped(o.unit_id) &&
+                            (!o.archived_at ||
+                              o.id ===
+                                (modal.data as Student | undefined)
+                                  ?.offering_id),
+                        )
                         .map((o) => (
                           <option value={o.id} key={o.id}>
                             {o.name} •{" "}
@@ -2919,6 +2992,10 @@ export default function App() {
                         ))}
                     </select>
                   </label>
+                  <EnrollmentPlanningFields
+                    student={modal.data as Student | undefined}
+                    profile={profile}
+                  />
                   <div className="form-section-label">
                     RESPONSÁVEL E CONTATO
                   </div>
@@ -2984,14 +3061,17 @@ export default function App() {
                       defaultValue={(modal.data as CourseClass)?.name}
                     />
                   </label>
-                  <label>
-                    Curso *
-                    <input
-                      name="course"
-                      required
-                      defaultValue={(modal.data as CourseClass)?.course}
-                    />
-                  </label>
+                  <ClassPlanningFields
+                    course={modal.data as CourseClass | undefined}
+                    offerings={allRecords!.offerings.filter(
+                      (o) =>
+                        scoped(o.unit_id) &&
+                        (!o.archived_at ||
+                          o.id ===
+                            (modal.data as CourseClass | undefined)
+                              ?.offering_id),
+                    )}
+                  />
                   <label>
                     Unidade *
                     <select
@@ -3010,6 +3090,7 @@ export default function App() {
                     Professor *
                     <select
                       name="teacher_id"
+                      aria-label="Professor *"
                       required
                       defaultValue={
                         (modal.data as CourseClass)?.teacher_id || ""
@@ -3141,19 +3222,30 @@ export default function App() {
                       </select>
                     </label>
                     <label>
-                      Duração em meses *
+                      Duração em meses (referência)
                       <input
                         name="duration_months"
                         type="number"
                         min="1"
                         max="120"
-                        required
                         defaultValue={
-                          (modal.data as Offering)?.duration_months || 6
+                          (modal.data as Offering)?.duration_months || ""
                         }
                       />
                     </label>
                   </div>
+                  <label>
+                    Carga horária total (horas)
+                    <input
+                      name="total_hours"
+                      type="number"
+                      min="0.25"
+                      max="100000"
+                      step="0.25"
+                      placeholder="Ex.: 200"
+                      defaultValue={(modal.data as Offering)?.total_hours || ""}
+                    />
+                  </label>
                   <label>
                     Cursos e módulos incluídos *
                     <textarea

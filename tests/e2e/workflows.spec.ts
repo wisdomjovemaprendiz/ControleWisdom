@@ -1710,3 +1710,168 @@ test("funcionário acessa sua senha pelo cabeçalho no celular", async ({
       .getByRole("button", { name: "Equipe e acesso", exact: true }),
   ).toHaveCount(0);
 });
+
+test("curso e turma registram carga horária e a chamada atualiza o progresso do aluno", async ({
+  page,
+}) => {
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Cursos e pacotes", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Novo curso ou pacote", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nome da formação *").fill("Curso Planejado 200h");
+  await dialog
+    .getByLabel("Carga horária total (horas)", { exact: true })
+    .fill("200");
+  await dialog
+    .getByLabel("Cursos e módulos incluídos *")
+    .fill("Preparação profissional");
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const offering = schoolApi.store.offerings.find(
+    (o) => o.name === "Curso Planejado 200h",
+  )!;
+  expect(offering.total_hours).toBe(200);
+  expect(offering.duration_months).toBeNull();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Turmas", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Nova turma", exact: true }).click();
+  dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nome da turma *").fill("Turma Planejada");
+  await dialog
+    .getByLabel("Curso ou pacote de referência", { exact: true })
+    .selectOption(offering.id);
+  await dialog
+    .getByLabel("Carga horária de cada aula (horas)", { exact: true })
+    .fill("2");
+  await dialog.getByLabel("Terça", { exact: true }).check();
+  await dialog.getByLabel("Quinta", { exact: true }).check();
+  await dialog.getByLabel("Professor *", { exact: true }).selectOption("p2");
+  await dialog
+    .getByLabel("Dias e horário *", { exact: true })
+    .fill("Ter e Qui · 14h às 16h");
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const course = schoolApi.store.classes.find(
+    (c) => c.name === "Turma Planejada",
+  )!;
+  expect(course.lesson_duration_minutes).toBe(120);
+  expect(course.lesson_days).toEqual([2, 4]);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Nova matrícula", exact: true })
+    .click();
+  dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Nome completo", { exact: true })
+    .fill("Aluno Planejado");
+  await dialog.getByLabel("Turma", { exact: true }).selectOption(course.id);
+  await dialog
+    .getByLabel("Data de início do curso", { exact: true })
+    .fill("2026-11-01");
+  await dialog
+    .getByLabel("Vencimento do último boleto", { exact: true })
+    .fill("2027-05-01");
+  await dialog
+    .getByRole("button", { name: "Salvar registro", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const student = schoolApi.store.students.find(
+    (s) => s.name === "Aluno Planejado",
+  )!;
+  expect(student.course_start_date).toBe("2026-11-01");
+  expect(student.last_installment_date).toBe("2027-05-01");
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Chamada", exact: true })
+    .click();
+  await page.getByLabel("Turma", { exact: true }).selectOption(course.id);
+  await page
+    .getByPlaceholder("O que os alunos aprenderam hoje?")
+    .fill("Introdução");
+  await page
+    .locator(".attendance-row")
+    .getByRole("button", { name: "Presente", exact: true })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Finalizar chamada e gerar resumo",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  expect(
+    schoolApi.store.lessons.find((l) => l.class_id === course.id)
+      ?.duration_minutes,
+  ).toBe(120);
+  async function openStudent() {
+    await page
+      .locator("nav")
+      .getByRole("button", { name: "Alunos", exact: true })
+      .click();
+    await page
+      .getByPlaceholder("Buscar aluno ou responsável…")
+      .fill(student.name);
+    await page.getByRole("button", { name: student.name, exact: true }).click();
+  }
+  await openStudent();
+  let progress = page.getByRole("region", {
+    name: "Progresso do curso",
+    exact: true,
+  });
+  await expect(
+    progress.getByRole("progressbar", { name: "Carga horária concluída" }),
+  ).toHaveAttribute("aria-valuenow", "1");
+  await expect(progress).toContainText("2 h de 200 h");
+  await expect(progress).toContainText("198 h restantes");
+  await expect(progress).toContainText("01/11/2026");
+  await expect(progress).toContainText("01/05/2027");
+  await page.getByRole("button", { name: "Fechar ficha", exact: true }).click();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Chamada", exact: true })
+    .click();
+  await page
+    .locator(".attendance-row")
+    .getByRole("button", { name: "Falta", exact: true })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Finalizar chamada e gerar resumo",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await openStudent();
+  progress = page.getByRole("region", {
+    name: "Progresso do curso",
+    exact: true,
+  });
+  await expect(progress.getByRole("progressbar")).toHaveAttribute(
+    "aria-valuenow",
+    "0",
+  );
+  await expect(progress).toContainText("0 h de 200 h");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

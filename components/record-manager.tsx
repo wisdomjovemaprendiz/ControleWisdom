@@ -74,7 +74,8 @@ export function RecordManager({
     if (selection.action === "edit")
       for (const field of recordFields[table]) {
         let value: unknown = String(data.get(field.key) || "");
-        if (field.type === "number") value = Number(value);
+        if (field.nullable && value === "") value = null;
+        else if (field.type === "number") value = Number(value);
         if (field.key === "active") value = value === "true";
         if (["offering_id", "class_id"].includes(field.key) && value === "")
           value = null;
@@ -522,8 +523,14 @@ export function RecordManager({
                           type={field.type || "text"}
                           defaultValue={String(selection.row[field.key] ?? "")}
                           required={field.required}
-                          min={field.type === "number" ? 1 : undefined}
-                          max={field.key === "level" ? 5 : undefined}
+                          min={
+                            field.min ??
+                            (field.type === "number" ? 1 : undefined)
+                          }
+                          max={
+                            field.max ?? (field.key === "level" ? 5 : undefined)
+                          }
+                          step={field.step}
                         />
                       )}
                     </label>

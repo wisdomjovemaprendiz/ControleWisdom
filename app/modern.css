@@ -4647,3 +4647,138 @@ button.secondary {
     padding: 24px 18px;
   }
 }
+/* Course progress stays inside the dossier reading area, keeping its header compact. */
+.course-progress-card {
+  border: 1px solid #dfe7f1;
+  border-radius: 12px;
+  background: white;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.course-progress-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.course-progress-heading h3 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+.course-progress-heading span {
+  color: #64758c;
+  font-size: 13px;
+}
+.course-progress-heading > strong {
+  font-size: 24px;
+  color: #214f86;
+  white-space: nowrap;
+}
+.course-progress-track {
+  height: 9px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e8eef6;
+  margin-top: 14px;
+}
+.course-progress-track > span {
+  display: block;
+  height: 100%;
+  background: var(--course-progress-color);
+  border-radius: inherit;
+  transition: width 180ms ease;
+}
+.course-progress-hours {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 9px;
+  font-size: 14px;
+}
+.course-progress-hours > span {
+  font-size: 13px;
+  color: #63768d;
+}
+.course-progress-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.course-progress-dates dt {
+  font-size: 13px;
+  color: #60738b;
+  margin-bottom: 4px;
+}
+.course-progress-dates dd {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+.course-progress-dates small {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+.course-billing-comparison {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #edf4fb;
+  color: #305c88;
+  font-size: 13px;
+}
+.course-billing-comparison.after-billing {
+  background: #fff5e6;
+  color: #8a5e20;
+}
+.course-progress-method {
+  margin-top: 12px;
+  border-top: 1px solid #e7edf5;
+  padding-top: 10px;
+  font-size: 13px;
+  color: #5d7088;
+}
+.course-progress-method summary {
+  cursor: pointer;
+}
+.course-progress-method p {
+  margin-top: 8px;
+}
+.course-progress-help {
+  color: #63768d;
+  font-size: 14px;
+  margin-top: 12px;
+}
+.enrollment-planning-fields,
+.class-planning-fields {
+  border: 1px solid #dce5ef;
+  padding: 16px;
+  border-radius: 12px;
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  min-width: 0;
+}
+.enrollment-planning-fields legend,
+.class-planning-fields > legend {
+  font-weight: 700;
+  padding-inline: 6px;
+}
+@media (max-width: 700px) {
+  .course-progress-card {
+    padding: 14px;
+  }
+  .course-progress-heading h3 {
+    font-size: 16px;
+  }
+  .course-progress-heading > strong {
+    font-size: 21px;
+  }
+  .course-progress-dates {
+    gap: 12px;
+  }
+}

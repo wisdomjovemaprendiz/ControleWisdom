@@ -29,6 +29,10 @@ export type RecordField = {
   options?: string[];
   relation?: RecordTable;
   required?: boolean;
+  nullable?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
 };
 const name = { key: "name", label: "Nome", required: true };
 export const recordFields: Record<RecordTable, RecordField[]> = {
@@ -36,12 +40,39 @@ export const recordFields: Record<RecordTable, RecordField[]> = {
   offerings: [
     name,
     { key: "kind", label: "Tipo", options: ["individual", "pacote"] },
-    { key: "duration_months", label: "Duração em meses", type: "number" },
+    {
+      key: "duration_months",
+      label: "Duração em meses (referência)",
+      type: "number",
+      nullable: true,
+    },
+    {
+      key: "total_hours",
+      label: "Carga horária total (horas)",
+      type: "number",
+      nullable: true,
+      min: 0.25,
+      max: 100000,
+      step: 0.25,
+    },
     { key: "courses", label: "Cursos / módulos", type: "textarea" },
   ],
   classes: [
     name,
     { key: "course", label: "Curso" },
+    {
+      key: "offering_id",
+      label: "Curso ou pacote de referência",
+      relation: "offerings",
+    },
+    {
+      key: "lesson_duration_minutes",
+      label: "Carga por aula (minutos)",
+      type: "number",
+      nullable: true,
+      min: 5,
+      max: 480,
+    },
     {
       key: "teacher_id",
       label: "Professor",
@@ -63,6 +94,26 @@ export const recordFields: Record<RecordTable, RecordField[]> = {
     { key: "email", label: "E-mail" },
     { key: "address", label: "Endereço" },
     { key: "enrollment_date", label: "Data de matrícula", type: "date" },
+    {
+      key: "course_start_date",
+      label: "Data de início do curso",
+      type: "date",
+      nullable: true,
+    },
+    {
+      key: "last_installment_date",
+      label: "Vencimento do último boleto",
+      type: "date",
+      nullable: true,
+    },
+    {
+      key: "opening_hours",
+      label: "Horas anteriores aos registros",
+      type: "number",
+      min: 0,
+      max: 100000,
+      step: 0.25,
+    },
     {
       key: "status",
       label: "Situação",
@@ -87,6 +138,14 @@ export const recordFields: Record<RecordTable, RecordField[]> = {
     { key: "active", label: "Acesso ativo", options: ["true", "false"] },
   ],
   lessons: [
+    {
+      key: "duration_minutes",
+      label: "Duração registrada (minutos)",
+      type: "number",
+      nullable: true,
+      min: 5,
+      max: 480,
+    },
     {
       key: "topic",
       label: "Conteúdo da aula",

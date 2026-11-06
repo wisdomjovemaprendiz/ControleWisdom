@@ -29,6 +29,9 @@ export interface Profile {
   unit_id: string;
 }
 export interface CourseClass {
+  offering_id?: string | null;
+  lesson_duration_minutes?: number | null;
+  lesson_days?: number[];
   color?: string;
   enrollment_open?: boolean;
   enrollment_priority?: number;
@@ -46,16 +49,20 @@ export interface CourseClass {
   whatsapp: string;
 }
 export interface Offering {
+  total_hours?: number | null;
   archived_at?: string | null;
   record_archive_reason?: string;
   id: string;
   unit_id: string;
   name: string;
   kind: "individual" | "pacote";
-  duration_months: number;
+  duration_months: number | null;
   courses: string;
 }
 export interface Student {
+  course_start_date?: string | null;
+  last_installment_date?: string | null;
+  opening_hours?: number;
   enrollment_mode?: "class" | "individual";
   individual_hours?: number | null;
   individual_days?: number[];
@@ -105,6 +112,7 @@ export interface Lesson {
   closed: boolean;
 }
 export interface Attendance {
+  course_offering_id?: string | null;
   arrival_time?: string;
   justification?: string;
   archived_at?: string | null;

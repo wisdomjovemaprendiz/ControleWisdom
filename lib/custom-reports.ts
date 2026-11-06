@@ -1,3 +1,8 @@
+import {
+  courseProgress,
+  createProgressIndex,
+  type CourseProgress,
+} from "./course-progress";
 import type { Store, Student, Profile } from "./domain";
 import {
   canAccess,
@@ -14,12 +19,14 @@ type Context = {
   attendance: Store["attendance"];
   lessons: Store["lessons"];
   latestPedagogy?: Store["pedagogy"][number];
+  progress?: CourseProgress;
 };
 export interface ReportField {
   id: string;
   label: string;
   group: string;
   pedagogy?: boolean;
+  course?: boolean;
   value: (context: Context) => ReportCell;
 }
 const personal = (id: keyof Student, label: string): ReportField => ({
@@ -182,6 +189,27 @@ export const customReportFields: ReportField[] = [
     value: ({ student }) =>
       student.archive_reason || student.record_archive_reason || "",
   },
+  ...(
+    [
+      ["course_total", "Carga horária do curso (h)", "totalHours"],
+      ["course_completed", "Horas cumpridas no curso", "completedHours"],
+      ["course_remaining", "Horas restantes no curso", "remainingHours"],
+      ["course_percent", "Progresso do curso (%)", "percent"],
+      ["course_start", "Início do curso", "startDate"],
+      ["course_end", "Término estimado do curso", "estimatedEnd"],
+      ["last_installment", "Vencimento do último boleto", "lastInstallment"],
+    ] as const
+  ).map(([id, label, key]): ReportField => ({
+    id,
+    label,
+    group: "Progresso do curso",
+    course: true,
+    value: ({ progress }) => {
+      const value = progress?.[key];
+      if (typeof value === "number") return value;
+      return value ? displayDate(value) : "";
+    },
+  })),
   ...(["date", "skill", "notes", "intervention", "follow_up"] as const).map(
     (key): ReportField => ({
       id: `pedagogy_${key}`,
@@ -289,19 +317,26 @@ export function buildCustomReport(
     .sort((a, b) =>
       studentDisplayName(a).localeCompare(studentDisplayName(b), "pt-BR"),
     );
+  const progressIndex = fields.some((f) => f.course)
+    ? createProgressIndex(store)
+    : null;
   return {
     headers: fields.map((f) => f.label),
-    rows: students.map((student) =>
-      fields.map((f) =>
+    rows: students.map((student) => {
+      const progress = progressIndex
+        ? courseProgress(store, student, options.to || undefined, progressIndex)
+        : undefined;
+      return fields.map((f) =>
         f.value({
           store,
           student,
           attendance: attendanceByStudent.get(student.id) || [],
           lessons: lessonsByStudent.get(student.id) || [],
           latestPedagogy: latestByStudent.get(student.id),
+          progress,
         }),
-      ),
-    ),
+      );
+    }),
     count: students.length,
   };
 }
