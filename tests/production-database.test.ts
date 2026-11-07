@@ -1368,5 +1368,137 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       );
     },
   );
+  await t.test(
+    "ocorrências da chamada são atômicas, privadas e auditadas",
+    async () => {
+      await db.exec("reset role");
+      await db.exec(
+        readFileSync(
+          new URL("../supabase/014_lesson_occurrences.sql", import.meta.url),
+          "utf8",
+        ),
+      );
+      await as(2);
+      const lesson = (
+        await db.query<any>("select * from public.lessons where id=$1", [
+          id(310),
+        ])
+      ).rows[0];
+      const marks = (
+        await db.query<any>(
+          "select * from public.attendance where lesson_id=$1",
+          [id(310)],
+        )
+      ).rows;
+      const occurrences = [
+        {
+          id: id(990),
+          student_id: null,
+          codes: ["talk"],
+          notes: "Combinados retomados",
+        },
+        {
+          id: id(991),
+          student_id: id(302),
+          codes: ["phone", "task"],
+          notes: "Orientação individual",
+        },
+      ];
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify({ ...lesson, teacher_id: id(2), occurrences }),
+        JSON.stringify(marks),
+      ]);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        2,
+      );
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify({ ...lesson, teacher_id: id(2), occurrences }),
+        JSON.stringify(marks),
+      ]);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        2,
+      );
+      await assert.rejects(
+        db.query("select public.save_lesson_attendance($1,$2)", [
+          JSON.stringify({
+            ...lesson,
+            teacher_id: id(2),
+            topic: "Não deve persistir",
+            occurrences: [
+              { id: id(992), student_id: id(32), codes: ["talk"], notes: "" },
+            ],
+          }),
+          JSON.stringify(marks),
+        ]),
+      );
+      assert.notEqual(
+        (
+          await db.query<any>("select topic from public.lessons where id=$1", [
+            id(310),
+          ])
+        ).rows[0].topic,
+        "Não deve persistir",
+      );
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        2,
+      );
+      await as(3);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        2,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "update public.occurrences set notes='Não permitido' returning id",
+          )
+        ).rows.length,
+        0,
+      );
+      await as(4);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        0,
+      );
+      await as(6);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        0,
+      );
+      await as(1);
+      const logs = (
+        await db.query<any>(
+          "select * from public.audit_log where entity='occurrences' and entity_id=$1 order by id",
+          [id(991)],
+        )
+      ).rows;
+      assert.equal(logs[0].actor_id, id(2));
+      assert.deepEqual(logs[0].after_data.codes, ["phone", "task"]);
+      await as(2);
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify({ ...lesson, teacher_id: id(2) }),
+        JSON.stringify(marks),
+      ]);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        2,
+      );
+      await db.query("select public.save_lesson_attendance($1,$2)", [
+        JSON.stringify({
+          ...lesson,
+          teacher_id: id(2),
+          occurrences: [occurrences[0]],
+        }),
+        JSON.stringify(marks),
+      ]);
+      assert.equal(
+        (await db.query("select * from public.occurrences")).rows.length,
+        1,
+      );
+    },
+  );
   await db.close();
 });

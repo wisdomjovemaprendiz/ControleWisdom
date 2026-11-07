@@ -36,11 +36,11 @@ export function OccupancyLegend() {
         40–69%
       </span>
       <span>
-        <i style={{ background: "#218361" }} />
+        <i style={{ background: "#63962E" }} />
         70–89%
       </span>
       <span>
-        <i style={{ background: "#CC641C" }} />
+        <i style={{ background: "#218361" }} />
         90–100%
       </span>
     </div>

@@ -261,5 +261,6 @@ export function schoolFixture(): Store {
       },
     ],
     contacts: [],
+    occurrences: [],
   };
 }

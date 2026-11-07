@@ -1,3 +1,4 @@
+import { occurrenceOptions } from "./occurrences";
 import type { Store } from "./domain";
 import { labels, studentDisplayName } from "./domain";
 import { weekdays } from "./individual";
@@ -14,6 +15,11 @@ export interface AuditEntry {
 }
 export const auditFieldLabels: Record<string, string> = {
   name: "Nome",
+  codes: "Ocorrências marcadas",
+  lesson_id: "Aula",
+  author_name: "Registrado por",
+  created_at: "Data do registro",
+  updated_at: "Última alteração",
   total_hours: "Carga horária do curso (h)",
   offering_id: "Curso contratado",
   lesson_duration_minutes: "Duração da aula da turma (min)",
@@ -66,6 +72,17 @@ export function auditValue(key: string, value: unknown, store: Store): string {
     return store.offerings.find((o) => o.id === value)?.name || String(value);
   if (["course_start_date", "last_installment_date"].includes(key))
     return String(value).split("-").reverse().join("/");
+  if (key === "codes" && Array.isArray(value))
+    return value
+      .map(
+        (id) =>
+          occurrenceOptions.find(([code]) => code === id)?.[1] || String(id),
+      )
+      .join("; ");
+  if (key === "lesson_id") {
+    const lesson = store.lessons.find((l) => l.id === value);
+    return lesson ? `${lesson.date} · ${lesson.topic}` : String(value);
+  }
   if (key === "class_id")
     return store.classes.find((c) => c.id === value)?.name || String(value);
   if (key === "student_id") {

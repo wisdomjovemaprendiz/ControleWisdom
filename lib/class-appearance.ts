@@ -42,8 +42,8 @@ export function occupancyInfo(enrolled: number, capacity: number) {
   const color = {
     low: "#C43B43",
     moderate: "#B98517",
-    balanced: "#218361",
-    "near-full": "#CC641C",
+    balanced: "#63962E",
+    "near-full": "#218361",
   }[tone];
   const label =
     percent >= 100

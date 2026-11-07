@@ -194,6 +194,7 @@ export function LifecycleSettings({
             >
               {Object.entries({
                 ...recordLabels,
+                occurrences: "Ocorrências da aula",
                 offboarding_steps: "Checklist de desligamento",
               }).map(([key, value]) => (
                 <option key={key} value={key}>

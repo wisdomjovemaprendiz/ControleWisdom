@@ -222,6 +222,7 @@ export function operationalStore(source: Store): Store {
     ),
     lessonIds = visible(lessons);
   return {
+    occurrences: source.occurrences.filter((r) => lessonIds.has(r.lesson_id)),
     units,
     classes,
     students,

@@ -1,3 +1,4 @@
+import { studentOccurrences, occurrenceText } from "./occurrences";
 import {
   studentPlacement,
   lessonPlacement,
@@ -111,6 +112,18 @@ export interface Lesson {
   topic: string;
   closed: boolean;
 }
+export interface LessonOccurrence {
+  id: string;
+  unit_id: string;
+  lesson_id: string;
+  student_id: string | null;
+  codes: string[];
+  notes: string;
+  author_id: string;
+  author_name: string;
+  created_at?: string;
+  updated_at?: string;
+}
 export interface Attendance {
   course_offering_id?: string | null;
   arrival_time?: string;
@@ -177,6 +190,7 @@ export interface Store {
   attendance: Attendance[];
   pedagogy: Pedagogy[];
   contacts: Contact[];
+  occurrences: LessonOccurrence[];
 }
 export const labels: Record<string, string> = {
   admin: "Administrador",
@@ -315,7 +329,11 @@ export function comparePedagogy(a: Pedagogy, b: Pedagogy) {
     (a.parent_record_id === b.id ? -1 : b.parent_record_id === a.id ? 1 : 0)
   );
 }
-export function evolutionMessage(store: Store, student: Student) {
+export function evolutionMessage(
+  store: Store,
+  student: Student,
+  history: Store = store,
+) {
   const records = store.pedagogy
     .filter((p) => p.student_id === student.id)
     .sort(comparePedagogy);
@@ -325,7 +343,13 @@ export function evolutionMessage(store: Store, student: Student) {
     student.enrollment_mode === "individual"
       ? `\nCarga horária realizada: ${(individualMinutes(store, student.id) / 60).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} h${student.individual_hours ? ` de ${student.individual_hours} h` : ""}\nDias: ${student.individual_days?.map((d) => weekdays[d]).join(", ") || "A definir"}\nDuração por aula: ${student.individual_duration_minutes ? `${student.individual_duration_minutes} minutos` : "A definir"}`
       : "";
-  return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${studentDisplayName(student)}\n${student.enrollment_mode === "individual" ? "Modalidade" : "Turma"}: ${studentPlacement(store, student)}\nFrequência: ${f === null ? "Sem registros" : f + "%"}${individualDetails}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}\n\nEquipe Wisdom`;
+  const occurrenceLines = studentOccurrences(history, student.id)
+    .slice(0, 10)
+    .map(
+      (item) =>
+        `${displayDate(history.lessons.find((l) => l.id === item.lesson_id)!.date)} — ${item.student_id ? "Individual" : "Contexto da turma"}: ${occurrenceText(item)}`,
+    );
+  return `*Wisdom | Acompanhamento pedagógico*\nOlá, ${student.guardian || "responsável"}!\nAluno(a): ${studentDisplayName(student)}\n${student.enrollment_mode === "individual" ? "Modalidade" : "Turma"}: ${studentPlacement(store, student)}\nFrequência: ${f === null ? "Sem registros" : f + "%"}${individualDetails}\n${latest ? `\nRegistro de ${displayDate(latest.date)}\nHabilidade: ${latest.skill}\nEvolução: ${latest.notes}\nPróximos passos: ${latest.intervention || "Continuar acompanhamento"}` : "\nAinda não há registros individuais de evolução."}${occurrenceLines.length ? `\n\n*Ocorrências registradas*\n${occurrenceLines.join("\n")}` : ""}\n\nEquipe Wisdom`;
 }
 export function whatsappUrl(phone: string, message: string) {
   const number = phone.replace(/\D/g, "");

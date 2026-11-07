@@ -230,6 +230,18 @@ export async function installSchoolApi(page: Page) {
     if (path === "/rest/v1/rpc/save_lesson_attendance") {
       const body = req.postDataJSON(),
         lesson = body.lesson_data;
+      if (lesson.occurrences)
+        store.occurrences = store.occurrences
+          .filter((o) => o.lesson_id !== lesson.id)
+          .concat(
+            lesson.occurrences.map((o: any) => ({
+              ...o,
+              lesson_id: lesson.id,
+              unit_id: lesson.unit_id,
+              author_id: actor.id,
+              author_name: actor.name,
+            })),
+          );
       store.lessons = store.lessons
         .filter((l) => l.id !== lesson.id)
         .concat(lesson);

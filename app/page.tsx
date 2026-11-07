@@ -4,7 +4,23 @@ import {
   ClassPlanningFields,
 } from "@/components/course-planning-fields";
 import { CompactDialog } from "@/components/compact-dialog";
-import { courseProgress, formatHours } from "@/lib/course-progress";
+import {
+  naturalName,
+  studentChatUrl,
+  studentOccurrences,
+  occurrenceText,
+} from "@/lib/occurrences";
+import { StudentListProgress } from "@/components/student-list-progress";
+import {
+  LessonOccurrences,
+  OccurrenceHistory,
+  type OccurrenceDraft,
+} from "@/components/lesson-occurrences";
+import {
+  courseProgress,
+  formatHours,
+  createProgressIndex,
+} from "@/lib/course-progress";
 import { classFrame, occupancyInfo } from "@/lib/class-appearance";
 import { OccupancyBar, OccupancyLegend } from "@/components/occupancy-bar";
 import { CustomReportBuilder } from "@/components/custom-report-builder";
@@ -147,6 +163,7 @@ const tables: (keyof Store)[] = [
   "attendance",
   "pedagogy",
   "contacts",
+  "occurrences",
 ];
 type Modal = {
   kind: string;
@@ -224,7 +241,7 @@ export default function App() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
   const [dossierId, setDossierId] = useState<string | null>(null);
-  const [studentStatus, setStudentStatus] = useState("all"),
+  const [studentStatus, setStudentStatus] = useState("ativo"),
     [studentClass, setStudentClass] = useState("all");
   const [individualStudentId, setIndividualStudentId] = useState("");
   const [individualDuration, setIndividualDuration] = useState("");
@@ -237,6 +254,15 @@ export default function App() {
     >({}),
     [reportFrom, setReportFrom] = useState(""),
     [reportTo, setReportTo] = useState(today());
+  const [occurrenceDraft, setOccurrenceDraft] = useState<OccurrenceDraft[]>([]);
+  const [classOrder, setClassOrder] = useState("name"),
+    [classAvailability, setClassAvailability] = useState("all"),
+    [classSearch, setClassSearch] = useState("");
+  const [classHistoryId, setClassHistoryId] = useState<string | null>(null);
+  const progressIndex = useMemo(
+    () => (allRecords ? createProgressIndex(allRecords) : null),
+    [allRecords],
+  );
   const [attendanceEditor, setAttendanceEditor] = useState<{
     student: Student;
     status: "atrasado" | "justificado";
@@ -417,16 +443,71 @@ export default function App() {
     classes = store?.classes.filter((c) => scoped(c.unit_id)) || [],
     active = students.filter((s) => s.status === "ativo"),
     alerts = active.filter((s) => needsAbsenceOutreach(store!, s)),
-    filtered = students.filter(
-      (s) =>
-        `${studentDisplayName(s)} ${s.guardian}`
-          .toLowerCase()
-          .includes(query.toLowerCase()) &&
-        (studentStatus === "all" || s.status === studentStatus) &&
-        (studentClass === "all" ||
-          (studentClass === INDIVIDUAL && isIndividual(s)) ||
-          s.class_id === studentClass),
-    );
+    filtered = students
+      .filter(
+        (s) =>
+          `${studentDisplayName(s)} ${s.guardian}`
+            .toLowerCase()
+            .includes(query.toLowerCase()) &&
+          (studentStatus === "all" || s.status === studentStatus) &&
+          (studentClass === "all" ||
+            (studentClass === INDIVIDUAL && isIndividual(s)) ||
+            s.class_id === studentClass),
+      )
+      .sort((a, b) =>
+        naturalName(studentDisplayName(a), studentDisplayName(b)),
+      );
+  const classStats = new Map(
+    classes.map((c) => {
+      const enrolled = active.filter((s) => s.class_id === c.id).length;
+      return [
+        c.id,
+        {
+          enrolled,
+          vacancies: Math.max(0, c.capacity - enrolled),
+          percent: c.capacity ? enrolled / c.capacity : 0,
+          occurrences:
+            store?.occurrences.filter((o) =>
+              store.lessons.some(
+                (l) => l.id === o.lesson_id && l.class_id === c.id,
+              ),
+            ).length || 0,
+        },
+      ];
+    }),
+  );
+  const directoryClasses = classes
+    .filter(
+      (c) =>
+        c.name
+          .toLocaleLowerCase("pt-BR")
+          .includes(classSearch.toLocaleLowerCase("pt-BR")) &&
+        (classAvailability === "all" ||
+          (classAvailability === "open" && c.enrollment_open !== false) ||
+          (classAvailability === "vacancies" &&
+            classStats.get(c.id)!.vacancies > 0) ||
+          (classAvailability === "full" &&
+            classStats.get(c.id)!.vacancies === 0) ||
+          (classAvailability === "incidents" &&
+            classStats.get(c.id)!.occurrences > 0)),
+    )
+    .sort((a, b) => {
+      const x = classStats.get(a.id)!,
+        y = classStats.get(b.id)!;
+      const order =
+        classOrder === "more-vacancies"
+          ? y.vacancies - x.vacancies
+          : classOrder === "less-vacancies"
+            ? x.vacancies - y.vacancies
+            : classOrder === "incidents"
+              ? y.occurrences - x.occurrences
+              : classOrder === "occupancy"
+                ? y.percent - x.percent
+                : classOrder === "priority"
+                  ? (a.enrollment_priority || 3) - (b.enrollment_priority || 3)
+                  : 0;
+      return order || naturalName(a.name, b.name);
+    });
   const writableClasses = classes.filter(
     (c) => profile?.role !== "professor" || c.teacher_id === profile.id,
   );
@@ -460,7 +541,18 @@ export default function App() {
   );
   const attendanceDirty = Boolean(
     selectedLesson &&
-    (topic.trim() !== selectedLesson.topic ||
+    (JSON.stringify(occurrenceDraft) !==
+      JSON.stringify(
+        store?.occurrences
+          .filter((o) => o.lesson_id === selectedLesson.id)
+          .map(({ id, student_id, codes, notes }) => ({
+            id,
+            student_id,
+            codes,
+            notes,
+          })),
+      ) ||
+      topic.trim() !== selectedLesson.topic ||
       (classId === INDIVIDUAL &&
         Number(individualDuration) !== selectedLesson.duration_minutes) ||
       active
@@ -490,6 +582,16 @@ export default function App() {
       (l) => matchesLesson(l) && l.date === lessonDate,
     );
     setTopic(l?.topic || "");
+    setOccurrenceDraft(
+      store.occurrences
+        .filter((o) => o.lesson_id === l?.id)
+        .map(({ id, student_id, codes, notes }) => ({
+          id,
+          student_id,
+          codes,
+          notes,
+        })),
+    );
     setIndividualDuration(
       String(
         l?.duration_minutes ||
@@ -521,6 +623,7 @@ export default function App() {
     lessonDate,
     store?.lessons,
     store?.attendance,
+    store?.occurrences,
   ]);
   useEffect(() => {
     const key =
@@ -800,13 +903,27 @@ export default function App() {
       if (!supabase) throw new Error("Acesso não configurado.");
       {
         const { error } = await supabase.rpc("save_lesson_attendance", {
-          lesson_data: lesson,
+          lesson_data: { ...lesson, occurrences: occurrenceDraft },
           attendance_data: rows,
         });
         if (error) throw error;
       }
       const next = {
         ...allRecords!,
+        occurrences: [
+          ...allRecords!.occurrences.filter((o) => o.lesson_id !== lesson.id),
+          ...occurrenceDraft.map((o) => ({
+            ...o,
+            lesson_id: lesson.id,
+            unit_id: lesson.unit_id,
+            author_id:
+              allRecords!.occurrences.find((previous) => previous.id === o.id)
+                ?.author_id || profile.id,
+            author_name:
+              allRecords!.occurrences.find((previous) => previous.id === o.id)
+                ?.author_name || profile.name,
+          })),
+        ],
         lessons: [
           ...allRecords!.lessons.filter((l) => l.id !== lesson.id),
           lesson,
@@ -1709,7 +1826,7 @@ export default function App() {
                     <tr>
                       <th>ALUNO</th>
                       <th>TURMA</th>
-                      <th>RESPONSÁVEL</th>
+                      <th>TELEFONE DO ALUNO</th>
                       <th>FREQUÊNCIA</th>
                       <th>STATUS</th>
                       <th>AÇÕES</th>
@@ -1729,8 +1846,15 @@ export default function App() {
                                 {studentDisplayName(s)}
                               </button>
                               <small>
-                                Desde {displayDate(s.enrollment_date)}
+                                {s.course_start_date
+                                  ? `Desde ${displayDate(s.course_start_date)}`
+                                  : "Início não informado"}
                               </small>
+                              <StudentListProgress
+                                store={allRecords!}
+                                student={s}
+                                index={progressIndex!}
+                              />
                               {s.offering_id && (
                                 <span className="package-label">
                                   {
@@ -1745,8 +1869,21 @@ export default function App() {
                         </td>
                         <td>{studentPlacement(store, s)}</td>
                         <td>
-                          {s.guardian || "Não informado"}
-                          <small>{s.guardian_phone || "Sem telefone"}</small>
+                          <div className="student-phone">
+                            <span>{s.phone || "Sem telefone"}</span>
+                            {s.phone && (
+                              <a
+                                className="icon-button"
+                                title={`Conversar com ${studentDisplayName(s)} no WhatsApp`}
+                                href={studentChatUrl(s.phone)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`WhatsApp de ${studentDisplayName(s)}`}
+                              >
+                                <MessageCircle size={18} />
+                              </a>
+                            )}
+                          </div>
                         </td>
                         <td>
                           {frequency(store, s.id) === null
@@ -1796,7 +1933,11 @@ export default function App() {
                                 onClick={() =>
                                   setMessage({
                                     title: "Evolução do aluno",
-                                    text: evolutionMessage(store, s),
+                                    text: evolutionMessage(
+                                      store,
+                                      s,
+                                      allRecords!,
+                                    ),
                                     phone: s.guardian_phone,
                                   })
                                 }
@@ -1859,9 +2000,48 @@ export default function App() {
               <div className="panel-header">
                 <div>
                   <span className="index-label">DISTRIBUIÇÃO DAS TURMAS</span>
-                  <h2>{classes.length} turmas cadastradas</h2>
+                  <h2>{directoryClasses.length} turmas cadastradas</h2>
                 </div>
                 <OccupancyLegend />
+              </div>
+              <div className="class-directory-filters">
+                <label>
+                  Buscar turma
+                  <input
+                    aria-label="Buscar turma"
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Ordenar turmas
+                  <select
+                    aria-label="Ordenar turmas"
+                    value={classOrder}
+                    onChange={(e) => setClassOrder(e.target.value)}
+                  >
+                    <option value="name">Nome / número</option>
+                    <option value="more-vacancies">Mais vagas</option>
+                    <option value="less-vacancies">Menos vagas</option>
+                    <option value="occupancy">Maior ocupação</option>
+                    <option value="incidents">Mais ocorrências</option>
+                    <option value="priority">Prioridade de matrícula</option>
+                  </select>
+                </label>
+                <label>
+                  Filtrar turmas
+                  <select
+                    aria-label="Filtrar turmas"
+                    value={classAvailability}
+                    onChange={(e) => setClassAvailability(e.target.value)}
+                  >
+                    <option value="all">Todas</option>
+                    <option value="open">Matrículas abertas</option>
+                    <option value="vacancies">Com vagas</option>
+                    <option value="full">Lotadas</option>
+                    <option value="incidents">Com ocorrências</option>
+                  </select>
+                </label>
               </div>
               <div className="table-scroll">
                 <table>
@@ -1875,7 +2055,7 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {classes.map((c) => {
+                    {directoryClasses.map((c) => {
                       const count = active.filter(
                         (s) => s.class_id === c.id,
                       ).length;
@@ -1888,6 +2068,16 @@ export default function App() {
                           <td>
                             <strong>{c.name}</strong>
                             <small>{c.course}</small>
+                            {profile.role !== "comercial" && (
+                              <button
+                                type="button"
+                                className="text-link class-incidents-button"
+                                onClick={() => setClassHistoryId(c.id)}
+                              >
+                                Ocorrências ({classStats.get(c.id)!.occurrences}
+                                )
+                              </button>
+                            )}
                             <Badge
                               tone={
                                 c.enrollment_open !== false
@@ -1988,7 +2178,7 @@ export default function App() {
                   </tbody>
                 </table>
               </div>
-              {!classes.length && (
+              {!directoryClasses.length && (
                 <Empty text="Nenhuma turma cadastrada nesta unidade." />
               )}
             </section>
@@ -2192,6 +2382,13 @@ export default function App() {
                     </strong>
                   </div>
                 </div>
+                <LessonOccurrences
+                  key={`${selectedClass?.id}:${individualStudent?.id || ""}:${lessonDate}`}
+                  students={active.filter(isAttendanceStudent)}
+                  individual={classId === INDIVIDUAL}
+                  value={occurrenceDraft}
+                  onChange={setOccurrenceDraft}
+                />
                 <section className="panel">
                   <div className="panel-header">
                     <div>
@@ -2430,7 +2627,7 @@ export default function App() {
                               )!;
                               setMessage({
                                 title: "Evolução pedagógica",
-                                text: evolutionMessage(store, s),
+                                text: evolutionMessage(store, s, allRecords!),
                                 phone: s.guardian_phone,
                               });
                             }}
@@ -2830,7 +3027,7 @@ export default function App() {
             const student = students.find((s) => s.id === dossierId)!;
             setMessage({
               title: "Evolução do aluno",
-              text: evolutionMessage(store, student),
+              text: evolutionMessage(store, student, allRecords!),
               phone: student.guardian_phone,
             });
             setDossierId(null);
@@ -2838,7 +3035,7 @@ export default function App() {
           onPdf={() => {
             const student = students.find((s) => s.id === dossierId)!;
             void pdf("Ficha do aluno", [
-              evolutionMessage(store, student),
+              evolutionMessage(store, student, allRecords!),
               `Matrícula: ${displayDate(student.enrollment_date)}`,
               ...(() => {
                 const p = courseProgress(reportSource, student);
@@ -2850,6 +3047,11 @@ export default function App() {
                 ];
               })(),
               `Situação: ${labels[student.status]}`,
+              "Histórico de ocorrências",
+              ...studentOccurrences(reportSource, student.id).map(
+                (o) =>
+                  `${displayDate(reportSource.lessons.find((l) => l.id === o.lesson_id)!.date)} — ${o.student_id ? "Individual" : "Contexto da turma"}: ${occurrenceText(o)} · ${o.author_name}`,
+              ),
               "Histórico pedagógico completo",
               ...reportSource.pedagogy
                 .filter((p) => p.student_id === student.id)
@@ -2892,6 +3094,31 @@ export default function App() {
             setStore(null);
           }}
         />
+      )}
+      {classHistoryId && (
+        <CompactDialog
+          title={`Ocorrências — ${store.classes.find((c) => c.id === classHistoryId)?.name || "Turma"}`}
+          onClose={() => setClassHistoryId(null)}
+        >
+          <OccurrenceHistory
+            store={allRecords!}
+            records={allRecords!.occurrences
+              .filter((o) =>
+                allRecords!.lessons.some(
+                  (l) => l.id === o.lesson_id && l.class_id === classHistoryId,
+                ),
+              )
+              .sort((a, b) =>
+                (
+                  allRecords!.lessons.find((l) => l.id === b.lesson_id)?.date ||
+                  ""
+                ).localeCompare(
+                  allRecords!.lessons.find((l) => l.id === a.lesson_id)?.date ||
+                    "",
+                ),
+              )}
+          />
+        </CompactDialog>
       )}
       {lessonBirthdays.length > 0 && (
         <CompactDialog

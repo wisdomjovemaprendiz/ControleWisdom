@@ -4,6 +4,8 @@ import { studentDisplayName, attendanceDescription } from "@/lib/domain";
 import { comparePedagogy } from "@/lib/domain";
 import { outcomeLabels } from "@/lib/pedagogy";
 import { CourseProgressCard } from "./course-progress-card";
+import { studentOccurrences } from "@/lib/occurrences";
+import { OccurrenceHistory } from "./lesson-occurrences";
 import { StudentAvatar } from "./student-avatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Download, MessageCircle, Pencil, X } from "lucide-react";
@@ -155,8 +157,12 @@ export function StudentDossier({
             ["attendance", "Frequência"],
             ["pedagogy", "Pedagógico"],
             ["contacts", "Contatos"],
+            ["occurrences", "Ocorrências"],
           ]
-            .filter(([key]) => key !== "pedagogy" || canViewPedagogy)
+            .filter(
+              ([key]) =>
+                !["pedagogy", "occurrences"].includes(key) || canViewPedagogy,
+            )
             .map(([key, name]) => (
               <button
                 role="tab"
@@ -251,6 +257,12 @@ export function StudentDossier({
                 </div>
               )}
             </>
+          )}
+          {tab === "occurrences" && (
+            <OccurrenceHistory
+              store={progressStore || store}
+              records={studentOccurrences(progressStore || store, s.id)}
+            />
           )}
           {tab === "attendance" && (
             <div className="dossier-timeline">

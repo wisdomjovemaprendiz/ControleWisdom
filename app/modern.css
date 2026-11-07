@@ -5118,3 +5118,154 @@ button.secondary {
     flex-wrap: wrap;
   }
 }
+
+.student-list-progress {
+  max-width: 240px;
+  display: grid;
+  gap: 5px;
+  margin: 6px 0;
+  font-size: 12px;
+  color: #425c7e;
+}
+.student-list-progress-track {
+  display: block;
+  height: 5px;
+  background: #e0e8f3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.student-list-progress-track i {
+  display: block;
+  height: 100%;
+  background: #2461a9;
+  border-radius: inherit;
+}
+.student-phone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.class-directory-filters {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.5fr) repeat(2, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 18px 22px;
+}
+.class-directory-filters label {
+  display: grid;
+  gap: 7px;
+  color: #526a89;
+  font-size: 13px;
+}
+.class-directory-filters input,
+.class-directory-filters select,
+.occurrence-body select,
+.occurrence-body textarea {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #d8e1ef;
+  border-radius: 8px;
+  background: white;
+  padding: 11px;
+  color: #243b58;
+  font: inherit;
+}
+.class-incidents-button {
+  display: block;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.occurrence-editor {
+  margin: 18px 0;
+}
+.occurrence-editor > summary {
+  cursor: pointer;
+  padding: 18px 22px;
+  font-weight: 700;
+  color: #284d7c;
+}
+.occurrence-editor > summary > span {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 10px;
+}
+.occurrence-body {
+  padding: 0 22px 20px;
+  display: grid;
+  gap: 16px;
+}
+.occurrence-body > label {
+  display: grid;
+  gap: 8px;
+}
+.occurrence-body fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.occurrence-body legend {
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.occurrence-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.occurrence-options label {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.occurrence-options input {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  flex: 0 0 17px;
+  accent-color: #16488d;
+}
+.occurrence-draft-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.occurrence-draft-list li,
+.occurrence-history article {
+  padding: 14px;
+  border: 1px solid #dfe7f0;
+  border-radius: 9px;
+}
+.occurrence-draft-list p,
+.occurrence-history p {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+.occurrence-history {
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .class-directory-filters,
+  .occurrence-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .student-list-progress {
+    min-width: 160px;
+  }
+}
+.occurrence-body .occurrence-options label {
+  flex-direction: row;
+}
+.occurrence-options input[type="checkbox"] {
+  min-height: 17px;
+  min-width: 17px;
+  max-width: 17px;
+  padding: 0;
+}

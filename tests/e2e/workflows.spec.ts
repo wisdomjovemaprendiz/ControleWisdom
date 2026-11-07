@@ -1364,7 +1364,9 @@ test("desligamento exige checklist configurável antes de salvar", async ({
     .locator("nav")
     .getByRole("button", { name: "Alunos", exact: true })
     .click();
-  const row = page.locator("tbody tr").first();
+  const row = page
+    .locator("tbody tr")
+    .filter({ hasText: schoolApi.store.students[0].name });
   const id = schoolApi.store.students[0].id;
   await row.getByTitle("Arquivar aluno", { exact: true }).click();
   let dialog = page.getByRole("dialog");
@@ -1439,6 +1441,7 @@ test("foto redonda amplia duas vezes sem abrir a ficha do aluno", async ({
   expect(await avatar.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
     "50%",
   );
+  await avatar.scrollIntoViewIfNeeded();
   const box = await avatar.boundingBox();
   await avatar.click();
   const zoom = page.getByRole("img", {
@@ -2286,4 +2289,174 @@ test("Excel sem coluna Turma usa o destino e preserva telefones do responsável"
   expect(student.class_id).toBe("c2");
   expect(student.guardian_phone).toBe("71999994321");
   expect(student.guardian).toBe("Paula Responsável");
+});
+
+test("lista de alunos inicia com ativos em ordem alfabética, início informado e contato próprio", async ({
+  page,
+}) => {
+  const student = schoolApi.store.students.find((s) => s.id === "s1")!;
+  Object.assign(student, {
+    course_start_date: "2026-09-01",
+    phone: "71999991234",
+    opening_hours: 10,
+  });
+  schoolApi.store.offerings.find(
+    (o) => o.id === student.offering_id,
+  )!.total_hours = 200;
+  await page.reload();
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  await expect(page.getByLabel("Filtrar situação da matrícula")).toHaveValue(
+    "ativo",
+  );
+  const rows = page.locator(".table-scroll tbody tr");
+  const names = await rows.locator(".student-link").allTextContents();
+  expect(names).toEqual(
+    [...names].sort((a, b) =>
+      a.localeCompare(b, "pt-BR", { numeric: true, sensitivity: "base" }),
+    ),
+  );
+  await expect(rows).toHaveCount(14);
+  const row = rows.filter({ hasText: "Gabriel Almeida" });
+  await expect(row).toContainText("Desde 01/09/2026");
+  await expect(row).toContainText("10 h de 200 h");
+  await expect(row.getByRole("progressbar")).toHaveAttribute(
+    "aria-valuenow",
+    "5",
+  );
+  await expect(row).not.toContainText(student.guardian);
+  await expect(
+    row.getByRole("link", { name: "WhatsApp de Gabriel Almeida" }),
+  ).toHaveAttribute(
+    "href",
+    "https://web.whatsapp.com/send?phone=5571999991234",
+  );
+  await page
+    .getByLabel("Filtrar situação da matrícula")
+    .selectOption("conclusao");
+  await expect(rows).toHaveCount(1);
+});
+
+test("ocorrências coletivas e individuais persistem sem aparecer no WhatsApp da turma", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await page.getByLabel("Turma", { exact: true }).selectOption("c1");
+  await page.getByLabel("Data da aula").fill("2026-10-21");
+  await page.getByLabel("Conteúdo trabalhado").fill("Atividade supervisionada");
+  await page
+    .getByRole("button", { name: "Todos presentes", exact: true })
+    .click();
+  await page.locator(".occurrence-editor > summary").click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const checkbox = page.getByLabel("Conversa excessiva", { exact: true });
+  expect((await checkbox.boundingBox())!.height).toBeLessThanOrEqual(20);
+  expect((await checkbox.locator("..").boundingBox())!.height).toBeLessThan(60);
+  await checkbox.check();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByLabel("Registrar ocorrência para").selectOption("s1");
+  await page.getByLabel("Uso excessivo do celular", { exact: true }).check();
+  await page
+    .getByLabel("Não realizou a atividade proposta", { exact: true })
+    .check();
+  await page
+    .getByLabel("Outra ocorrência ou detalhes")
+    .fill("Orientação individual registrada");
+  await page
+    .getByRole("button", {
+      name: "Finalizar chamada e gerar resumo",
+      exact: true,
+    })
+    .click();
+  const message = page.getByRole("dialog");
+  await expect(message.locator(".whatsapp-bubble")).not.toContainText(
+    "Orientação individual",
+  );
+  await expect(message.locator(".whatsapp-bubble")).not.toContainText(
+    "Conversa excessiva",
+  );
+  expect(schoolApi.store.occurrences).toHaveLength(2);
+  await message
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page.reload();
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Gabriel Almeida", exact: true })
+    .click();
+  const dossier = page.getByRole("dialog", { name: "Gabriel Almeida" });
+  await dossier.getByRole("tab", { name: "Ocorrências", exact: true }).click();
+  await expect(dossier).toContainText("Orientação individual registrada");
+  await expect(dossier).toContainText("Conversa excessiva");
+  await dossier
+    .getByRole("button", { name: "Evolução ao responsável", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").locator(".whatsapp-bubble"),
+  ).toContainText("Orientação individual registrada");
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Turmas", exact: true }).click();
+  const row = page
+    .locator(".class-directory tbody tr")
+    .filter({ hasText: "Informática • Turma 01" });
+  await row
+    .getByRole("button", { name: "Ocorrências (2)", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Gabriel Almeida");
+  await expect(page.getByRole("dialog")).toContainText("Conversa excessiva");
+});
+
+test("turmas têm ordem natural, filtros por vagas e ocorrências e lotação verde", async ({
+  page,
+}) => {
+  Object.assign(
+    schoolApi.store.classes.find((c) => c.id === "c1")!,
+    { name: "Turma 10", capacity: 7 },
+  );
+  Object.assign(
+    schoolApi.store.classes.find((c) => c.id === "c2")!,
+    { name: "Turma 2", capacity: 30 },
+  );
+  Object.assign(
+    schoolApi.store.classes.find((c) => c.id === "c3")!,
+    { name: "Turma 1", capacity: 10 },
+  );
+  schoolApi.store.occurrences.push({
+    id: "otest",
+    lesson_id: "l1",
+    unit_id: "u1",
+    student_id: "s1",
+    codes: ["phone"],
+    notes: "",
+    author_id: "p2",
+    author_name: "Ana",
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "Turmas", exact: true }).click();
+  await page.getByLabel("Filtrar unidade").selectOption("u1");
+  const rows = page.locator(".class-directory tbody tr");
+  expect(
+    await rows.locator("td:first-child > strong").allTextContents(),
+  ).toEqual(["Turma 1", "Turma 2", "Turma 10"]);
+  await page
+    .getByLabel("Ordenar turmas", { exact: true })
+    .selectOption("more-vacancies");
+  await expect(rows.first()).toContainText("Turma 2");
+  await page
+    .getByLabel("Ordenar turmas", { exact: true })
+    .selectOption("incidents");
+  await expect(rows.first()).toContainText("Turma 10");
+  await page
+    .getByLabel("Filtrar turmas", { exact: true })
+    .selectOption("incidents");
+  await expect(rows).toHaveCount(1);
+  expect(
+    await rows
+      .first()
+      .locator(".occupancy-meter")
+      .evaluate((el) =>
+        getComputedStyle(el).getPropertyValue("--occupancy-color"),
+      ),
+  ).toBe("#218361");
 });
