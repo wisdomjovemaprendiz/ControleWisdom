@@ -11,6 +11,10 @@ export interface ImportRow {
   name: string;
   className: string;
   birthDate: string;
+  phone: string;
+  guardian: string;
+  guardianPhone: string;
+  email: string;
   classId: string;
   unitId: string;
   status: "ready" | "duplicate" | "error";
@@ -37,8 +41,10 @@ export function parseBirthDate(value: ImportCell, reference = today()): string {
       .slice(0, 10);
   } else {
     const raw = String(value).trim();
-    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(raw);
-    text = match ? `${match[3]}-${match[2]}-${match[1]}` : raw;
+    const match = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/.exec(raw);
+    text = match
+      ? `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`
+      : raw;
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
     throw new Error("Use nascimento em DD/MM/AAAA.");
@@ -58,20 +64,41 @@ export function previewStudents(
   students: Student[],
   profile: Profile,
   unitId: string,
+  options?: { classId?: string; columns: ImportField[]; hasHeader: boolean },
 ): ImportRow[] {
   if (!canAccess(profile, unitId))
     throw new Error("Sem acesso à unidade selecionada.");
   if (!rows.length) throw new Error("Planilha vazia.");
-  if (rows.length > 501) throw new Error("Importe até 500 alunos por arquivo.");
-  const headers = rows[0].map((v) => normalized(String(v || "")));
-  const find = (aliases: string[]) =>
-    headers.findIndex((h) => aliases.includes(h));
-  const nameIndex = find(["nome", "aluno", "nomedoaluno", "nomecompleto"]),
-    classIndex = find(["turma", "classe", "nomedaturma"]),
-    birthIndex = find(["nascimento", "datadenascimento", "aniversario"]);
-  if (nameIndex < 0 || classIndex < 0)
-    throw new Error("A primeira linha deve conter as colunas Nome e Turma.");
-  const allowed = classes.filter((c) => c.unit_id === unitId),
+  const configuration = options || detectImportColumns(rows);
+  const columns = configuration.columns;
+  const data = rows.slice(configuration.hasHeader ? 1 : 0);
+  if (
+    data.filter((r) => r.some((c) => c !== null && String(c).trim())).length >
+    500
+  )
+    throw new Error("Importe até 500 alunos por lote.");
+  const mapped = columns.filter((c) => c !== "ignore");
+  if (new Set(mapped).size !== mapped.length)
+    throw new Error(
+      "Cada informação deve ter apenas uma coluna. Revise o mapeamento.",
+    );
+  const nameIndex = columns.indexOf("name"),
+    classIndex = columns.indexOf("class"),
+    birthIndex = columns.indexOf("birth"),
+    phoneIndex = columns.indexOf("phone"),
+    guardianIndex = columns.indexOf("guardian"),
+    guardianPhoneIndex = columns.indexOf("guardian_phone"),
+    emailIndex = columns.indexOf("email");
+  if (nameIndex < 0 || (classIndex < 0 && !options?.classId))
+    throw new Error(
+      "Identifique a coluna Nome e escolha uma turma de destino ou uma coluna Turma.",
+    );
+  const allowed = classes.filter(
+      (c) =>
+        c.unit_id === unitId &&
+        !c.archived_at &&
+        (profile.role !== "professor" || c.teacher_id === profile.id),
+    ),
     seen = new Set(
       students
         .filter((s) => s.unit_id === unitId)
@@ -84,17 +111,21 @@ export function previewStudents(
         .length,
     ]),
   );
-  return rows.slice(1).flatMap((cells, index) => {
+  return data.flatMap((cells, index) => {
     if (cells.every((c) => c === null || String(c).trim() === "")) return [];
     const name = String(cells[nameIndex] || "")
         .trim()
         .replace(/\s+/g, " "),
       className = String(cells[classIndex] || "").trim();
     const row: ImportRow = {
-      row: index + 2,
+      row: index + (configuration.hasHeader ? 2 : 1),
       name,
       className,
       birthDate: "",
+      phone: "",
+      guardian: "",
+      guardianPhone: "",
+      email: "",
       classId: "",
       unitId,
       status: "error",
@@ -108,8 +139,10 @@ export function previewStudents(
       row.detail = "Nome excede 150 caracteres.";
       return [row];
     }
-    const matches = allowed.filter(
-      (c) => c.id === className || normalized(c.name) === normalized(className),
+    const matches = allowed.filter((c) =>
+      options?.classId
+        ? c.id === options.classId
+        : c.id === className || normalized(c.name) === normalized(className),
     );
     if (matches.length !== 1) {
       row.detail = matches.length
@@ -119,7 +152,16 @@ export function previewStudents(
     }
     const group = matches[0];
     row.classId = group.id;
+    row.className = group.name;
     try {
+      row.phone = importPhone(cells[phoneIndex] ?? null);
+      row.guardianPhone = importPhone(cells[guardianPhoneIndex] ?? null);
+      row.guardian = String(cells[guardianIndex] ?? "").trim();
+      row.email = String(cells[emailIndex] ?? "").trim();
+      if (row.guardian.length > 150)
+        throw new Error("Nome do responsável excede 150 caracteres.");
+      if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email))
+        throw new Error("E-mail inválido.");
       row.birthDate = parseBirthDate(
         birthIndex < 0 ? null : (cells[birthIndex] ?? null),
       );
@@ -155,14 +197,213 @@ export function importedStudent(row: ImportRow, profile: Profile): Student {
     offering_id: null,
     name: row.name,
     birth_date: row.birthDate,
-    phone: "",
-    guardian: "",
-    guardian_phone: "",
-    email: "",
+    phone: row.phone,
+    guardian: row.guardian,
+    guardian_phone: row.guardianPhone,
+    email: row.email,
     address: "",
     created_by: profile.id,
     enrollment_date: today(),
     status: "ativo",
     archive_reason: "",
   };
+}
+
+export const importFields = {
+  ignore: "Ignorar",
+  name: "Nome do aluno",
+  class: "Turma",
+  birth: "Data de nascimento",
+  phone: "Telefone do aluno",
+  guardian: "Nome do responsável",
+  guardian_phone: "Telefone do responsável",
+  email: "E-mail",
+} as const;
+export type ImportField = keyof typeof importFields;
+const headerAliases: Record<ImportField, string[]> = {
+  ignore: [],
+  name: [
+    "nome",
+    "aluno",
+    "alunos",
+    "nomedoaluno",
+    "nomesdosalunos",
+    "nomecompleto",
+    "estudante",
+  ],
+  class: ["turma", "classe", "nomedaturma"],
+  birth: [
+    "nascimento",
+    "datadenascimento",
+    "datanascimento",
+    "aniversario",
+    "dn",
+  ],
+  phone: [
+    "telefone",
+    "celular",
+    "whatsapp",
+    "fone",
+    "contato",
+    "telefonedoaluno",
+    "telefonealuno",
+    "celulardoaluno",
+  ],
+  guardian: ["responsavel", "nomedoresponsavel", "nomeresponsavel"],
+  guardian_phone: [
+    "telefonedoresponsavel",
+    "telefoneresponsavel",
+    "celulardoresponsavel",
+    "whatsappdoresponsavel",
+  ],
+  email: ["email", "emaildoaluno"],
+};
+export function importPhone(value: ImportCell) {
+  if (value === null || value === "") return "";
+  const text = String(value).trim(),
+    digits = text.replace(/\D/g, "");
+  if (!/^[+\d\s().-]+$/.test(text) || digits.length < 10 || digits.length > 15)
+    throw new Error(
+      "Telefone inválido. Revise a coluna ou deixe o campo vazio.",
+    );
+  return digits;
+}
+export function detectImportColumns(
+  rows: ImportCell[][],
+  classes: CourseClass[] = [],
+) {
+  const first = rows[0] || [];
+  const header = first.map(
+    (v) =>
+      (Object.keys(headerAliases) as ImportField[]).find((key) =>
+        headerAliases[key].includes(normalized(String(v ?? ""))),
+      ) || "ignore",
+  );
+  const hasHeader =
+    header.includes("name") || header.filter((v) => v !== "ignore").length >= 2;
+  const used = new Set<ImportField>();
+  const width = Math.max(0, ...rows.slice(0, 501).map((r) => r.length));
+  if (width > 30)
+    throw new Error("Selecione no máximo 30 colunas por importação.");
+  const columns: ImportField[] = Array.from({ length: width }, (_, index) => {
+    let field: ImportField = hasHeader ? header[index] || "ignore" : "ignore";
+    const sample = rows
+      .slice(hasHeader ? 1 : 0)
+      .map((r) => r[index])
+      .filter((v) => v !== null && v !== undefined && String(v).trim())
+      .slice(0, 20);
+    if (!hasHeader && sample.length) {
+      if (
+        sample.every(
+          (v) =>
+            v instanceof Date ||
+            (typeof v === "string" &&
+              /^(?:\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})$/.test(
+                v.trim(),
+              )) ||
+            (typeof v === "number" && v > 1000 && v < 100000),
+        )
+      )
+        field = "birth";
+      else if (
+        sample.every((v) => {
+          try {
+            return !!importPhone(v ?? null);
+          } catch {
+            return false;
+          }
+        })
+      )
+        field = "phone";
+      else if (
+        sample.every(
+          (v) => typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+        )
+      )
+        field = "email";
+      else if (
+        sample.every((v) =>
+          classes.some(
+            (c) =>
+              c.id === String(v) ||
+              normalized(c.name) === normalized(String(v)),
+          ),
+        )
+      )
+        field = "class";
+      else if (
+        !used.has("name") &&
+        sample.every((v) => typeof v === "string" && /\p{L}/u.test(v))
+      )
+        field = "name";
+    }
+    if (field !== "ignore" && used.has(field)) return "ignore";
+    used.add(field);
+    return field;
+  });
+  return { columns, hasHeader };
+}
+// Clipboard tables use tabs. Delimited text and plain Word lists are also accepted.
+export function parsePastedStudents(text: string): ImportCell[][] {
+  if (text.length > 200000)
+    throw new Error("A lista é muito grande. Cole até 500 alunos por lote.");
+  const cleaned = text
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/^\n+|\n+$/g, "");
+  if (!cleaned.trim()) return [];
+  const first = cleaned.split("\n").find((line) => line.trim()) || "";
+  const delimiter = ["\t", ";", "|", ","].find((d) => first.includes(d));
+  let rows: ImportCell[][];
+  if (delimiter) {
+    rows = [];
+    let row: string[] = [],
+      cell = "",
+      quoted = false;
+    for (let i = 0; i <= cleaned.length; i++) {
+      const c = cleaned[i];
+      if (c === '"' && (quoted || !cell)) {
+        if (quoted && cleaned[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else quoted = !quoted;
+      } else if (
+        !quoted &&
+        (c === delimiter || c === "\n" || c === undefined)
+      ) {
+        row.push(cell.trim());
+        cell = "";
+        if (c !== delimiter) {
+          rows.push(row);
+          row = [];
+        }
+      } else if (c !== undefined) cell += c;
+    }
+    if (quoted)
+      throw new Error("Há aspas abertas na lista. Confira o texto colado.");
+  } else {
+    rows = cleaned
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => {
+        const value = line.trim().replace(/^(?:[•●▪*–-]\s+|\d+[.)]\s+)/, "");
+        // Preserve names with single spaces. Extract clearly delimited dates/phones only.
+        const birth =
+          /(?:^|\s)(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})(?=\s|$)/.exec(
+            value,
+          );
+        const withoutBirth = birth
+          ? value.replace(birth[0], " ").trim()
+          : value;
+        const phone = /(?:^|\s)([+()]?\d[\d ().-]{8,}\d)$/.exec(withoutBirth);
+        const name = phone
+          ? withoutBirth.slice(0, phone.index).trim()
+          : withoutBirth;
+        if (birth || phone) return [name, birth?.[1] || "", phone?.[1] || ""];
+        return [value];
+      });
+  }
+  rows = rows.filter((r) => r.some((v) => String(v ?? "").trim()));
+  if (rows.length > 501) throw new Error("Importe até 500 alunos por lote.");
+  return rows;
 }

@@ -132,3 +132,121 @@ test("29 de fevereiro não é convertido automaticamente em outra data", () => {
   assert.equal(birthdaysThisWeek([student], "2026-02-28").length, 0);
   assert.equal(birthdaysThisWeek([student], "2028-02-29")[0].isToday, true);
 });
+
+test("lista colada aceita nomes do Word e turma comum sem cabeçalho", async () => {
+  const { parsePastedStudents, detectImportColumns } =
+    await import("../lib/student-import");
+  const s = schoolFixture();
+  const data = parsePastedStudents("1. Aluna  Nova\n• Aluno Novo\nAluno Novo");
+  const config = detectImportColumns(data, s.classes);
+  assert.equal(config.hasHeader, false);
+  assert.deepEqual(config.columns, ["name"]);
+  const rows = previewStudents(
+    data,
+    s.classes,
+    s.students,
+    s.profiles[0],
+    "u1",
+    { ...config, classId: "c1" },
+  );
+  assert.deepEqual(
+    rows.map((r) => r.status),
+    ["ready", "ready", "duplicate"],
+  );
+  assert.equal(rows[0].name, "Aluna Nova");
+});
+test("colunas sem título reconhecem telefone e nascimento em ordens diferentes", async () => {
+  const { parsePastedStudents, detectImportColumns } =
+    await import("../lib/student-import");
+  const s = schoolFixture();
+  for (const text of [
+    "Aluna Teste\t(71) 99999-1234\t14/05/2009",
+    "14/05/2009\tAluna Teste\t71999991234",
+    "Aluna Teste 14/05/2009 (71) 99999-1234",
+    "Aluna Teste (71) 99999-1234 14/05/2009",
+  ]) {
+    const data = parsePastedStudents(text),
+      config = detectImportColumns(data, s.classes);
+    const rows = previewStudents(
+      data,
+      s.classes,
+      s.students,
+      s.profiles[0],
+      "u1",
+      { ...config, classId: "c1" },
+    );
+    assert.equal(rows[0].status, "ready", text);
+    assert.equal(rows[0].name, "Aluna Teste");
+    assert.equal(rows[0].phone, "71999991234");
+    assert.equal(rows[0].birthDate, "2009-05-14");
+    assert.equal(importedStudent(rows[0], s.profiles[0]).phone, "71999991234");
+  }
+});
+test("cabeçalhos reconhecem contatos separados e a turma escolhida prevalece", async () => {
+  const { parsePastedStudents, detectImportColumns } =
+    await import("../lib/student-import");
+  const s = schoolFixture();
+  const data = parsePastedStudents(
+    'Nome;Turma;Telefone;Responsável;Telefone do responsável;Nascimento\n"Ana; Maria";c2;71999991234;Paula Souza;71999994321;5/3/2009',
+  );
+  const config = detectImportColumns(data, s.classes);
+  assert.equal(config.hasHeader, true);
+  const rows = previewStudents(
+    data,
+    s.classes,
+    s.students,
+    s.profiles[0],
+    "u1",
+    { ...config, classId: "c1" },
+  );
+  assert.equal(rows[0].status, "ready");
+  assert.equal(rows[0].classId, "c1");
+  assert.equal(rows[0].guardian, "Paula Souza");
+  assert.equal(rows[0].guardianPhone, "71999994321");
+  assert.equal(rows[0].birthDate, "2009-03-05");
+  assert.equal(rows[0].name, "Ana; Maria");
+});
+test("limites e revisão impedem campos duplicados, datas erradas e turma de outra unidade", async () => {
+  const { parsePastedStudents, detectImportColumns } =
+    await import("../lib/student-import");
+  const s = schoolFixture(),
+    data = parsePastedStudents("Aluno Novo\t31/02/2009\t71999991234");
+  const config = detectImportColumns(data, s.classes);
+  assert.equal(
+    previewStudents(data, s.classes, s.students, s.profiles[0], "u1", {
+      ...config,
+      classId: "c1",
+    })[0].status,
+    "error",
+  );
+  assert.equal(
+    previewStudents(data, s.classes, s.students, s.profiles[0], "u1", {
+      ...config,
+      classId: "c4",
+    })[0].status,
+    "error",
+  );
+  assert.throws(
+    () =>
+      previewStudents(data, s.classes, s.students, s.profiles[0], "u1", {
+        columns: ["name", "phone", "phone"],
+        hasHeader: false,
+        classId: "c1",
+      }),
+    /apenas uma coluna/,
+  );
+  const many = Array.from({ length: 501 }, (_, i) => ["Aluno " + i]);
+  assert.throws(
+    () =>
+      previewStudents(many, s.classes, s.students, s.profiles[0], "u1", {
+        columns: ["name"],
+        hasHeader: false,
+        classId: "c1",
+      }),
+    /500 alunos/,
+  );
+  assert.throws(
+    () => parsePastedStudents('Nome;Telefone\n"Nome aberto;71999991234'),
+    /aspas/,
+  );
+});

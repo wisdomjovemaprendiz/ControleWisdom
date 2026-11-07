@@ -5006,3 +5006,115 @@ button.secondary {
     padding: 18px;
   }
 }
+
+.import-destination {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.import-source {
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #eef2f7;
+}
+.import-source button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 9px;
+  padding: 12px;
+  color: #405a78;
+  background: transparent;
+  font: inherit;
+}
+.import-source button.selected {
+  background: #16478d;
+  color: white;
+}
+.import-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.import-paste-label textarea {
+  min-height: 180px;
+  font: inherit;
+  line-height: 1.7;
+  resize: vertical;
+}
+.import-mapping,
+.import-create-class {
+  border: 1px solid #dae3ef;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f8fafd;
+  display: grid;
+  gap: 14px;
+}
+.import-mapping h3,
+.import-create-class h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.import-mapping header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.modal-form .import-header-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.modal-form .import-header-check input {
+  width: 17px;
+  min-height: 0;
+  height: 17px;
+  padding: 0;
+  accent-color: #16478d;
+}
+.import-column-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.import-column-grid label {
+  min-width: 0;
+}
+.import-column-grid small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #61748c;
+}
+.import-create-class > fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .import-destination {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .import-destination > button {
+    justify-self: start;
+  }
+  .import-column-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .import-inline-actions {
+    flex-wrap: wrap;
+  }
+}

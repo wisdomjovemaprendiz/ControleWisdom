@@ -1516,7 +1516,7 @@ export default function App() {
                   className="secondary"
                   onClick={() => setImportOpen(true)}
                 >
-                  <Upload size={16} /> Importar Excel
+                  <Upload size={16} /> Importar alunos
                 </button>
               )}
               {isManager(profile.role) && (
@@ -2880,6 +2880,7 @@ export default function App() {
           initialUnit={currentUnit}
           onClose={() => setImportOpen(false)}
           onImport={saveImportedStudents}
+          onCreateClass={(course) => save("classes", course)}
         />
       )}
       {passwordOpen && (

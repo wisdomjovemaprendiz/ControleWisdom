@@ -253,9 +253,9 @@ test("Excel importa nomes e turmas com revisão e mantém cadastro incompleto", 
     .getByRole("button", { name: "Alunos", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Importar Excel", exact: true })
+    .getByRole("button", { name: "Importar alunos", exact: true })
     .click();
-  const dialog = page.getByRole("dialog", { name: "Importar alunos do Excel" });
+  const dialog = page.getByRole("dialog", { name: "Importar alunos em massa" });
   await dialog.getByLabel("Unidade da importação").selectOption("u1");
   await dialog.getByLabel("Arquivo Excel de alunos").setInputFiles({
     name: "alunos.xlsx",
@@ -298,7 +298,7 @@ test("modelo Excel baixado contém cabeçalhos de importação", async ({
     .getByRole("button", { name: "Alunos", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Importar Excel", exact: true })
+    .getByRole("button", { name: "Importar alunos", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Unidade da importação").selectOption("u1");
@@ -2129,4 +2129,161 @@ test("guia mobile ramifica e registra evolução sem digitar, com revisão obrig
       .locator(".pedagogy-agenda-list article")
       .filter({ hasText: "Organização e autonomia" }),
   ).toHaveCount(0);
+});
+
+test("colar tabela sem cabeçalho reconhece dados, permite revisão e mantém alerta cadastral", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Importar alunos", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Importar alunos em massa" });
+  await dialog.getByLabel("Unidade da importação").selectOption("u1");
+  await dialog.getByLabel("Turma de destino").selectOption("c1");
+  await dialog
+    .getByRole("button", { name: "Copiar e colar", exact: true })
+    .click();
+  await dialog
+    .getByLabel("Lista de alunos para colar")
+    .fill(
+      "Aluna Colada Um\t(71) 99999-1234\t14/05/2009\nAluno Colado Dois\t71999994321\t20/06/2008",
+    );
+  await expect(dialog.getByLabel("Informação da coluna 1")).toHaveValue("name");
+  await expect(dialog.getByLabel("Informação da coluna 2")).toHaveValue(
+    "phone",
+  );
+  await expect(dialog.getByLabel("Informação da coluna 3")).toHaveValue(
+    "birth",
+  );
+  await expect(
+    dialog.getByRole("checkbox", { name: "A primeira linha é cabeçalho" }),
+  ).not.toBeChecked();
+  await expect(
+    dialog.getByRole("button", { name: "Importar 2 alunos", exact: true }),
+  ).toBeEnabled();
+  await dialog.getByLabel("Informação da coluna 3").selectOption("phone");
+  await expect(dialog.getByRole("alert")).toContainText("apenas uma coluna");
+  await expect(
+    dialog.getByRole("button", { name: "Importar 0 alunos", exact: true }),
+  ).toBeDisabled();
+  await dialog.getByLabel("Informação da coluna 3").selectOption("birth");
+  await dialog
+    .getByRole("button", { name: "Importar 2 alunos", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const imported = schoolApi.store.students.find(
+    (s) => s.name === "Aluna Colada Um",
+  )!;
+  expect(imported.phone).toBe("71999991234");
+  expect(imported.birth_date).toBe("2009-05-14");
+  expect(imported.class_id).toBe("c1");
+  await page
+    .getByRole("button", { name: "Central de atenção", exact: true })
+    .click();
+  await expect(
+    page
+      .locator(".followup-list article")
+      .filter({ hasText: "Aluna Colada Um" }),
+  ).toContainText("Completar matrícula");
+});
+
+test("cria turma na importação sem perder lista e importa só nomes em celular", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Importar alunos", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Importar alunos em massa" });
+  await dialog.getByLabel("Unidade da importação").selectOption("u1");
+  await dialog
+    .getByRole("button", { name: "Copiar e colar", exact: true })
+    .click();
+  const text = "1. Lista Nova Ana\n2. Lista Novo Pedro";
+  await dialog.getByLabel("Lista de alunos para colar").fill(text);
+  await expect(
+    dialog.getByRole("button", { name: "Importar 0 alunos", exact: true }),
+  ).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: "Criar turma", exact: true })
+    .click();
+  const form = dialog.getByRole("form", { name: "Criar turma na importação" });
+  await form
+    .getByLabel("Nome da turma", { exact: true })
+    .fill("Turma criada na importação");
+  await form.getByLabel("Professor", { exact: true }).selectOption("p2");
+  await form
+    .getByLabel("Dias e horário", { exact: true })
+    .fill("Ter e Qui 10h");
+  await form
+    .getByLabel("Curso ou pacote de referência", { exact: true })
+    .selectOption("o2");
+  await form
+    .getByRole("button", { name: "Criar turma e selecionar", exact: true })
+    .click();
+  await expect(form).toHaveCount(0);
+  const group = schoolApi.store.classes.find(
+    (c) => c.name === "Turma criada na importação",
+  )!;
+  expect(group).toBeTruthy();
+  await expect(dialog.getByLabel("Turma de destino")).toHaveValue(group.id);
+  await expect(dialog.getByLabel("Lista de alunos para colar")).toHaveValue(
+    text,
+  );
+  await expect(
+    dialog.getByRole("button", { name: "Importar 2 alunos", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await dialog
+    .getByRole("button", { name: "Importar 2 alunos", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(
+    schoolApi.store.students
+      .filter((s) => s.class_id === group.id)
+      .map((s) => s.name),
+  ).toEqual(["Lista Nova Ana", "Lista Novo Pedro"]);
+});
+
+test("Excel sem coluna Turma usa o destino e preserva telefones do responsável", async ({
+  page,
+}) => {
+  const { default: writeXlsxFile } = await import("write-excel-file/node");
+  const buffer = await writeXlsxFile([
+    ["Nome", "Telefone", "Responsável", "Telefone do responsável"],
+    ["Aluno Excel Destino", "71999991234", "Paula Responsável", "71999994321"],
+  ]).toBuffer();
+  await page.getByRole("button", { name: "Alunos", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Importar alunos", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Importar alunos em massa" });
+  await dialog.getByLabel("Unidade da importação").selectOption("u1");
+  await dialog.getByLabel("Turma de destino").selectOption("c2");
+  await dialog.getByLabel("Arquivo Excel de alunos").setInputFiles({
+    name: "destino.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer,
+  });
+  await expect(
+    dialog.getByRole("button", { name: "Importar 1 alunos", exact: true }),
+  ).toBeEnabled();
+  await dialog
+    .getByRole("button", { name: "Importar 1 alunos", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  const student = schoolApi.store.students.find(
+    (s) => s.name === "Aluno Excel Destino",
+  )!;
+  expect(student.class_id).toBe("c2");
+  expect(student.guardian_phone).toBe("71999994321");
+  expect(student.guardian).toBe("Paula Responsável");
 });
