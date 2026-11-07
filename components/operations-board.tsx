@@ -1,4 +1,5 @@
 "use client";
+import { ManagementOverview } from "./management-overview";
 import { classFrame } from "@/lib/class-appearance";
 import { OccupancyBar } from "./occupancy-bar";
 import { studentDisplayName } from "@/lib/domain";
@@ -12,11 +13,9 @@ import {
   Check,
   ChevronRight,
   ClipboardCheck,
-  Clock,
   Filter,
   Plus,
   Search,
-  Users,
 } from "lucide-react";
 import {
   type Store,
@@ -29,9 +28,10 @@ import {
   frequency,
   labels,
 } from "@/lib/domain";
-import { followUps, classLessons } from "@/lib/operations";
+import { classLessons } from "@/lib/operations";
 interface Props {
   store: Store;
+  historyStore?: Store;
   profile: Profile;
   unit: string;
   classes: CourseClass[];
@@ -43,6 +43,7 @@ interface Props {
 }
 export function OperationsBoard({
   store,
+  historyStore,
   profile,
   unit,
   classes,
@@ -66,7 +67,6 @@ export function OperationsBoard({
         classes.some((c) => c.id === s.class_id),
     ),
     active = students.filter((s) => s.status === "ativo");
-  const tasks = followUps(store, profile, unit);
   const list = scopeClasses.filter(
     (c) =>
       (tab === "all" ||
@@ -86,66 +86,24 @@ export function OperationsBoard({
   const record = store.lessons.find(
     (l) => l.class_id === focus?.id && l.date === date,
   );
-  const ownFrequency = frequency({
-    ...store,
-    attendance: store.attendance.filter((a) =>
-      classes.some((c) => c.unit_id === a.unit_id),
-    ),
-  });
   const pendingCount = scopeClasses.filter(
     (c) => !store.lessons.some((l) => l.class_id === c.id && l.date === date),
   ).length;
   return (
     <div className="operations-board">
-      <div className="register-metrics">
-        <div>
-          <span>ALUNOS ATIVOS</span>
-          <strong>
-            {active.length.toString().padStart(2, "0")}
-            <small>de {students.length} matrículas</small>
-          </strong>
-        </div>
-        <div>
-          <span>
-            {profile.role === "professor" ? "MINHAS TURMAS" : "TURMAS"}
-          </span>
-          <strong>
-            {scopeClasses.length.toString().padStart(2, "0")}
-            <small>
-              {scopeClasses.reduce(
-                (n, c) =>
-                  n +
-                  c.capacity -
-                  active.filter((s) => s.class_id === c.id).length,
-                0,
-              )}{" "}
-              vagas abertas
-            </small>
-          </strong>
-        </div>
-        <div>
-          <span>FREQUÊNCIA</span>
-          <strong>
-            {ownFrequency === null ? "—" : ownFrequency + "%"}
-            <small>atrasos contam como presença</small>
-          </strong>
-        </div>
-        <button
-          onClick={() => onPage("alerts")}
-          className={
-            tasks.some((t) => t.priority <= 1) ? "metric-attention" : ""
-          }
-        >
-          <span>ACOMPANHAMENTOS</span>
-          <strong>
-            {tasks.length.toString().padStart(2, "0")}
-            <small>
-              ver fila de trabalho <ArrowUpRight size={14} />
-            </small>
-          </strong>
-        </button>
-      </div>
-      <div className="board-layout">
+      <ManagementOverview
+        store={store}
+        historyStore={historyStore || store}
+        profile={profile}
+        unit={unit}
+        onStudent={onStudent}
+        onAction={onAction}
+        onPage={onPage}
+      />
+      <details className="operational-class-directory">
+        <summary>
+          Consultar diário de turmas <span>{scopeClasses.length} turmas</span>
+        </summary>
         <section className="class-register">
           <div className="section-caption">
             <span className="index-label">01 / OPERAÇÃO</span>
@@ -424,95 +382,15 @@ export function OperationsBoard({
             </div>
           )}
         </section>
-        <div className="board-side">
-          <BirthdaysPanel
-            store={store}
-            students={students}
-            onStudent={onStudent}
-          />
-          <aside className="work-queue">
-            <div className="section-caption">
-              <span className="index-label">02 / ACOMPANHAR</span>
-              <span className="queue-count">{tasks.length}</span>
-            </div>
-            <h2>Próximas ações</h2>
-
-            <div className="queue-list">
-              {tasks.slice(0, 3).map((task, i) => (
-                <article className={`queue-task ${task.kind}`} key={task.id}>
-                  <div className="task-top">
-                    <span>
-                      {task.kind === "absence"
-                        ? "FREQUÊNCIA"
-                        : task.kind === "registration" ||
-                            task.kind === "enrollment"
-                          ? "SECRETARIA"
-                          : task.kind === "contact"
-                            ? "RESPONSÁVEL"
-                            : "PEDAGÓGICO"}
-                    </span>
-                    {task.date && <time>{displayDate(task.date)}</time>}
-                  </div>
-                  <h3>{task.title}</h3>
-                  <button
-                    className="student-link with-photo"
-                    onClick={() => onStudent(task.student)}
-                  >
-                    <StudentAvatar student={task.student} size={25} />
-                    <span>{studentDisplayName(task.student)}</span>
-                  </button>
-                  <p>{task.detail}</p>
-                  <button
-                    className="task-action"
-                    onClick={() =>
-                      task.kind === "registration" || task.kind === "enrollment"
-                        ? onAction("student", task.student)
-                        : task.kind === "pedagogy"
-                          ? onAction(
-                              `followup:${task.pedagogy_id}`,
-                              task.student,
-                            )
-                          : onAction("contact", task.student)
-                    }
-                  >
-                    {task.kind === "registration" || task.kind === "enrollment"
-                      ? "Completar cadastro"
-                      : task.kind === "pedagogy"
-                        ? "Abrir acompanhamento"
-                        : "Registrar contato"}
-                    <ArrowRight size={15} />
-                  </button>
-                </article>
-              ))}
-              {!tasks.length && (
-                <div className="empty">
-                  <Check size={26} />
-                  <p>Sem pendências identificadas nesta unidade.</p>
-                </div>
-              )}
-            </div>
-            <button className="queue-footer" onClick={() => onPage("alerts")}>
-              Abrir central de acompanhamento <ArrowUpRight size={16} />
-            </button>
-            <div className="movement-summary">
-              <span className="index-label">SITUAÇÃO DAS MATRÍCULAS</span>
-              {["conclusao", "cancelamento", "abandono", "inadimplencia"].map(
-                (status) => (
-                  <div key={status}>
-                    <span>{labels[status]}</span>
-                    <strong>
-                      {students
-                        .filter((s) => s.status === status)
-                        .length.toString()
-                        .padStart(2, "0")}
-                    </strong>
-                  </div>
-                ),
-              )}
-            </div>
-          </aside>
-        </div>
-      </div>
+      </details>
+      <details className="operational-birthdays">
+        <summary>Aniversariantes</summary>
+        <BirthdaysPanel
+          store={store}
+          students={students}
+          onStudent={onStudent}
+        />
+      </details>
       <div className="operational-shortcuts">
         <span>ACESSO DIRETO</span>
         <button onClick={() => onAction("student")}>

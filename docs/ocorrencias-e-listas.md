@@ -14,7 +14,7 @@ A legenda de ocupação usa vermelho abaixo de 40%, amarelo de 40% a 69%, verde 
 
 ## Ocorrências na chamada
 
-O painel **Ocorrências da aula**, inicialmente recolhido, é opcional. Escolha toda a turma ou um aluno, marque quantas opções corresponderem aos fatos observados e acrescente detalhes, se necessário. Há opções de atenção ao celular, conversa, atrasos recorrentes, atividades, materiais, combinados, convivência, equipamentos, apoio e participação positiva. Nenhuma opção representa diagnóstico clínico.
+O painel **Ocorrências da turma**, inicialmente recolhido, é opcional e registra somente situações coletivas. Para um aluno específico, use o botão **Ocorrência**, depois de **Justificado**, na linha da chamada; o modal já identifica o aluno. Marque quantas opções corresponderem aos fatos observados e acrescente detalhes, se necessário. Há opções de atenção ao celular, conversa, atrasos recorrentes, atividades, materiais, combinados, convivência, equipamentos, apoio e participação positiva. Nenhuma opção representa diagnóstico clínico.
 
 A finalização da chamada grava presenças e ocorrências na mesma transação. Editar e finalizar novamente atualiza os registros, sem duplicá-los. Apagar todas as opções e o texto, ou remover um registro, exclui aquela ocorrência ao finalizar novamente. Os registros não são enviados antes de finalizar a chamada.
 

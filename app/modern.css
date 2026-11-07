@@ -5269,3 +5269,711 @@ button.secondary {
   max-width: 17px;
   padding: 0;
 }
+
+/* Decision-oriented operations overview. */
+.management-overview {
+  display: grid;
+  gap: 20px;
+}
+.management-toolbar,
+.management-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.management-toolbar {
+  justify-content: space-between;
+}
+.management-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: #526782;
+}
+.management-period {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #526782;
+}
+.management-period select {
+  padding: 9px 28px 9px 9px;
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+  background: #fff;
+  color: #253b58;
+  font: inherit;
+  font-size: 13px;
+}
+.management-actions .primary,
+.management-actions .secondary {
+  padding: 10px 13px;
+  font-size: 13px;
+}
+.management-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.management-metric {
+  text-align: left;
+  border: 1px solid #e0e5ee;
+  border-radius: 14px;
+  padding: 17px 18px;
+  background: #fff;
+  color: #233957;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  box-shadow: 0 3px 9px #21395303;
+}
+.management-metric-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.management-metric-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #f0f3f8;
+  color: #385f92;
+  flex-shrink: 0;
+}
+.management-metric strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 30px;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.management-metric strong > svg {
+  color: #8393a8;
+}
+.management-metric small {
+  font-size: 11px;
+  color: #6e7e93;
+  line-height: 1.5;
+}
+.management-metric.attention {
+  border-top: 3px solid #ca5c57;
+}
+.management-metric.attention .management-metric-icon {
+  background: #fdf0ef;
+  color: #b94c49;
+}
+.management-metric.academic {
+  border-top: 3px solid #436ba2;
+}
+.management-metric.withdrawal {
+  border-top: 3px solid #b78a59;
+}
+.management-metric.withdrawal .management-metric-icon {
+  background: #faf3e9;
+  color: #9d713c;
+}
+.management-metric.growth {
+  border-top: 3px solid #4e8c70;
+}
+.management-metric.growth .management-metric-icon {
+  background: #edf6f0;
+  color: #367457;
+}
+.management-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+.management-card {
+  min-width: 0;
+  border: 1px solid #e0e5ee;
+  border-radius: 15px;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.management-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 18px 20px 13px;
+}
+.management-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #8998ad;
+}
+.management-card h2 {
+  font-size: 17px;
+  margin: 5px 0 0;
+  line-height: 1.35;
+  color: #273e5f;
+  letter-spacing: -0.4px;
+}
+.management-count {
+  background: #f1f4f8;
+  border-radius: 6px;
+  padding: 5px 7px;
+  white-space: nowrap;
+  color: #667d99;
+  font-size: 11px;
+}
+.management-tabs {
+  display: flex;
+  padding: 0 20px 10px;
+  gap: 5px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #eef1f6;
+}
+.management-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  background: none;
+  border: 0;
+  color: #71839b;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.management-tabs button.selected {
+  background: #edf3fb;
+  color: #245591;
+}
+.management-tabs b {
+  font-size: 10px;
+  font-weight: 600;
+}
+.management-priority-list {
+  flex: 1;
+}
+.management-priority-list article {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-bottom: 1px solid #f0f2f6;
+}
+.management-priority-mark {
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  color: #446899;
+}
+.management-priority-person {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.management-priority-person .student-link {
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.management-priority-person small {
+  font-size: 11px;
+  color: #8090a4;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.management-item-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #dfe6f0;
+  border-radius: 8px;
+  background: white;
+  padding: 8px;
+  color: #385f91;
+  font-size: 10px;
+}
+.management-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px 20px;
+  background: #fbfcfe;
+  border: 0;
+  border-top: 1px solid #edf0f5;
+  color: #466990;
+  font-size: 12px;
+  text-align: left;
+  margin-top: auto;
+}
+.management-empty {
+  display: grid;
+  justify-items: center;
+  color: #8192a7;
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 13px;
+  gap: 10px;
+}
+.management-empty p {
+  margin: 0;
+}
+.management-empty-text {
+  color: #7c8da3;
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 12px 20px;
+}
+.management-attendance-chart > header > strong {
+  color: #285c97;
+  font-size: 25px;
+}
+.management-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 3px 20px;
+  font-size: 10px;
+  color: #7b8da5;
+}
+.management-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.management-chart-legend i {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  border-radius: 2px;
+}
+.management-chart-legend .presente,
+.management-bars .presente {
+  background: #4c8b73;
+}
+.management-chart-legend .falta,
+.management-bars .falta {
+  background: #c96d6b;
+}
+.management-chart-legend .atrasado,
+.management-bars .atrasado {
+  background: #d5ac5c;
+}
+.management-chart-legend .justificado,
+.management-bars .justificado {
+  background: #7d9ec8;
+}
+.management-bars {
+  list-style: none;
+  padding: 0 20px;
+  margin: 20px 0 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.management-bars li {
+  display: grid;
+  grid-template-rows: 16px 145px 16px;
+  justify-items: center;
+  flex: 1;
+  gap: 7px;
+  min-width: 0;
+}
+.management-bars li > b {
+  font-size: 11px;
+  color: #5d7595;
+  font-weight: 500;
+}
+.management-bar-track {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  align-items: stretch;
+  height: 145px;
+  width: min(100%, 32px);
+  background: #f4f6f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.management-bar-track > span {
+  display: block;
+  flex-shrink: 0;
+}
+.management-bars li > small {
+  font-size: 9px;
+  color: #8191a8;
+  white-space: nowrap;
+}
+.management-chart-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px 16px;
+  font-size: 10px;
+  color: #8090a5;
+  margin-top: auto;
+}
+.management-chart-meta .text-link {
+  font-size: 11px;
+}
+.management-chart-empty {
+  font-size: 11px;
+  padding: 0 20px 15px;
+  color: #8090a5;
+}
+.management-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.management-opportunity-list article {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px;
+  padding: 13px 0 13px 11px;
+  border-left: 3px solid var(--class-color);
+  border-bottom: 1px solid #f0f3f7;
+}
+.management-opportunity-list article > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+.management-opportunity-list strong {
+  font-size: 12px;
+  color: #385778;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.management-opportunity-list small {
+  font-size: 11px;
+  color: #8b9ab0;
+}
+.management-highlight-list > button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 9px;
+  text-align: left;
+  background: white;
+  border: 0;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f3f7;
+}
+.management-highlight-list > button > span {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+.management-highlight-list strong {
+  font-size: 12px;
+  color: #3b5878;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.management-highlight-list small {
+  font-size: 10px;
+  color: #8a9ab0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.management-highlight-list em {
+  font-size: 10px;
+  font-style: normal;
+  color: #4b7c63;
+}
+.management-highlight-list svg {
+  color: #7691b0;
+  flex-shrink: 0;
+}
+.management-criteria {
+  margin-top: auto;
+  padding: 14px 20px;
+  font-size: 10px;
+  color: #7c8fa6;
+}
+.management-criteria p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.management-flow {
+  display: grid;
+  gap: 17px;
+  padding: 8px 20px 20px;
+}
+.management-flow > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+.management-flow span {
+  font-size: 11px;
+  color: #778ca5;
+}
+.management-flow strong {
+  font-size: 14px;
+  color: #3d587b;
+}
+.management-flow i {
+  display: block;
+  height: 5px;
+  border-radius: 5px;
+  grid-column: 1/-1;
+}
+.management-flow i.growth {
+  background: #6c9f84;
+}
+.management-flow i.withdrawal {
+  background: #c27d70;
+}
+.management-current-status {
+  display: flex;
+  margin: 0 20px;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f5;
+}
+.management-current-status button {
+  flex: 1;
+  display: grid;
+  text-align: left;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 10px;
+  color: #7e90a7;
+}
+.management-current-status strong {
+  font-size: 17px;
+  color: #405c7e;
+}
+.management-departure-note {
+  font-size: 10px;
+  color: #8a99ad;
+  padding: 12px 20px;
+  line-height: 1.5;
+}
+.operational-class-directory,
+.operational-birthdays {
+  border: 1px solid #e0e5ee;
+  border-radius: 12px;
+  background: #fff;
+  margin-top: 20px;
+  overflow: hidden;
+}
+.operational-class-directory > summary,
+.operational-birthdays > summary {
+  cursor: pointer;
+  padding: 17px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4c678b;
+}
+.operational-class-directory > summary > span {
+  margin-left: 9px;
+  color: #95a3b5;
+  font-size: 11px;
+  font-weight: 400;
+}
+.operational-class-directory .class-register {
+  border: 0;
+  box-shadow: none;
+}
+.operational-birthdays .birthdays-panel {
+  border: 0;
+  margin: 0;
+}
+.occurrence-class-footer {
+  display: grid;
+  gap: 10px;
+  padding: 0 22px 20px;
+  color: #8191a8;
+  font-size: 12px;
+}
+.attendance-options button.occurrence-launch {
+  border: 1px solid #ddd7ea;
+  color: #75618d;
+  gap: 5px;
+}
+.attendance-options button.occurrence-launch.has-record {
+  background: #f1ecf8;
+  border-color: #a08ab6;
+  color: #614879;
+}
+.individual-occurrence-dialog {
+  width: min(510px, calc(100vw - 28px));
+}
+.occurrence-dialog-student {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0 20px;
+  font-size: 15px;
+}
+.individual-occurrence-dialog .occurrence-body {
+  padding: 0;
+  gap: 18px;
+}
+.individual-occurrence-dialog .occurrence-options {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.individual-occurrence-dialog .occurrence-options label {
+  display: flex;
+  flex-direction: row;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.individual-occurrence-dialog .occurrence-options input[type="checkbox"] {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  min-height: 17px;
+  margin: 2px 0 0;
+  padding: 0;
+}
+.occurrence-dialog-note {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8b9bb0;
+  margin-top: 12px;
+}
+.individual-occurrence-dialog footer {
+  position: sticky;
+  bottom: -22px;
+  background: #fff;
+  padding: 14px 0;
+  border-top: 1px solid #edf0f5;
+}
+@media (max-width: 1100px) {
+  .management-secondary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .management-enrollment {
+    grid-column: 1/-1;
+  }
+  .management-item-action span {
+    display: none;
+  }
+  .management-metric {
+    padding: 15px 13px;
+  }
+}
+@media (max-width: 760px) {
+  .management-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .management-main-grid,
+  .management-secondary-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .management-enrollment {
+    grid-column: auto;
+  }
+  .management-metric-label {
+    font-size: 11px;
+  }
+  .management-metric strong {
+    font-size: 25px;
+  }
+  .management-metric small {
+    font-size: 10px;
+  }
+  .management-toolbar {
+    gap: 13px;
+  }
+  .management-toolbar > div {
+    gap: 8px;
+  }
+  .management-toolbar .management-actions {
+    width: 100%;
+  }
+  .management-card > header {
+    padding: 16px;
+  }
+  .management-priority-list article {
+    padding: 12px 16px;
+  }
+  .management-tabs {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .management-metric-icon {
+    width: 27px;
+    height: 27px;
+  }
+  .management-card h2 {
+    font-size: 16px;
+  }
+  .management-bars {
+    gap: 9px;
+  }
+  .attendance-options {
+    flex-wrap: wrap;
+  }
+  .attendance-options .occurrence-launch {
+    flex-basis: 100%;
+  }
+}
+.management-kicker {
+  font-size: 11px;
+}
+.management-metric small,
+.management-priority-person small,
+.management-opportunity-list small,
+.management-flow span {
+  font-size: 12px;
+}
+.management-priority-person .student-link {
+  font-size: 14px;
+}
+.management-count,
+.management-highlight-list small {
+  font-size: 12px;
+}
+.management-opportunity-list strong,
+.management-highlight-list strong {
+  font-size: 13px;
+}
+.management-chart-legend,
+.management-highlight-list em,
+.management-current-status button,
+.management-departure-note,
+.management-criteria {
+  font-size: 11px;
+}
+@media (max-width: 760px) {
+  .management-metric-label {
+    font-size: 12px;
+  }
+  .management-metric small {
+    font-size: 11px;
+  }
+}
+.management-period {
+  flex-direction: row;
+}

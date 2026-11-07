@@ -145,6 +145,7 @@ test("layout funciona em celular sem rolagem horizontal", async ({ page }) => {
 test("quadro filtra chamadas e abre a turma e data corretas", async ({
   page,
 }) => {
+  await page.locator(".operational-class-directory > summary").click();
   await page.getByRole("button", { name: "Sem chamada" }).click();
   await expect(page.locator(".board-table tbody tr")).toHaveCount(3);
   await page
@@ -158,6 +159,7 @@ test("quadro filtra chamadas e abre a turma e data corretas", async ({
     "Inglês • Turma 02",
   );
   await page
+    .locator(".class-journal")
     .getByRole("button", { name: "Fazer chamada", exact: true })
     .click();
   await expect(page.getByLabel("Turma", { exact: true })).toHaveValue("c2");
@@ -165,6 +167,7 @@ test("quadro filtra chamadas e abre a turma e data corretas", async ({
 test("ficha reúne cadastro, chamadas, pedagógico e edição do aluno", async ({
   page,
 }) => {
+  await page.locator(".operational-class-directory > summary").click();
   await page
     .locator(".journal-table")
     .getByRole("button", { name: "Gabriel Almeida", exact: true })
@@ -225,6 +228,7 @@ test("filtros do cadastro combinam situação e turma", async ({ page }) => {
 });
 
 test("ficha fecha por Escape e devolve o foco ao aluno", async ({ page }) => {
+  await page.locator(".operational-class-directory > summary").click();
   const source = page
     .locator(".journal-table")
     .getByRole("button", { name: "Gabriel Almeida", exact: true });
@@ -312,6 +316,7 @@ test("modelo Excel baixado contém cabeçalhos de importação", async ({
 test("aniversários de hoje e da semana respeitam o filtro de unidade", async ({
   page,
 }) => {
+  await page.locator(".operational-birthdays > summary").click();
   const panel = page.locator(".birthdays-panel");
   await panel.getByRole("button", { name: /^Hoje/ }).click();
   await expect(panel.locator(".birthday-student")).toHaveCount(1);
@@ -1193,11 +1198,14 @@ test("secretaria recebe nova pré-matrícula automaticamente sem recarregar a p�
     created_by: "p5",
     registration_stage: "pre_enrollment",
   });
-  await expect(page.locator(".queue-list")).not.toContainText(
-    "Atualização Comercial",
+  const confirmation = page.locator(
+    ".management-enrollment .management-card-footer",
   );
+  await expect(confirmation).toContainText("0 cadastros em conferência");
   await page.clock.fastForward(61000);
-  await expect(page.locator(".queue-list")).toContainText(
+  await expect(confirmation).toContainText("1 cadastro em conferência");
+  await confirmation.click();
+  await expect(page.locator(".followup-list")).toContainText(
     "Atualização Comercial",
   );
 });
@@ -2353,14 +2361,26 @@ test("ocorrências coletivas e individuais persistem sem aparecer no WhatsApp da
   expect((await checkbox.locator("..").boundingBox())!.height).toBeLessThan(60);
   await checkbox.check();
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.getByLabel("Registrar ocorrência para").selectOption("s1");
-  await page.getByLabel("Uso excessivo do celular", { exact: true }).check();
   await page
+    .getByRole("button", { name: "Ocorrência de Gabriel Almeida", exact: true })
+    .click();
+  const individualOccurrence = page.getByRole("dialog", {
+    name: "Ocorrência individual",
+    exact: true,
+  });
+  await expect(individualOccurrence).toContainText("Gabriel Almeida");
+  await individualOccurrence
+    .getByLabel("Uso excessivo do celular", { exact: true })
+    .check();
+  await individualOccurrence
     .getByLabel("Não realizou a atividade proposta", { exact: true })
     .check();
-  await page
+  await individualOccurrence
     .getByLabel("Outra ocorrência ou detalhes")
     .fill("Orientação individual registrada");
+  await individualOccurrence
+    .getByRole("button", { name: "OK", exact: true })
+    .click();
   await page
     .getByRole("button", {
       name: "Finalizar chamada e gerar resumo",
@@ -2459,4 +2479,116 @@ test("turmas têm ordem natural, filtros por vagas e ocorrências e lotação ve
         getComputedStyle(el).getPropertyValue("--occupancy-color"),
       ),
   ).toBe("#218361");
+});
+
+test("ocorrência do aluno abre na linha, confirma ou cancela sem mudar presença e não mistura a sala", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await page.getByLabel("Data da aula").fill("2026-10-21");
+  const row = page
+    .locator(".attendance-row")
+    .filter({ hasText: "Gabriel Almeida" });
+  await row.getByRole("button", { name: "Presente", exact: true }).click();
+  expect(
+    await row.locator(".attendance-options button").allTextContents(),
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining("Justificado"),
+      expect.stringContaining("Ocorrência"),
+    ]),
+  );
+  const labels = await row
+    .locator(".attendance-options button")
+    .allTextContents();
+  expect(labels[3]).toContain("Justificado");
+  expect(labels[4]).toContain("Ocorrência");
+  const launch = row.getByRole("button", {
+    name: "Ocorrência de Gabriel Almeida",
+    exact: true,
+  });
+  await launch.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Ocorrência individual",
+    exact: true,
+  });
+  await expect(dialog).toContainText("Gabriel Almeida");
+  await expect(dialog.locator("select")).toHaveCount(0);
+  await dialog.getByLabel("Uso excessivo do celular", { exact: true }).check();
+  await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(launch).not.toHaveClass(/has-record/);
+  await expect(row).toHaveClass(/marked-presente/);
+  await launch.click();
+  await expect(
+    dialog.getByLabel("Uso excessivo do celular", { exact: true }),
+  ).not.toBeChecked();
+  await dialog.getByLabel("Uso excessivo do celular", { exact: true }).check();
+  await dialog.getByLabel("Conversa excessiva", { exact: true }).check();
+  await dialog
+    .getByLabel("Outra ocorrência ou detalhes")
+    .fill("Orientação apenas deste aluno");
+  await dialog.getByRole("button", { name: "OK", exact: true }).click();
+  await expect(launch).toHaveClass(/has-record/);
+  await expect(
+    row.getByRole("button", { name: "Presente", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.locator(".occurrence-editor > summary").click();
+  await expect(page.getByLabel("Registrar ocorrência para")).toHaveCount(0);
+  await expect(
+    page
+      .locator(".occurrence-editor")
+      .getByLabel("Conversa excessiva", { exact: true }),
+  ).not.toBeChecked();
+  await launch.click();
+  await expect(dialog.getByLabel("Outra ocorrência ou detalhes")).toHaveValue(
+    "Orientação apenas deste aluno",
+  );
+  await dialog.getByRole("button", { name: "Limpar", exact: true }).click();
+  await dialog.getByRole("button", { name: "OK", exact: true }).click();
+  await expect(launch).not.toHaveClass(/has-record/);
+});
+
+test("operação prioriza gestão, filtra período e abre ações sem expor o diário inteiro", async ({
+  page,
+}) => {
+  await expect(
+    page.locator(".operational-class-directory"),
+  ).not.toHaveAttribute("open", "");
+  await expect(page.locator(".class-register")).not.toBeVisible();
+  await expect(page.locator(".management-metric")).toHaveCount(4);
+  await expect(
+    page.getByRole("region", { name: "Prioridades de acompanhamento" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Presença e faltas no período" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Oportunidades de matrícula" }),
+  ).toBeVisible();
+  await page.getByLabel("Período do painel").selectOption("7");
+  await page.getByRole("button", { name: /Faltas no período/ }).click();
+  await expect(
+    page
+      .getByRole("button", { name: "Faltas", exact: false })
+      .filter({ hasText: "Faltas" })
+      .last(),
+  ).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Matricular em Informática • Turma 01",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("dialog").getByLabel("Turma", { exact: true }),
+  ).toHaveValue("c1");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fechar", exact: true })
+    .click();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

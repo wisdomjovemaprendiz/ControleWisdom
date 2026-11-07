@@ -1,4 +1,6 @@
 "use client";
+import { CompactDialog } from "./compact-dialog";
+import { StudentAvatar } from "./student-avatar";
 import { useState } from "react";
 import type { LessonOccurrence, Student, Store } from "@/lib/domain";
 import { studentDisplayName, displayDate } from "@/lib/domain";
@@ -7,32 +9,69 @@ export type OccurrenceDraft = Pick<
   LessonOccurrence,
   "id" | "student_id" | "codes" | "notes"
 >;
+export function OccurrenceFields({
+  codes,
+  notes,
+  onChange,
+}: {
+  codes: string[];
+  notes: string;
+  onChange: (codes: string[], notes: string) => void;
+}) {
+  return (
+    <div className="occurrence-body">
+      <fieldset>
+        <legend>Marque as situações observadas</legend>
+        <div className="occurrence-options">
+          {occurrenceOptions.map(([code, title]) => (
+            <label key={code}>
+              <input
+                type="checkbox"
+                checked={codes.includes(code)}
+                onChange={(event) =>
+                  onChange(
+                    event.target.checked
+                      ? [...codes, code]
+                      : codes.filter((id) => id !== code),
+                    notes,
+                  )
+                }
+              />
+              {title}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label>
+        Outra ocorrência ou detalhes (opcional)
+        <textarea
+          aria-label="Outra ocorrência ou detalhes"
+          rows={3}
+          maxLength={2000}
+          value={notes}
+          onChange={(event) => onChange(codes, event.target.value)}
+        />
+      </label>
+    </div>
+  );
+}
 export function LessonOccurrences({
-  students,
   value,
   onChange,
-  individual,
 }: {
-  students: Student[];
   value: OccurrenceDraft[];
   onChange: (items: OccurrenceDraft[]) => void;
-  individual: boolean;
 }) {
-  const [target, setTarget] = useState(
-    individual ? students[0]?.id || "" : "class",
-  );
-  const targetId = individual ? students[0]?.id : target;
-  const selected = targetId === "class" ? null : targetId || null;
-  const record = value.find((item) => item.student_id === selected);
+  const record = value.find((item) => item.student_id === null);
   function update(codes: string[], notes: string) {
-    const others = value.filter((item) => item.student_id !== selected);
+    const others = value.filter((item) => item.student_id !== null);
     onChange(
       codes.length || notes.trim()
         ? [
             ...others,
             {
               id: record?.id || crypto.randomUUID(),
-              student_id: selected,
+              student_id: null,
               codes,
               notes,
             },
@@ -43,87 +82,102 @@ export function LessonOccurrences({
   return (
     <details className="panel occurrence-editor">
       <summary>
-        Ocorrências da aula{" "}
-        <span>{value.length ? `${value.length} registro(s)` : "Opcional"}</span>
+        Ocorrências da turma{" "}
+        <span>{record ? "Registro incluído" : "Opcional"}</span>
       </summary>
-      <div className="occurrence-body">
-        <label>
-          Registrar ocorrência para
-          <select
-            aria-label="Registrar ocorrência para"
-            value={targetId || ""}
-            onChange={(e) => setTarget(e.target.value)}
-          >
-            {!individual && <option value="class">Toda a turma</option>}
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {studentDisplayName(s)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <fieldset>
-          <legend>Marque as situações observadas</legend>
-          <div className="occurrence-options">
-            {occurrenceOptions.map(([code, title]) => (
-              <label key={code}>
-                <input
-                  type="checkbox"
-                  checked={record?.codes.includes(code) || false}
-                  onChange={(e) =>
-                    update(
-                      e.target.checked
-                        ? [...(record?.codes || []), code]
-                        : (record?.codes || []).filter((id) => id !== code),
-                      record?.notes || "",
-                    )
-                  }
-                />
-                {title}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <label>
-          Outra ocorrência ou detalhes (opcional)
-          <textarea
-            aria-label="Outra ocorrência ou detalhes"
-            rows={3}
-            maxLength={2000}
-            value={record?.notes || ""}
-            onChange={(e) => update(record?.codes || [], e.target.value)}
-          />
-        </label>
+      <OccurrenceFields
+        codes={record?.codes || []}
+        notes={record?.notes || ""}
+        onChange={update}
+      />
+      <div className="occurrence-class-footer">
         <small>
-          Registros internos, disponíveis no histórico e no acompanhamento ao
-          responsável. Não entram no resumo do grupo.
+          Registro coletivo da sala. As ocorrências individuais ficam no botão
+          de cada aluno.
         </small>
-        {!!value.length && (
-          <ul className="occurrence-draft-list">
-            {value.map((item) => (
-              <li key={item.id}>
-                <strong>
-                  {item.student_id
-                    ? students.find((s) => s.id === item.student_id)?.name ||
-                      "Aluno do histórico"
-                    : "Turma"}
-                </strong>
-                <p>{occurrenceText(item)}</p>
-                <button
-                  type="button"
-                  className="text-link"
-                  onClick={() =>
-                    onChange(value.filter((other) => other.id !== item.id))
-                  }
-                >
-                  Remover registro
-                </button>
-              </li>
-            ))}
-          </ul>
+        {record && (
+          <button
+            type="button"
+            className="text-link"
+            onClick={() => update([], "")}
+          >
+            Remover ocorrência da turma
+          </button>
         )}
       </div>
     </details>
+  );
+}
+export function IndividualOccurrenceDialog({
+  student,
+  initial,
+  onConfirm,
+  onClose,
+}: {
+  student: Student;
+  initial?: OccurrenceDraft;
+  onConfirm: (item: OccurrenceDraft | null) => void;
+  onClose: () => void;
+}) {
+  const [codes, setCodes] = useState(initial?.codes || []),
+    [notes, setNotes] = useState(initial?.notes || "");
+  return (
+    <CompactDialog
+      title="Ocorrência individual"
+      className="individual-occurrence-dialog"
+      onClose={onClose}
+    >
+      <div className="occurrence-dialog-student">
+        <StudentAvatar student={student} />
+        <strong>{studentDisplayName(student)}</strong>
+      </div>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onConfirm(
+            codes.length || notes.trim()
+              ? {
+                  id: initial?.id || crypto.randomUUID(),
+                  student_id: student.id,
+                  codes,
+                  notes: notes.trim(),
+                }
+              : null,
+          );
+        }}
+      >
+        <OccurrenceFields
+          codes={codes}
+          notes={notes}
+          onChange={(nextCodes, nextNotes) => {
+            setCodes(nextCodes);
+            setNotes(nextNotes);
+          }}
+        />
+        <small className="occurrence-dialog-note">
+          Fica no histórico e será gravada ao finalizar a chamada. Não entra no
+          resumo do grupo.
+        </small>
+        <footer>
+          <button
+            type="button"
+            className="text-link"
+            onClick={() => {
+              setCodes([]);
+              setNotes("");
+            }}
+          >
+            Limpar
+          </button>
+          <button type="button" className="secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="primary">
+            OK
+          </button>
+        </footer>
+      </form>
+    </CompactDialog>
   );
 }
 export function OccurrenceHistory({

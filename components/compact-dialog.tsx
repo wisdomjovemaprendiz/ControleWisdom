@@ -6,10 +6,12 @@ export function CompactDialog({
   title,
   onClose,
   children,
+  className = "",
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -30,7 +32,7 @@ export function CompactDialog({
   return (
     <dialog
       ref={dialog}
-      className="compact-dialog"
+      className={`compact-dialog ${className}`}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault();

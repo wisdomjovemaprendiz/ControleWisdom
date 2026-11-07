@@ -13,6 +13,7 @@ import {
 import { StudentListProgress } from "@/components/student-list-progress";
 import {
   LessonOccurrences,
+  IndividualOccurrenceDialog,
   OccurrenceHistory,
   type OccurrenceDraft,
 } from "@/components/lesson-occurrences";
@@ -255,6 +256,8 @@ export default function App() {
     [reportFrom, setReportFrom] = useState(""),
     [reportTo, setReportTo] = useState(today());
   const [occurrenceDraft, setOccurrenceDraft] = useState<OccurrenceDraft[]>([]);
+  const [individualOccurrenceStudent, setIndividualOccurrenceStudent] =
+    useState<Student | null>(null);
   const [classOrder, setClassOrder] = useState("name"),
     [classAvailability, setClassAvailability] = useState("all"),
     [classSearch, setClassSearch] = useState("");
@@ -636,6 +639,7 @@ export default function App() {
     if (birthdaySelection.current === key) return;
     birthdaySelection.current = key;
     setAttendanceEditor(null);
+    setIndividualOccurrenceStudent(null);
     setLessonBirthdays(
       key && /^\d{4}-\d{2}-\d{2}$/.test(lessonDate)
         ? active
@@ -1509,11 +1513,14 @@ export default function App() {
             title="Aniversariantes de hoje e da semana"
             onClick={() => {
               goto("overview");
-              requestAnimationFrame(() =>
-                document
-                  .getElementById("birthdays")
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" }),
-              );
+              requestAnimationFrame(() => {
+                const birthdays = document.getElementById("birthdays");
+                birthdays?.closest("details")?.setAttribute("open", "");
+                birthdays?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              });
             }}
           >
             <Cake size={19} />
@@ -1735,6 +1742,7 @@ export default function App() {
           {page === "overview" && profile.role !== "comercial" && (
             <OperationsBoard
               store={store}
+              historyStore={allRecords!}
               profile={profile}
               unit={currentUnit}
               classes={classes}
@@ -1750,7 +1758,14 @@ export default function App() {
               }}
               onStudent={(s) => setDossierId(s.id)}
               onAction={(kind, data) => {
-                if (kind.startsWith("followup:")) {
+                if (kind.startsWith("students:")) {
+                  setStudentStatus(kind.slice(9));
+                  setStudentClass("all");
+                  setQuery("");
+                  goto("students");
+                } else if (kind.startsWith("enroll:")) {
+                  setModal({ kind: "student", classPreset: kind.slice(7) });
+                } else if (kind.startsWith("followup:")) {
                   const record = store.pedagogy.find(
                     (p) => p.id === kind.slice(9),
                   );
@@ -2382,13 +2397,12 @@ export default function App() {
                     </strong>
                   </div>
                 </div>
-                <LessonOccurrences
-                  key={`${selectedClass?.id}:${individualStudent?.id || ""}:${lessonDate}`}
-                  students={active.filter(isAttendanceStudent)}
-                  individual={classId === INDIVIDUAL}
-                  value={occurrenceDraft}
-                  onChange={setOccurrenceDraft}
-                />
+                {classId !== INDIVIDUAL && (
+                  <LessonOccurrences
+                    value={occurrenceDraft}
+                    onChange={setOccurrenceDraft}
+                  />
+                )}
                 <section className="panel">
                   <div className="panel-header">
                     <div>
@@ -2484,7 +2498,19 @@ export default function App() {
                             {marks[s.id] === status && <Check size={14} />}{" "}
                             {labels[status]}
                           </button>
-                        ))}
+                        ))}{" "}
+                        <button
+                          type="button"
+                          className={`occurrence-launch ${occurrenceDraft.some((item) => item.student_id === s.id) ? "has-record" : ""}`}
+                          aria-label={`Ocorrência de ${studentDisplayName(s)}`}
+                          aria-haspopup="dialog"
+                          onClick={() => setIndividualOccurrenceStudent(s)}
+                        >
+                          Ocorrência
+                          {occurrenceDraft.some(
+                            (item) => item.student_id === s.id,
+                          ) && <Check size={14} />}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -3092,6 +3118,25 @@ export default function App() {
             setPasswordOpen(false);
             setProfile(null);
             setStore(null);
+          }}
+        />
+      )}
+      {individualOccurrenceStudent && (
+        <IndividualOccurrenceDialog
+          student={individualOccurrenceStudent}
+          initial={occurrenceDraft.find(
+            (item) => item.student_id === individualOccurrenceStudent.id,
+          )}
+          onClose={() => setIndividualOccurrenceStudent(null)}
+          onConfirm={(item) => {
+            setOccurrenceDraft((previous) => [
+              ...previous.filter(
+                (record) =>
+                  record.student_id !== individualOccurrenceStudent.id,
+              ),
+              ...(item ? [item] : []),
+            ]);
+            setIndividualOccurrenceStudent(null);
           }}
         />
       )}
