@@ -24,6 +24,9 @@ import {
 } from "@/lib/course-progress";
 import { classFrame, occupancyInfo } from "@/lib/class-appearance";
 import { OccupancyBar, OccupancyLegend } from "@/components/occupancy-bar";
+import { SchoolCalendar } from "@/components/school-calendar";
+import { SignatureSheetBuilder } from "@/components/signature-sheet-builder";
+import type { CalendarEvent } from "@/lib/school-calendar";
 import { CustomReportBuilder } from "@/components/custom-report-builder";
 import {
   INDIVIDUAL,
@@ -48,6 +51,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  CalendarDays,
   LayoutDashboard,
   Users,
   GraduationCap,
@@ -145,6 +149,7 @@ const nav = [
   ["overview", "Operação", LayoutDashboard],
   ["students", "Alunos", Users],
   ["classes", "Turmas", GraduationCap],
+  ["calendar", "Calendário escolar", CalendarDays],
   ["offerings", "Cursos e pacotes", BookOpen],
   ["attendance", "Chamada", ClipboardCheck],
   ["pedagogy", "Pedagógico", BookOpen],
@@ -165,6 +170,7 @@ const tables: (keyof Store)[] = [
   "pedagogy",
   "contacts",
   "occurrences",
+  "calendar_events",
 ];
 type Modal = {
   kind: string;
@@ -845,6 +851,26 @@ export default function App() {
     } finally {
       setBusy(false);
     }
+  }
+  async function deleteCalendarEvent(event: CalendarEvent) {
+    if (!supabase) return false;
+    const { data, error } = await supabase
+      .from("calendar_events")
+      .delete()
+      .eq("id", event.id)
+      .select("id");
+    if (error || !data?.length) return false;
+    setStore((previous) =>
+      previous
+        ? {
+            ...previous,
+            calendar_events: previous.calendar_events.filter(
+              (record) => record.id !== event.id,
+            ),
+          }
+        : previous,
+    );
+    return true;
   }
   async function saveAttendance(e: FormEvent) {
     e.preventDefault();
@@ -1668,9 +1694,13 @@ export default function App() {
                   </select>
                 </label>
               )}
-              {!["attendance", "reports", "settings", "records"].includes(
-                page,
-              ) &&
+              {![
+                "attendance",
+                "reports",
+                "settings",
+                "records",
+                "calendar",
+              ].includes(page) &&
                 !(page === "pedagogy" && profile.role === "secretaria") &&
                 !(
                   profile.role === "comercial" &&
@@ -2740,8 +2770,24 @@ export default function App() {
               </section>
             </>
           )}
+          {page === "calendar" && profile.role !== "comercial" && (
+            <SchoolCalendar
+              key={currentUnit}
+              store={store}
+              profile={profile}
+              initialUnit={currentUnit}
+              onSave={(event) => save("calendar_events", event)}
+              onDelete={deleteCalendarEvent}
+            />
+          )}
           {page === "reports" && profile.role !== "comercial" && (
             <>
+              <SignatureSheetBuilder
+                store={store}
+                profile={profile}
+                unit={currentUnit}
+                onCalendar={() => goto("calendar")}
+              />
               {isManager(profile.role) && (
                 <DailyAnalysis unit={currentUnit} units={store.units} />
               )}

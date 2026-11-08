@@ -1,3 +1,4 @@
+import { nationalHolidays2027 } from "../../lib/school-calendar";
 import type { Store } from "../../lib/domain";
 import { today } from "../../lib/domain";
 export function schoolFixture(): Store {
@@ -262,5 +263,16 @@ export function schoolFixture(): Store {
     ],
     contacts: [],
     occurrences: [],
+    calendar_events: nationalHolidays2027.map(([date, title]) => ({
+      id: `national-${date}`,
+      unit_id: null,
+      class_id: null,
+      title,
+      kind: "holiday",
+      start_date: date,
+      end_date: date,
+      enabled: true,
+      source_key: `br-${date}`,
+    })),
   };
 }

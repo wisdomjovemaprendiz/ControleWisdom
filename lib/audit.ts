@@ -15,6 +15,10 @@ export interface AuditEntry {
 }
 export const auditFieldLabels: Record<string, string> = {
   name: "Nome",
+  title: "Motivo",
+  start_date: "Início do período",
+  end_date: "Fim do período",
+  enabled: "Aplicado ao calendário",
   codes: "Ocorrências marcadas",
   lesson_id: "Aula",
   author_name: "Registrado por",

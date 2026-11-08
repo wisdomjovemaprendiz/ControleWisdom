@@ -2592,3 +2592,138 @@ test("operação prioriza gestão, filtra período e abre ações sem expor o di
     ),
   ).toBe(true);
 });
+
+test("calendário seleciona intervalo por clique e ficha anual inclui dias sem aula", async ({
+  page,
+}) => {
+  schoolApi.store.classes.find((c) => c.id === "c1")!.lesson_days = [2, 4];
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Calendário escolar", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Ver 2027", exact: true }).click();
+  await expect(
+    page.getByRole("button", {
+      name: /01\/01\/2027 — Confraternização Universal/,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "11/01/2027", exact: true }).click();
+  await page.getByRole("button", { name: "15/01/2027", exact: true }).click();
+  await expect(page.getByLabel("Início do período sem aula")).toHaveValue(
+    "2027-01-11",
+  );
+  await expect(page.getByLabel("Fim do período sem aula")).toHaveValue(
+    "2027-01-15",
+  );
+  await page
+    .getByLabel("Motivo do dia sem aula")
+    .fill("Recesso da turma em janeiro");
+  await page.getByLabel("Abrangência do período").selectOption("c1");
+  await page
+    .getByRole("button", { name: "Salvar período", exact: true })
+    .click();
+  await expect(page.locator(".calendar-event-list")).toContainText(
+    "Recesso da turma em janeiro",
+  );
+  const event = schoolApi.store.calendar_events.find(
+    (e) => e.title === "Recesso da turma em janeiro",
+  )!;
+  expect(event.class_id).toBe("c1");
+  expect(event.unit_id).toBe("u1");
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  const builder = page.getByRole("region", {
+    name: "Emissão da ficha avaliativa",
+  });
+  await builder.getByLabel("Aluno da ficha avaliativa").selectOption("s1");
+  await builder.getByLabel("Mês inicial da ficha").fill("2027-01");
+  await builder.getByLabel("Mês final da ficha").fill("2027-12");
+  await builder.locator(".signature-schedule-preview > summary").click();
+  await expect(builder).toContainText("Recesso da turma em janeiro");
+  await expect(builder).toContainText("Independência do Brasil");
+  const pending = page.waitForEvent("download");
+  await builder
+    .getByRole("button", { name: "Baixar ficha avaliativa PDF", exact: true })
+    .click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toContain(
+    "ficha-avaliativa-Gabriel-Almeida-2027-01-2027-12.pdf",
+  );
+  const { readFile } = await import("node:fs/promises");
+  const bytes = await readFile((await download.path())!);
+  expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  expect(
+    (bytes.toString("latin1").match(/\/Type \/Page\b/g) || []).length,
+  ).toBeGreaterThan(1);
+});
+
+test("calendário permite editar, desativar e excluir períodos e cabe no celular", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Calendário escolar", exact: true })
+    .click();
+  await page.getByLabel("Motivo do dia sem aula").fill("Recesso editável");
+  await page.getByLabel("Início do período sem aula").fill("2027-07-01");
+  await page.getByLabel("Fim do período sem aula").fill("2027-07-15");
+  await page
+    .getByRole("button", { name: "Salvar período", exact: true })
+    .click();
+  let row = page
+    .locator(".calendar-event-list article")
+    .filter({ hasText: "Recesso editável" });
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: "Desativar", exact: true }).click();
+  await expect(row).toContainText("Não aplicado");
+  await row
+    .getByRole("button", { name: "Editar Recesso editável", exact: true })
+    .click();
+  await page.getByLabel("Motivo do dia sem aula").fill("Recesso atualizado");
+  await page
+    .getByRole("button", { name: "Salvar período", exact: true })
+    .click();
+  row = page
+    .locator(".calendar-event-list article")
+    .filter({ hasText: "Recesso atualizado" });
+  await expect(row).toBeVisible();
+  await row
+    .getByRole("button", { name: "Excluir Recesso atualizado", exact: true })
+    .click();
+  await expect(row).toHaveCount(0);
+  expect(
+    schoolApi.store.calendar_events.some(
+      (e) => e.title === "Recesso atualizado",
+    ),
+  ).toBe(false);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("professor consulta calendário e só escolhe alunos da própria unidade para ficha", async ({
+  page,
+}) => {
+  await page.getByTitle("Sair", { exact: true }).click();
+  await login(page, "ana.oliveira");
+  await page
+    .getByRole("button", { name: "Calendário escolar", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Ver 2027", exact: true }).click();
+  await expect(page.locator(".calendar-event-list")).toContainText(
+    "Confraternização Universal",
+  );
+  await expect(
+    page.getByRole("button", { name: "Salvar período", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".calendar-event-actions")).toHaveCount(0);
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  const select = page.getByLabel("Aluno da ficha avaliativa");
+  await expect(select.locator('option[value="s14"]')).toHaveCount(0);
+  await select.selectOption("s1");
+  await expect(page.locator(".signature-student-summary")).toContainText(
+    "Gabriel Almeida",
+  );
+});

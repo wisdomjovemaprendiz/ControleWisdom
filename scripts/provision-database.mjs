@@ -72,6 +72,7 @@ try {
     "012_class_identity.sql",
     "013_course_progress.sql",
     "014_lesson_occurrences.sql",
+    "015_school_calendar.sql",
   ]) {
     const version = file.slice(0, 3);
     if (done.some((row) => row.version === version)) {

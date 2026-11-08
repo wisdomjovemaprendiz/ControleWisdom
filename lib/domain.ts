@@ -1,3 +1,4 @@
+import type { CalendarEvent } from "./school-calendar";
 import { studentOccurrences, occurrenceText } from "./occurrences";
 import {
   studentPlacement,
@@ -191,6 +192,7 @@ export interface Store {
   pedagogy: Pedagogy[];
   contacts: Contact[];
   occurrences: LessonOccurrence[];
+  calendar_events: CalendarEvent[];
 }
 export const labels: Record<string, string> = {
   admin: "Administrador",

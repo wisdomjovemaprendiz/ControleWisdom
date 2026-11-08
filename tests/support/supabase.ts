@@ -291,6 +291,14 @@ export async function installSchoolApi(page: Page) {
               headers: { "Access-Control-Allow-Origin": "*" },
             });
       }
+      if (table === "calendar_events" && req.method() === "DELETE") {
+        const id = url.searchParams.get("id")?.replace(/^eq\./, "");
+        const removed = values.filter((row) => row.id === id);
+        store.calendar_events = store.calendar_events.filter(
+          (row) => row.id !== id,
+        );
+        return json(route, removed);
+      }
       if (req.method() === "PATCH") {
         const id = url.searchParams.get("id")?.replace(/^eq\./, "");
         for (const row of values)
@@ -312,7 +320,8 @@ export async function installSchoolApi(page: Page) {
           ? canAccess(actor, row.id)
           : table === "profiles"
             ? row.id === actor.id || canAccess(actor, row.unit_id)
-            : canAccess(actor, row.unit_id) &&
+            : ((table === "calendar_events" && !row.unit_id) ||
+                canAccess(actor, row.unit_id)) &&
               !(table === "pedagogy" && actor.role === "comercial"),
       );
       for (const [key, value] of url.searchParams)

@@ -1500,5 +1500,109 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       );
     },
   );
+  await t.test(
+    "calendário pré-carrega 2027, restringe unidades e audita recessos",
+    async () => {
+      await db.exec(
+        "reset role;select set_config('request.jwt.claim.sub','',false)",
+      );
+      await db.exec(
+        readFileSync(
+          new URL("../supabase/015_school_calendar.sql", import.meta.url),
+          "utf8",
+        ),
+      );
+      await as(2);
+      assert.equal(
+        (
+          await db.query(
+            "select * from public.calendar_events where source_key like 'br-2027-%'",
+          )
+        ).rows.length,
+        9,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "update public.calendar_events set enabled=false returning id",
+          )
+        ).rows.length,
+        0,
+      );
+      await as(3);
+      await db.query(
+        "insert into public.calendar_events(id,unit_id,class_id,title,kind,start_date,end_date) values($1,$2,$3,'Recesso da turma','recess','2027-07-01','2027-07-15')",
+        [id(1501), id(11), id(301)],
+      );
+      await assert.rejects(
+        db.query(
+          "insert into public.calendar_events(title,kind,start_date,end_date) values('Global proibido','recess','2027-07-01','2027-07-15')",
+        ),
+      );
+      await assert.rejects(
+        db.query(
+          "insert into public.calendar_events(unit_id,title,kind,start_date,end_date) values($1,'Unidade externa','recess','2027-07-01','2027-07-15')",
+          [id(12)],
+        ),
+      );
+      await assert.rejects(
+        db.query(
+          "insert into public.calendar_events(unit_id,class_id,title,kind,start_date,end_date) values($1,$2,'Turma forjada','recess','2027-07-01','2027-07-15')",
+          [id(11), id(22)],
+        ),
+      );
+      await as(1);
+      await db.query(
+        "insert into public.calendar_events(id,unit_id,title,kind,start_date,end_date) values($1,$2,'Calendário Vila','holiday','2027-06-01','2027-06-01')",
+        [id(1502), id(12)],
+      );
+      const audit = (
+        await db.query<any>(
+          "select * from public.audit_log where entity='calendar_events' and entity_id=$1 order by id",
+          [id(1501)],
+        )
+      ).rows[0];
+      assert.equal(audit.actor_id, id(3));
+      assert.equal(audit.after_data.title, "Recesso da turma");
+      await assert.rejects(
+        db.query(
+          "insert into public.calendar_events(title,kind,start_date,end_date) values('Invertido','recess','2027-07-20','2027-07-01')",
+        ),
+      );
+      await as(3);
+      assert.equal(
+        (
+          await db.query("select * from public.calendar_events where id=$1", [
+            id(1502),
+          ])
+        ).rows.length,
+        0,
+      );
+      await db.query(
+        "update public.calendar_events set enabled=false where id=$1",
+        [id(1501)],
+      );
+      assert.equal(
+        (
+          await db.query<any>(
+            "select enabled from public.calendar_events where id=$1",
+            [id(1501)],
+          )
+        ).rows[0].enabled,
+        false,
+      );
+      await db.query("delete from public.calendar_events where id=$1", [
+        id(1501),
+      ]);
+      assert.equal(
+        (
+          await db.query("select * from public.calendar_events where id=$1", [
+            id(1501),
+          ])
+        ).rows.length,
+        0,
+      );
+    },
+  );
   await db.close();
 });
