@@ -128,6 +128,29 @@ test("paginação conserva todas as datas e não deixa mês sem linha no fim da 
   };
   assert.ok(calendarEventError(event));
 });
+test("continuações usam a área extra sem perder datas nem ultrapassar a página", () => {
+  const { store, student } = setup();
+  const months = signatureMonths(store, student, "2027-01", "2027-12");
+  const height = (row: { kind: string }) => (row.kind === "month" ? 7 : 13);
+  const capacity = (index: number) => (index ? 244 : 199);
+  const pages = paginateSignatureMonths(months, capacity, height);
+  const dates = pages
+    .flat()
+    .flatMap((row) => (row.kind === "day" ? [row.day.date] : []));
+  assert.deepEqual(
+    dates,
+    months.flatMap((month) => month.days.map((day) => day.date)),
+  );
+  pages.forEach((page, index) => {
+    assert.ok(
+      page.reduce((sum, row) => sum + height(row), 0) <= capacity(index),
+    );
+    assert.equal(page[0].kind, "month");
+    assert.equal(page.at(-1)!.kind, "day");
+  });
+  assert.ok(pages[1].length > pages[0].length);
+  assert.ok(pages.length < paginateSignatureMonths(months, 199, height).length);
+});
 test("PDF da ficha contém logo, fonte institucional e várias páginas sem perder o calendário anual", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (input) =>

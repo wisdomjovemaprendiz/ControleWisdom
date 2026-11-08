@@ -168,7 +168,7 @@ export type SignatureRow =
   | { kind: "day"; day: SignatureDay };
 export function paginateSignatureMonths(
   months: SignatureMonth[],
-  maxHeight: number,
+  maxHeight: number | ((pageIndex: number) => number),
   height: (row: SignatureRow) => number,
 ) {
   const pages: SignatureRow[][] = [];
@@ -179,6 +179,8 @@ export function paginateSignatureMonths(
     current = [];
     used = 0;
   };
+  const capacity = () =>
+    typeof maxHeight === "number" ? maxHeight : maxHeight(pages.length);
   for (const month of months) {
     const band: SignatureRow = {
       kind: "month",
@@ -188,14 +190,14 @@ export function paginateSignatureMonths(
     const first = month.days[0];
     if (
       first &&
-      used + height(band) + height({ kind: "day", day: first }) > maxHeight
+      used + height(band) + height({ kind: "day", day: first }) > capacity()
     )
       flush();
     current.push(band);
     used += height(band);
     for (const day of month.days) {
       const row: SignatureRow = { kind: "day", day };
-      if (used + height(row) > maxHeight) {
+      if (used + height(row) > capacity()) {
         flush();
         const continuation: SignatureRow = {
           ...band,
@@ -204,7 +206,7 @@ export function paginateSignatureMonths(
         current.push(continuation);
         used = height(continuation);
       }
-      if (used + height(row) > maxHeight)
+      if (used + height(row) > capacity())
         throw new Error(
           "Há muitos motivos sobrepostos em uma data. Resuma os títulos no calendário.",
         );

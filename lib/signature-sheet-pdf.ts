@@ -82,86 +82,101 @@ export async function createSignatureSheetPdf({
     from === to
       ? months[0].label
       : `${months[0].label} a ${months.at(-1)!.label}`;
-  function header() {
-    doc.setFillColor(13, 64, 139);
-    doc.rect(0, 0, 210, 2, "F");
-    doc.setFillColor(237, 25, 37);
-    doc.rect(175, 0, 35, 2, "F");
-    doc.addImage(logo, "JPEG", 168, 8, 30, 20, "wisdom-sheet-logo");
-    doc.setFont("WisdomSheet", "bold");
-    doc.setTextColor(20, 55, 104);
-    doc.setFontSize(13);
-    doc.text("FICHA AVALIATIVA DO ALUNO", margin, 14);
-    doc.setFont("WisdomSheet", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(104, 119, 139);
-    doc.text("Wisdom Cursos · Presença e acompanhamento das aulas", margin, 20);
-    doc.setDrawColor(205, 215, 228);
-    doc.line(margin, 27, 198, 27);
-    let y = 31;
-    function field(left: string, right?: string, indent = 0) {
+  const schedule = group
+    ? `Horário: ${scheduleTimeLabel(group.schedule) || scheduleTimeLabel(group.name) || "Não informado"}`
+    : student.individual_duration_minutes
+      ? `Duração: ${student.individual_duration_minutes} minutos`
+      : "Horário não informado";
+  const lessonLabel = `Dias de aula: ${days} · ${schedule}`;
+  function header(continuation = false, draw = true) {
+    let y = continuation ? 12 : 24;
+    const indent = !continuation && photo ? 18 : 0;
+    function textBlock(
+      text: string,
+      size: number,
+      bold: boolean,
+      available: number,
+      x = margin,
+    ) {
+      doc.setFont("WisdomSheet", bold ? "bold" : "normal");
+      doc.setFontSize(size);
+      doc.setTextColor(20, 55, 104);
+      const lines = doc.splitTextToSize(text, available) as string[];
+      const lineHeight = size * 0.3528 * 1.2;
+      if (draw) doc.text(lines, x, y);
+      y += lines.length * lineHeight + 1.5;
+    }
+    if (!continuation && draw) {
+      doc.setFillColor(13, 64, 139);
+      doc.rect(0, 0, 210, 2, "F");
+      doc.setFillColor(237, 25, 37);
+      doc.rect(175, 0, 35, 2, "F");
+      doc.addImage(logo, "JPEG", 172, 6, 26, 17, "wisdom-sheet-logo");
+      doc.setFont("WisdomSheet", "bold");
+      doc.setTextColor(20, 55, 104);
+      doc.setFontSize(11);
+      doc.text("FICHA AVALIATIVA DO ALUNO", margin, 13);
+      if (photo)
+        doc.addImage(
+          photo.data,
+          photo.format || "PNG",
+          margin,
+          20,
+          14,
+          14,
+          `sheet-student-${student.id}`,
+        );
+    }
+    textBlock(
+      studentDisplayName(student),
+      continuation ? 10.5 : 13,
+      true,
+      (continuation ? width : 154) - indent,
+      margin + indent,
+    );
+    textBlock(
+      lessonLabel,
+      continuation ? 9 : 11,
+      !continuation,
+      width - indent,
+      margin + indent,
+    );
+    if (continuation) return y + 1;
+    if (photo) y = Math.max(y, 37);
+    y += 1;
+    function pair(left: string, right: string) {
       doc.setFont("WisdomSheet", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(32, 49, 72);
-      const leftWidth = right ? 91 - indent : width - indent;
-      const lines = doc.splitTextToSize(left, leftWidth) as string[];
-      const other = right ? (doc.splitTextToSize(right, 91) as string[]) : [];
-      doc.text(lines, margin + indent, y + 2.5);
-      if (other.length) doc.text(other, 107, y + 2.5);
-      y += Math.max(lines.length, other.length) * 4.2 + 2;
+      const first = doc.splitTextToSize(left, 91) as string[];
+      const second = doc.splitTextToSize(right, 91) as string[];
+      if (draw) {
+        doc.text(first, margin, y);
+        doc.text(second, 107, y);
+      }
+      y += Math.max(first.length, second.length) * 3.6 + 1.3;
     }
-    field(
+    pair(
+      `Turma: ${student.enrollment_mode === "individual" ? "Aulas individuais" : group?.name || "Não informada"}`,
+      `Curso: ${course?.name || group?.course || "Não informado"}`,
+    );
+    pair(
+      `Responsável: ${student.guardian || "Não informado"}`,
+      `Telefone do responsável: ${student.guardian_phone || "Não informado"}`,
+    );
+    pair(
       `Unidade: ${unit?.name || "Não informada"}`,
       `Professor(a): ${teacher || "Não informado"}`,
     );
-    field(
-      `Curso: ${course?.name || group?.course || "Não informado"}`,
-      `Turma: ${student.enrollment_mode === "individual" ? "Aulas individuais" : group?.name || "Não informada"}`,
-    );
-    field(
-      `Dias: ${days} · ${group ? `Horário: ${scheduleTimeLabel(group.schedule) || scheduleTimeLabel(group.name) || "Não informado"}` : student.individual_duration_minutes ? `Duração: ${student.individual_duration_minutes} minutos` : "Horário não informado"}`,
-    );
-    const identityY = y;
-    if (photo)
-      doc.addImage(
-        photo.data,
-        photo.format || "PNG",
-        margin,
-        identityY - 1,
-        14,
-        14,
-        `sheet-student-${student.id}`,
-      );
-    field(
-      `Aluno(a): ${studentDisplayName(student)}`,
-      undefined,
-      photo ? 18 : 0,
-    );
-    field(
-      `Responsável: ${student.guardian || "Não informado"}`,
-      undefined,
-      photo ? 18 : 0,
-    );
-    if (photo) y = Math.max(y, identityY + 15);
-    field(
+    pair(
       `Telefone do aluno: ${student.phone || "Não informado"}`,
-      `Telefone do responsável: ${student.guardian_phone || "Não informado"}`,
-    );
-    field(
-      `E-mail: ${student.email || "Não informado"}`,
       `Nascimento: ${student.birth_date ? displayDate(student.birth_date) : "Não informado"}`,
     );
-    doc.setFontSize(8);
-    doc.setTextColor(75, 95, 124);
-    const periodLines = doc.splitTextToSize(
-      `Período: ${period}`,
-      width,
-    ) as string[];
-    doc.text(periodLines, margin, y + 2.2);
-    y += periodLines.length * 3.7 + 4;
-    return y;
+    textBlock(`Período: ${period}`, 8, false, width);
+    return y + 1;
   }
-  const startY = header();
+  const startY = header(false, false);
+  const continuationY = header(true, false);
   const closureText = (row: Extract<SignatureRow, { kind: "day" }>) =>
     "SEM AULA — " +
     [
@@ -182,15 +197,12 @@ export async function createSignatureSheetPdf({
   };
   const pages = paginateSignatureMonths(
     months,
-    bottom - startY - 10,
+    (pageIndex) => bottom - (pageIndex ? continuationY : startY) - 10,
     rowHeight,
   );
   pages.forEach((rows, pageIndex) => {
-    if (pageIndex) {
-      doc.addPage();
-      header();
-    }
-    let y = startY;
+    if (pageIndex) doc.addPage();
+    let y = header(pageIndex > 0);
     doc.setFillColor(19, 64, 123);
     doc.rect(margin, y, width, 9, "F");
     doc.setTextColor(255, 255, 255);
