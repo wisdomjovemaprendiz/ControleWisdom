@@ -280,6 +280,8 @@ export default function App() {
   } | null>(null);
   const [lessonBirthdays, setLessonBirthdays] = useState<Student[]>([]);
   const birthdaySelection = useRef("");
+  const attendanceSelection = useRef("");
+  const authenticatedUserId = useRef<string | null>(null);
   const [photoDraft, setPhotoDraft] = useState<CompressedPhoto | null>(null),
     [removePhoto, setRemovePhoto] = useState(false),
     [photoBusy, setPhotoBusy] = useState(false);
@@ -300,10 +302,13 @@ export default function App() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
+        authenticatedUserId.current = null;
+        attendanceSelection.current = "";
         setProfile(null);
         setStore(null);
         return;
       }
+      authenticatedUserId.current = user.id;
       const { data: p, error: e } = await supabase
         .from("profiles")
         .select("*")
@@ -354,9 +359,25 @@ export default function App() {
       return;
     }
     void load();
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Refreshing a token (including on window focus) is not a data change.
+      // Initial hydration is already performed by load() above.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
+      if (
+        event === "SIGNED_IN" &&
+        session?.user.id === authenticatedUserId.current
+      )
+        return;
       clearPhotoCache();
       if (event === "SIGNED_OUT") {
+        authenticatedUserId.current = null;
+        attendanceSelection.current = "";
+        setMarks({});
+        setAttendanceDetails({});
+        setOccurrenceDraft([]);
+        setTopic("");
+        setIndividualOccurrenceStudent(null);
+        setAttendanceEditor(null);
         setPasswordOpen(false);
         setProfile(null);
         setStore(null);
@@ -586,7 +607,17 @@ export default function App() {
         )),
   );
   useEffect(() => {
-    if (!store || !selectedClass) return;
+    if (!store || !selectedClass || !profile) return;
+    const key = JSON.stringify([
+      profile.id,
+      selectedClass.id,
+      individualStudent?.id || "",
+      lessonDate,
+    ]);
+    // Server refreshes must never overwrite an in-progress attendance draft.
+    // Hydrate only when the user chooses a different lesson or account.
+    if (attendanceSelection.current === key) return;
+    attendanceSelection.current = key;
     const l = store.lessons.find(
       (l) => matchesLesson(l) && l.date === lessonDate,
     );
@@ -627,6 +658,7 @@ export default function App() {
       ),
     );
   }, [
+    profile?.id,
     selectedClass?.id,
     individualStudent?.id,
     lessonDate,

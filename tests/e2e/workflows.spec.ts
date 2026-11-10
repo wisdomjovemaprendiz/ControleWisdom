@@ -2727,3 +2727,108 @@ test("professor consulta calendário e só escolhe alunos da própria unidade pa
     "Gabriel Almeida",
   );
 });
+
+for (const viewport of [
+  { width: 1280, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`atualização mantém chamada e ocorrência em edição (${viewport.width}px)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    if (viewport.width < 600) {
+      await page.getByRole("button", { name: "Abrir menu" }).click();
+    }
+    await page
+      .locator("nav")
+      .getByRole("button", { name: "Chamada", exact: true })
+      .click();
+    await page.getByLabel("Data da aula").fill("2026-10-21");
+    await page
+      .getByLabel("Conteúdo trabalhado")
+      .fill("Conteúdo antes da atualização");
+    await page
+      .getByRole("button", { name: "Todos presentes", exact: true })
+      .click();
+    const row = page
+      .locator(".attendance-row")
+      .filter({ hasText: "Gabriel Almeida" });
+    await row.getByRole("button", { name: "Atrasado", exact: true }).click();
+    const delay = page.getByRole("dialog", { name: "Registrar atraso" });
+    await delay.getByLabel("Horário de chegada de Gabriel Almeida").fill("14:15");
+    await delay.getByRole("button", { name: "OK", exact: true }).click();
+    await page.locator(".occurrence-editor > summary").click();
+    await page
+      .locator(".occurrence-editor")
+      .getByLabel("Conversa excessiva", { exact: true })
+      .check();
+    await row
+      .getByRole("button", {
+        name: "Ocorrência de Gabriel Almeida",
+        exact: true,
+      })
+      .click();
+    const occurrence = page.getByRole("dialog", {
+      name: "Ocorrência individual",
+      exact: true,
+    });
+    await occurrence
+      .getByLabel("Uso excessivo do celular", { exact: true })
+      .check();
+    await occurrence
+      .getByLabel("Outra ocorrência ou detalhes")
+      .fill("Orientação em andamento");
+    // A data refresh can complete while the dialog is open (e.g. session renewal).
+    const loaded = page.waitForResponse(
+      (response) =>
+        response.url().includes("/rest/v1/calendar_events") &&
+        response.request().method() === "GET",
+    );
+    await page
+      .getByTitle("Atualizar dados", { exact: true })
+      .evaluate((button: HTMLButtonElement) => button.click());
+    await loaded;
+    await expect(
+      page.getByTitle("Atualizar dados", { exact: true }),
+    ).toBeEnabled();
+    await expect(
+      occurrence.getByLabel("Outra ocorrência ou detalhes"),
+    ).toHaveValue("Orientação em andamento");
+    await expect(
+      occurrence.getByLabel("Uso excessivo do celular", { exact: true }),
+    ).toBeChecked();
+    await occurrence.getByRole("button", { name: "OK", exact: true }).click();
+    await expect(page.getByLabel("Conteúdo trabalhado")).toHaveValue(
+      "Conteúdo antes da atualização",
+    );
+    await expect(row).toHaveClass(/marked-atrasado/);
+    await expect(
+      page
+        .locator(".occurrence-editor")
+        .getByLabel("Conversa excessiva", { exact: true }),
+    ).toBeChecked();
+    await page
+      .getByRole("button", {
+        name: "Finalizar chamada e gerar resumo",
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "Resumo da aula" }),
+    ).toBeVisible();
+    const lesson = schoolApi.store.lessons.find(
+      (item) => item.date === "2026-10-21" && item.class_id === "c1",
+    )!;
+    expect(lesson.topic).toBe("Conteúdo antes da atualização");
+    expect(
+      schoolApi.store.attendance.find(
+        (item) => item.lesson_id === lesson.id && item.student_id === "s1",
+      )?.arrival_time,
+    ).toBe("14:15");
+    expect(
+      schoolApi.store.occurrences.filter(
+        (item) => item.lesson_id === lesson.id,
+      ),
+    ).toHaveLength(2);
+  });
+}
