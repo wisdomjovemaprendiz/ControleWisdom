@@ -5,7 +5,7 @@
 - **Calendário escolar:** feriados, recessos e outros períodos sem aula.
 - **Relatórios → Ficha avaliativa do aluno:** escolha o aluno e os meses, confira as datas se desejar e baixe o PDF.
 
-A seleção do aluno traz sua unidade, turma ou modalidade individual, curso, professor, dias de aula e os contatos cadastrados. Dados ausentes aparecem como Não informado. A foto é incorporada quando disponível no armazenamento privado. Nenhum campo passa a ser obrigatório no cadastro por causa desta emissão.
+A seleção do aluno traz sua unidade, turma ou modalidade individual, curso, professor, dias de aula e os contatos cadastrados. Dados ausentes aparecem como Não informado. A ficha não exibe a foto do aluno. Nenhum campo passa a ser obrigatório no cadastro por causa desta emissão.
 
 ## Dias sem aula
 

@@ -204,18 +204,13 @@ export function SignatureSheetBuilder({
               setBusy(true);
               setError("");
               try {
-                const [{ createSignatureSheetPdf }, { photoForReport }] =
-                  await Promise.all([
-                    import("@/lib/signature-sheet-pdf"),
-                    import("@/lib/photos"),
-                  ]);
-                const photo = await photoForReport(student);
+                const { createSignatureSheetPdf } =
+                  await import("@/lib/signature-sheet-pdf");
                 const doc = await createSignatureSheetPdf({
                   store,
                   student,
                   from,
                   to,
-                  photo,
                 });
                 doc.save(
                   `ficha-avaliativa-${studentDisplayName(student)

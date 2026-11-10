@@ -2,7 +2,6 @@ import { jsPDF } from "jspdf";
 import type { Store, Student } from "./domain";
 import { displayDate, studentDisplayName, today } from "./domain";
 import { weekdays } from "./individual";
-import type { ReportPhoto } from "./photos";
 import {
   scheduleTimeLabel,
   calendarKinds,
@@ -37,13 +36,11 @@ export async function createSignatureSheetPdf({
   student,
   from,
   to,
-  photo,
 }: {
   store: Store;
   student: Student;
   from: string;
   to: string;
-  photo?: ReportPhoto | null;
 }) {
   const months = signatureMonths(store, student, from, to);
   const { logo, normal, bold } = await assets();
@@ -90,7 +87,6 @@ export async function createSignatureSheetPdf({
   const lessonLabel = `Dias de aula: ${days} · ${schedule}`;
   function header(continuation = false, draw = true) {
     let y = continuation ? 12 : 24;
-    const indent = !continuation && photo ? 18 : 0;
     function textBlock(
       text: string,
       size: number,
@@ -116,33 +112,16 @@ export async function createSignatureSheetPdf({
       doc.setTextColor(20, 55, 104);
       doc.setFontSize(11);
       doc.text("FICHA AVALIATIVA DO ALUNO", margin, 13);
-      if (photo)
-        doc.addImage(
-          photo.data,
-          photo.format || "PNG",
-          margin,
-          20,
-          14,
-          14,
-          `sheet-student-${student.id}`,
-        );
     }
     textBlock(
       studentDisplayName(student),
       continuation ? 10.5 : 13,
       true,
-      (continuation ? width : 154) - indent,
-      margin + indent,
+      continuation ? width : 154,
+      margin,
     );
-    textBlock(
-      lessonLabel,
-      continuation ? 9 : 11,
-      !continuation,
-      width - indent,
-      margin + indent,
-    );
+    textBlock(lessonLabel, continuation ? 9 : 11, !continuation, width, margin);
     if (continuation) return y + 1;
-    if (photo) y = Math.max(y, 37);
     y += 1;
     function pair(left: string, right: string) {
       doc.setFont("WisdomSheet", "normal");
