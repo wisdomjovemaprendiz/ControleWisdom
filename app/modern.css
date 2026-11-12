@@ -6369,3 +6369,33 @@ button.secondary {
     gap: 5px;
   }
 }
+
+.attendance-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.attendance-bulk-actions .bulk-presente {
+  background: #e8f5ed;
+  color: #17633d;
+  border-color: #a8d7ba;
+}
+.attendance-bulk-actions .bulk-falta {
+  background: #fceced;
+  color: #a22b36;
+  border-color: #efb8bd;
+}
+.signature-date-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.signature-date-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.signature-schedule-preview > p {
+  margin: 12px 0;
+}

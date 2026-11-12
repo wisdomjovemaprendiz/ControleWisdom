@@ -249,7 +249,15 @@ export function displayDate(value: string) {
     : "—";
 }
 export function shortStudentName(name: string) {
-  return name.trim().split(/\s+/).slice(0, 2).join(" ");
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const connectors = new Set(["de", "da", "do", "das", "dos", "e", "d’", "d'"]);
+  let end = Math.min(2, parts.length);
+  while (
+    end < parts.length &&
+    connectors.has(parts[end - 1].toLocaleLowerCase("pt-BR"))
+  )
+    end++;
+  return parts.slice(0, end).join(" ");
 }
 export function studentDisplayName(student: Pick<Student, "id" | "name">) {
   return (

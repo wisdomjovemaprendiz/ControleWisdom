@@ -36,13 +36,23 @@ export async function createSignatureSheetPdf({
   student,
   from,
   to,
+  excludedDates = [],
 }: {
   store: Store;
   student: Student;
   from: string;
   to: string;
+  excludedDates?: readonly string[];
 }) {
-  const months = signatureMonths(store, student, from, to);
+  const months = signatureMonths(
+    store,
+    student,
+    from,
+    to,
+    excludedDates,
+  ).filter((month) => month.days.length);
+  if (!months.length)
+    throw new Error("Selecione ao menos uma data para emitir a ficha.");
   const { logo, normal, bold } = await assets();
   const doc = new jsPDF({
     orientation: "portrait",

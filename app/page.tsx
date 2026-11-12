@@ -2410,6 +2410,7 @@ export default function App() {
                     Data da aula
                     <input
                       type="date"
+                      aria-label="Data da aula"
                       required
                       max={today()}
                       value={lessonDate}
@@ -2475,22 +2476,58 @@ export default function App() {
                           : "Marque a situação de cada aluno para finalizar"}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => {
-                        setAttendanceDetails({});
-                        setMarks(
-                          Object.fromEntries(
-                            active
-                              .filter(isAttendanceStudent)
-                              .map((s) => [s.id, "presente"]),
-                          ),
-                        );
-                      }}
-                    >
-                      <Check size={16} /> Todos presentes
-                    </button>
+                    <div className="attendance-bulk-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() => {
+                          setLessonDate("");
+                          setTopic("");
+                          setMarks({});
+                          setAttendanceDetails({});
+                          setOccurrenceDraft([]);
+                          setAttendanceEditor(null);
+                          setIndividualOccurrenceStudent(null);
+                          setMessage(null);
+                          setError("");
+                          document
+                            .querySelector<HTMLInputElement>(
+                              'input[aria-label="Data da aula"]',
+                            )
+                            ?.focus();
+                        }}
+                      >
+                        Nova chamada
+                      </button>
+                      {(["presente", "falta"] as const).map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          className={`secondary bulk-${status}`}
+                          disabled={!lessonDate || busy}
+                          onClick={() => {
+                            setAttendanceDetails({});
+                            setMarks(
+                              Object.fromEntries(
+                                active
+                                  .filter(isAttendanceStudent)
+                                  .map((student) => [student.id, status]),
+                              ),
+                            );
+                          }}
+                        >
+                          {status === "presente" ? (
+                            <Check size={16} />
+                          ) : (
+                            <X size={16} />
+                          )}
+                          {status === "presente"
+                            ? "Todos presentes"
+                            : "Todos ausentes"}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {active.filter(isAttendanceStudent).map((s) => (
                     <div

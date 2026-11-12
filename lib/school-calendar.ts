@@ -126,7 +126,9 @@ export function signatureMonths(
   student: Student,
   from: string,
   to: string,
+  excludedDates: readonly string[] = [],
 ): SignatureMonth[] {
+  const excluded = new Set(excludedDates);
   const months = monthRange(from, to),
     days = studentWeekdays(store, student);
   if (!days.length)
@@ -140,8 +142,10 @@ export function signatureMonths(
     const dates = Array.from(
       { length: last },
       (_, i) => `${month}-${String(i + 1).padStart(2, "0")}`,
-    ).filter((date) =>
-      days.includes(new Date(date + "T12:00:00Z").getUTCDay()),
+    ).filter(
+      (date) =>
+        !excluded.has(date) &&
+        days.includes(new Date(date + "T12:00:00Z").getUTCDay()),
     );
     return {
       month,

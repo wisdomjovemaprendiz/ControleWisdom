@@ -174,3 +174,29 @@ test("PDF da ficha contém logo, fonte institucional e várias páginas sem perd
     globalThis.fetch = original;
   }
 });
+
+test("excluir datas da ficha não altera agenda, feriados nem outras emissões", () => {
+  const { store, student } = setup();
+  const original = signatureMonths(store, student, "2027-09", "2027-09");
+  const excluded = ["2027-09-02", "2027-09-07"];
+  const filtered = signatureMonths(
+    store,
+    student,
+    "2027-09",
+    "2027-09",
+    excluded,
+  );
+  assert.deepEqual(
+    filtered[0].days.map((day) => day.date),
+    original[0].days
+      .filter((day) => !excluded.includes(day.date))
+      .map((day) => day.date),
+  );
+  assert.deepEqual(
+    signatureMonths(store, student, "2027-09", "2027-09"),
+    original,
+  );
+  assert.ok(
+    store.calendar_events.some((event) => event.start_date === "2027-09-07"),
+  );
+});

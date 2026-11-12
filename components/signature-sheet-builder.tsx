@@ -30,6 +30,7 @@ export function SignatureSheetBuilder({
     [to, setTo] = useState(today().slice(0, 7)),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [excludedDates, setExcludedDates] = useState<string[]>([]);
   const students = store.students
     .filter(
       (s) =>
@@ -61,9 +62,18 @@ export function SignatureSheetBuilder({
         .toLocaleLowerCase("pt-BR")
         .includes(query.toLocaleLowerCase("pt-BR")),
   );
-  const total = result.months.reduce((n, month) => n + month.days.length, 0),
+  const total = result.months.reduce(
+      (n, month) =>
+        n +
+        month.days.filter((day) => !excludedDates.includes(day.date)).length,
+      0,
+    ),
     closed = result.months.reduce(
-      (n, month) => n + month.days.filter((day) => day.closures.length).length,
+      (n, month) =>
+        n +
+        month.days.filter(
+          (day) => day.closures.length && !excludedDates.includes(day.date),
+        ).length,
       0,
     );
   return (
@@ -99,6 +109,7 @@ export function SignatureSheetBuilder({
               value={student?.id || ""}
               onChange={(e) => {
                 setStudentId(e.target.value);
+                setExcludedDates([]);
                 setError("");
               }}
             >
@@ -124,6 +135,7 @@ export function SignatureSheetBuilder({
               value={from}
               onChange={(e) => {
                 setFrom(e.target.value);
+                setExcludedDates([]);
                 if (e.target.value > to) setTo(e.target.value);
               }}
             />
@@ -136,7 +148,10 @@ export function SignatureSheetBuilder({
               max="2100-12"
               aria-label="Mês final da ficha"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setExcludedDates([]);
+              }}
             />
           </label>
         </div>
@@ -169,6 +184,19 @@ export function SignatureSheetBuilder({
         {!!result.months.length && (
           <details className="signature-schedule-preview">
             <summary>Conferir datas da ficha</summary>
+            <p>
+              Desmarque os dias que não devem aparecer nesta ficha. O calendário
+              escolar permanece igual.
+            </p>
+            {!!excludedDates.length && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setExcludedDates([])}
+              >
+                Incluir todas as datas
+              </button>
+            )}
             {result.months.map((month) => (
               <div key={month.month}>
                 <h3>{month.label}</h3>
@@ -178,7 +206,21 @@ export function SignatureSheetBuilder({
                       key={day.date}
                       className={day.closures.length ? "closed" : ""}
                     >
-                      <time>{displayDate(day.date)}</time>
+                      <label className="signature-date-toggle">
+                        <input
+                          type="checkbox"
+                          aria-label={`Incluir ${displayDate(day.date)} na ficha`}
+                          checked={!excludedDates.includes(day.date)}
+                          onChange={(event) =>
+                            setExcludedDates((previous) =>
+                              event.target.checked
+                                ? previous.filter((date) => date !== day.date)
+                                : [...previous, day.date],
+                            )
+                          }
+                        />
+                        <time>{displayDate(day.date)}</time>
+                      </label>
                       <span>
                         {day.closures.length
                           ? `Sem aula — ${[...new Set(day.closures.map((event) => event.title))].join(" · ")}`
@@ -211,6 +253,7 @@ export function SignatureSheetBuilder({
                   student,
                   from,
                   to,
+                  excludedDates,
                 });
                 doc.save(
                   `ficha-avaliativa-${studentDisplayName(student)

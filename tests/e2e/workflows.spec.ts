@@ -2755,7 +2755,9 @@ for (const viewport of [
       .filter({ hasText: "Gabriel Almeida" });
     await row.getByRole("button", { name: "Atrasado", exact: true }).click();
     const delay = page.getByRole("dialog", { name: "Registrar atraso" });
-    await delay.getByLabel("Horário de chegada de Gabriel Almeida").fill("14:15");
+    await delay
+      .getByLabel("Horário de chegada de Gabriel Almeida")
+      .fill("14:15");
     await delay.getByRole("button", { name: "OK", exact: true }).click();
     await page.locator(".occurrence-editor > summary").click();
     await page
@@ -2832,3 +2834,137 @@ for (const viewport of [
     ).toHaveLength(2);
   });
 }
+
+test("nova chamada limpa a tela sem apagar registros e marcações coletivas têm cores", async ({
+  page,
+}) => {
+  schoolApi.store.students.find((student) => student.id === "s1")!.name =
+    "Alice de Souza Santos";
+  await page.getByTitle("Atualizar dados", { exact: true }).click();
+  await expect(
+    page.getByTitle("Atualizar dados", { exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Chamada", exact: true }).click();
+  await page.getByLabel("Data da aula").fill("2026-10-22");
+  await page.getByLabel("Conteúdo trabalhado").fill("Atividade de revisão");
+  const absent = page.getByRole("button", {
+    name: "Todos ausentes",
+    exact: true,
+  });
+  const present = page.getByRole("button", {
+    name: "Todos presentes",
+    exact: true,
+  });
+  expect(
+    await absent.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe("rgb(252, 236, 237)");
+  expect(
+    await present.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe("rgb(232, 245, 237)");
+  await absent.click();
+  await expect(page.locator(".attendance-row:not(.marked-falta)")).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole("button", {
+      name: "Finalizar chamada e gerar resumo",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByLabel("Mensagem para WhatsApp")).toHaveValue(
+    /Alice de Souza — Falta/,
+  );
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  const saved = schoolApi.store.attendance.length;
+  await page.getByRole("button", { name: "Nova chamada", exact: true }).click();
+  await expect(page.getByLabel("Data da aula")).toHaveValue("");
+  await expect(page.getByLabel("Conteúdo trabalhado")).toHaveValue("");
+  await expect(page.locator(".attendance-row[class*=marked-]")).toHaveCount(0);
+  expect(schoolApi.store.attendance.length).toBe(saved);
+  await page.getByLabel("Data da aula").fill("2026-10-23");
+  await present.click();
+  await expect(
+    page.locator(".attendance-row:not(.marked-presente)"),
+  ).toHaveCount(0);
+  await page.getByLabel("Data da aula").fill("2026-10-22");
+  await expect(page.getByLabel("Conteúdo trabalhado")).toHaveValue(
+    "Atividade de revisão",
+  );
+  await expect(page.locator(".attendance-row:not(.marked-falta)")).toHaveCount(
+    0,
+  );
+});
+
+test("ficha permite excluir dias do PDF sem alterar o calendário", async ({
+  page,
+}) => {
+  schoolApi.store.classes.find((course) => course.id === "c1")!.lesson_days = [
+    2, 4,
+  ];
+  await page.getByTitle("Atualizar dados", { exact: true }).click();
+  await expect(
+    page.getByTitle("Atualizar dados", { exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  const builder = page.getByRole("region", {
+    name: "Emissão da ficha avaliativa",
+  });
+  await builder.getByLabel("Aluno da ficha avaliativa").selectOption("s1");
+  await builder.getByLabel("Mês inicial da ficha").fill("2027-09");
+  await builder.getByLabel("Mês final da ficha").fill("2027-09");
+  await builder.locator(".signature-schedule-preview > summary").click();
+  const dates = builder.locator(".signature-date-toggle input");
+  const count = await dates.count();
+  await builder
+    .getByLabel("Incluir 02/09/2027 na ficha", { exact: true })
+    .uncheck();
+  await builder
+    .getByLabel("Incluir 07/09/2027 na ficha", { exact: true })
+    .uncheck();
+  await expect(builder.locator(".signature-date-count")).toContainText(
+    `${count - 2} datas`,
+  );
+  const download = page.waitForEvent("download");
+  await builder
+    .getByRole("button", { name: "Baixar ficha avaliativa PDF", exact: true })
+    .click();
+  const file = await download;
+  const { execFileSync } = await import("node:child_process");
+  const text = execFileSync("pdftotext", [(await file.path())!, "-"], {
+    encoding: "utf8",
+  });
+  expect(text).not.toContain("02/09/2027");
+  expect(text).not.toContain("07/09/2027");
+  expect(text).toContain("09/09/2027");
+  expect(
+    schoolApi.store.calendar_events.some(
+      (event) => event.start_date === "2027-09-07",
+    ),
+  ).toBe(true);
+  await builder
+    .getByRole("button", { name: "Incluir todas as datas", exact: true })
+    .click();
+  await expect(
+    builder.locator(".signature-date-toggle input:not(:checked)"),
+  ).toHaveCount(0);
+  await expect(builder.locator(".signature-date-count")).toContainText(
+    `${count} datas`,
+  );
+  for (let i = 0; i < count; i++) await dates.nth(i).uncheck();
+  await expect(
+    builder.getByRole("button", {
+      name: "Baixar ficha avaliativa PDF",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await builder.getByLabel("Aluno da ficha avaliativa").selectOption("s2");
+  await expect(builder.locator(".signature-date-count")).toContainText(
+    `${count} datas`,
+  );
+});

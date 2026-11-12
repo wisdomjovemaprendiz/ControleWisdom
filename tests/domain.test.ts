@@ -79,3 +79,18 @@ test("WhatsApp higieniza telefone e codifica o texto revisado", () => {
     "https://wa.me/5511999999999?text=Ol%C3%A1%20%26%20pais",
   );
 });
+
+test("nome curto mantém preposições com o sobrenome seguinte", async () => {
+  const { shortStudentName } = await import("../lib/domain");
+  for (const [full, expected] of [
+    ["Alice de Souza Santos", "Alice de Souza"],
+    ["Ana da Silva", "Ana da Silva"],
+    ["Pedro DOS Santos Pereira", "Pedro DOS Santos"],
+    ["Carlos e de Almeida", "Carlos e de Almeida"],
+    ["Nicoly Lago Santos", "Nicoly Lago"],
+    ["  Alice   de   Souza  ", "Alice de Souza"],
+    ["Alice", "Alice"],
+    ["", ""],
+  ])
+    assert.equal(shortStudentName(full), expected);
+});
