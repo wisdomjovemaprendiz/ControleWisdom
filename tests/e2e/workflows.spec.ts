@@ -2639,6 +2639,7 @@ test("calendário seleciona intervalo por clique e ficha anual inclui dias sem a
   await builder.getByLabel("Mês final da ficha").fill("2027-12");
   await builder.locator(".signature-schedule-preview > summary").click();
   await expect(builder).toContainText("Recesso da turma em janeiro");
+  await builder.getByLabel("Mês das datas da ficha").selectOption("2027-09");
   await expect(builder).toContainText("Independência do Brasil");
   const pending = page.waitForEvent("download");
   await builder
@@ -2919,14 +2920,14 @@ test("ficha permite excluir dias do PDF sem alterar o calendário", async ({
   await builder.getByLabel("Mês inicial da ficha").fill("2027-09");
   await builder.getByLabel("Mês final da ficha").fill("2027-09");
   await builder.locator(".signature-schedule-preview > summary").click();
-  const dates = builder.locator(".signature-date-toggle input");
+  const dates = builder.locator(".signature-calendar-day:not(:disabled)");
   const count = await dates.count();
   await builder
-    .getByLabel("Incluir 02/09/2027 na ficha", { exact: true })
-    .uncheck();
+    .getByRole("button", { name: "Incluir 02/09/2027 na ficha", exact: true })
+    .click();
   await builder
-    .getByLabel("Incluir 07/09/2027 na ficha", { exact: true })
-    .uncheck();
+    .getByRole("button", { name: "Incluir 07/09/2027 na ficha", exact: true })
+    .click();
   await expect(builder.locator(".signature-date-count")).toContainText(
     `${count - 2} datas`,
   );
@@ -2951,12 +2952,14 @@ test("ficha permite excluir dias do PDF sem alterar o calendário", async ({
     .getByRole("button", { name: "Incluir todas as datas", exact: true })
     .click();
   await expect(
-    builder.locator(".signature-date-toggle input:not(:checked)"),
+    builder.locator(
+      '.signature-calendar-day:not(:disabled)[aria-pressed="false"]',
+    ),
   ).toHaveCount(0);
   await expect(builder.locator(".signature-date-count")).toContainText(
     `${count} datas`,
   );
-  for (let i = 0; i < count; i++) await dates.nth(i).uncheck();
+  for (let i = 0; i < count; i++) await dates.nth(i).click();
   await expect(
     builder.getByRole("button", {
       name: "Baixar ficha avaliativa PDF",
@@ -2967,4 +2970,73 @@ test("ficha permite excluir dias do PDF sem alterar o calendário", async ({
   await expect(builder.locator(".signature-date-count")).toContainText(
     `${count} datas`,
   );
+});
+
+test("calendário da ficha navega por meses e preserva seleção no celular", async ({
+  page,
+}) => {
+  schoolApi.store.classes.find((course) => course.id === "c1")!.lesson_days = [
+    2, 4,
+  ];
+  await page.getByTitle("Atualizar dados", { exact: true }).click();
+  await expect(
+    page.getByTitle("Atualizar dados", { exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const builder = page.getByRole("region", {
+    name: "Emissão da ficha avaliativa",
+  });
+  await builder.getByLabel("Aluno da ficha avaliativa").selectOption("s1");
+  await builder.getByLabel("Mês inicial da ficha").fill("2027-09");
+  await builder.getByLabel("Mês final da ficha").fill("2027-10");
+  await builder.locator(".signature-schedule-preview > summary").click();
+  await expect(
+    builder.getByRole("button", { name: "Mês anterior da ficha", exact: true }),
+  ).toBeDisabled();
+  await expect(builder.locator(".signature-calendar-day")).toHaveCount(30);
+  await expect(
+    builder.getByRole("button", {
+      name: "04/09/2027 — Sem aula prevista",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  const september = builder.getByRole("button", {
+    name: "Incluir 07/09/2027 na ficha",
+    exact: true,
+  });
+  await september.click();
+  await builder
+    .getByRole("button", { name: "Próximo mês da ficha", exact: true })
+    .click();
+  await expect(builder.locator(".signature-calendar-day")).toHaveCount(31);
+  await expect(
+    builder.getByRole("button", { name: "Próximo mês da ficha", exact: true }),
+  ).toBeDisabled();
+  const october = builder.getByRole("button", {
+    name: "Incluir 07/10/2027 na ficha",
+    exact: true,
+  });
+  await october.click();
+  await builder
+    .getByRole("button", { name: "Mês anterior da ficha", exact: true })
+    .click();
+  await expect(september).toHaveAttribute("aria-pressed", "false");
+  await builder.locator(".signature-date-calendar").scrollIntoViewIfNeeded();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "/tmp/ficha-calendar-mobile.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.screenshot({
+    path: "/tmp/ficha-calendar-desktop.png",
+    fullPage: true,
+  });
+  await builder.getByLabel("Mês das datas da ficha").selectOption("2027-10");
+  await expect(october).toHaveAttribute("aria-pressed", "false");
 });

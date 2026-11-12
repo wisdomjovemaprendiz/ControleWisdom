@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { CalendarDays, Download } from "lucide-react";
 import {
   canAccess,
-  displayDate,
   studentDisplayName,
   today,
   type Store,
@@ -11,6 +10,7 @@ import {
 } from "@/lib/domain";
 import { canTeachIndividual, weekdays } from "@/lib/individual";
 import { signatureMonths, studentWeekdays } from "@/lib/school-calendar";
+import { SignatureDateCalendar } from "./signature-date-calendar";
 import { StudentAvatar } from "./student-avatar";
 import { naturalName } from "@/lib/occurrences";
 export function SignatureSheetBuilder({
@@ -184,10 +184,7 @@ export function SignatureSheetBuilder({
         {!!result.months.length && (
           <details className="signature-schedule-preview">
             <summary>Conferir datas da ficha</summary>
-            <p>
-              Desmarque os dias que não devem aparecer nesta ficha. O calendário
-              escolar permanece igual.
-            </p>
+            <p>Clique nos dias marcados para retirar ou reincluir na ficha.</p>
             {!!excludedDates.length && (
               <button
                 type="button"
@@ -197,40 +194,12 @@ export function SignatureSheetBuilder({
                 Incluir todas as datas
               </button>
             )}
-            {result.months.map((month) => (
-              <div key={month.month}>
-                <h3>{month.label}</h3>
-                <ul>
-                  {month.days.map((day) => (
-                    <li
-                      key={day.date}
-                      className={day.closures.length ? "closed" : ""}
-                    >
-                      <label className="signature-date-toggle">
-                        <input
-                          type="checkbox"
-                          aria-label={`Incluir ${displayDate(day.date)} na ficha`}
-                          checked={!excludedDates.includes(day.date)}
-                          onChange={(event) =>
-                            setExcludedDates((previous) =>
-                              event.target.checked
-                                ? previous.filter((date) => date !== day.date)
-                                : [...previous, day.date],
-                            )
-                          }
-                        />
-                        <time>{displayDate(day.date)}</time>
-                      </label>
-                      <span>
-                        {day.closures.length
-                          ? `Sem aula — ${[...new Set(day.closures.map((event) => event.title))].join(" · ")}`
-                          : "Conteúdo, assinatura e avaliação em branco"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <SignatureDateCalendar
+              key={`${studentId}:${from}:${to}`}
+              months={result.months}
+              excludedDates={excludedDates}
+              onChange={setExcludedDates}
+            />
           </details>
         )}
         <div className="signature-download">

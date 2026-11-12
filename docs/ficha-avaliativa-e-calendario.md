@@ -3,7 +3,7 @@
 ## Onde usar
 
 - **Calendário escolar:** feriados, recessos e outros períodos sem aula.
-- **Relatórios → Ficha avaliativa do aluno:** escolha o aluno e os meses, abra **Conferir datas da ficha**, desmarque os dias que deseja retirar e baixe o PDF. **Incluir todas as datas** restaura a seleção. A exclusão vale apenas para a emissão atual; não altera o calendário nem os registros de presença. Ao trocar de aluno ou de período, todas as datas voltam a ser incluídas.
+- **Relatórios → Ficha avaliativa do aluno:** escolha o aluno e os meses, abra **Conferir datas da ficha**, use o calendário mensal para desmarcar os dias que deseja retirar. As setas e o seletor permitem navegar entre os meses escolhidos; somente as datas de aula do aluno podem ser marcadas. Os dias incluídos aparecem em verde, os retirados com borda tracejada e os feriados/recessos com destaque. Depois, baixe o PDF. **Incluir todas as datas** restaura a seleção. A exclusão vale apenas para a emissão atual; não altera o calendário nem os registros de presença. Ao trocar de aluno ou de período, todas as datas voltam a ser incluídas.
 
 A seleção do aluno traz sua unidade, turma ou modalidade individual, curso, professor, dias de aula e os contatos cadastrados. Dados ausentes aparecem como Não informado. A ficha não exibe a foto do aluno. Nenhum campo passa a ser obrigatório no cadastro por causa desta emissão.
 
