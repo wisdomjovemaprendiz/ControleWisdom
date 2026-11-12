@@ -95,7 +95,7 @@ test("pré-matrícula gera alerta para secretaria e comercial não acessa pendê
   );
   assert.equal(canEditStudent(seller, { ...student, unit_id: "u2" }), false);
 });
-test("ausência na última aula também alerta comercial e secretaria sem exigir três faltas", () => {
+test("uma única falta não gera alerta para comercial nem secretaria", () => {
   const s = schoolFixture(),
     st = s.students[0];
   s.attendance = [];
@@ -107,9 +107,9 @@ test("ausência na última aula também alerta comercial e secretaria sem exigir
     student_id: st.id,
     status: "falta",
   });
-  assert.equal(needsAbsenceOutreach(s, st), true);
+  assert.equal(needsAbsenceOutreach(s, st), false);
   assert.ok(
-    followUps(s, seller).some(
+    !followUps(s, seller).some(
       (t) => t.kind === "absence" && t.student.id === st.id,
     ),
   );

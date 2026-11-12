@@ -1,8 +1,8 @@
-import { enrollmentStage, needsAbsenceOutreach, lastAbsence } from "./sales";
+import { enrollmentStage } from "./sales";
+import { absenceAlert } from "./absence-alerts";
 import { pendingPedagogy } from "./pedagogy";
 import { isManager } from "@/lib/accounts";
 import {
-  absenceCount,
   canAccess,
   type Profile,
   type Store,
@@ -28,19 +28,18 @@ export function followUps(
     canAccess(profile, unitId) &&
     (!isManager(profile.role) || unit === "all" || unit === unitId);
   const students = store.students.filter(
-    (s) => visible(s.unit_id) && s.status === "ativo",
+    (s) => visible(s.unit_id) && s.status === "ativo" && !s.archived_at,
   );
   const items: FollowUp[] = [];
   for (const s of students) {
-    const count = absenceCount(store, s.id);
-    if (needsAbsenceOutreach(store, s))
+    const alert = absenceAlert(store, s);
+    if (alert.active)
       items.push({
         id: `absence-${s.id}`,
         student: s,
         kind: "absence",
         priority: 1,
-        title:
-          count >= 3 ? `${count} faltas acumuladas` : "Ausente na última aula",
+        title: alert.label,
         detail: store.contacts.some((c) => c.student_id === s.id)
           ? "Consulte os contatos anteriores antes de retomar."
           : "Nenhum contato registrado com o responsável.",

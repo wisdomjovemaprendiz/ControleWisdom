@@ -1,4 +1,5 @@
 "use client";
+import { absenceAlert } from "@/lib/absence-alerts";
 import { classFrame } from "@/lib/class-appearance";
 import { OccupancyBar } from "./occupancy-bar";
 import { studentPlacement } from "@/lib/individual";
@@ -13,7 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { Store, Profile, Student, CourseClass } from "@/lib/domain";
-import { studentDisplayName, absenceCount, displayDate } from "@/lib/domain";
+import { studentDisplayName, displayDate } from "@/lib/domain";
 import {
   classSalesRows,
   enrollmentStage,
@@ -232,7 +233,7 @@ export function SalesDashboard({
                 <span>{studentDisplayName(s)}</span>
               </button>
               <p>
-                {absenceCount(store, s.id)} falta(s) acumulada(s)
+                {absenceAlert(store, s).label}
                 {lastAbsence(store, s)
                   ? ` · Última ausência: ${displayDate(lastAbsence(store, s)!.date)}`
                   : ""}

@@ -1,5 +1,5 @@
+import { absenceAlert } from "./absence-alerts";
 import {
-  absenceCount,
   canAccess,
   type Store,
   type Profile,
@@ -79,9 +79,7 @@ export function lastAbsence(store: Store, student: Student) {
   return rows[0]?.mark.status === "falta" ? rows[0].lesson : null;
 }
 export function needsAbsenceOutreach(store: Store, student: Student) {
-  return (
-    absenceCount(store, student.id) >= 3 || Boolean(lastAbsence(store, student))
-  );
+  return absenceAlert(store, student).active;
 }
 export function groupInvitation(
   student: Student,

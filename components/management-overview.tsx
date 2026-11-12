@@ -98,11 +98,11 @@ export function ManagementOverview({
   const absenceItems: PriorityItem[] = data.absentStudents.map((row) => ({
     id: `absence-${row.student.id}`,
     title: studentDisplayName(row.student),
-    detail: `${row.count} falta${row.count === 1 ? "" : "s"} no período · última em ${displayDate(row.lastDate)}`,
+    detail: row.alert.label,
     student: row.student,
     action: () => onAction("contact", row.student),
     actionLabel: "Registrar contato",
-    urgent: row.lastAbsent || row.count >= 3,
+    urgent: true,
     kind: "absence",
   }));
   const interventionItems: PriorityItem[] = data.interventions.map(

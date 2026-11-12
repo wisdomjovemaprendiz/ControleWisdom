@@ -1,3 +1,4 @@
+import { absenceAlert } from "./absence-alerts";
 import {
   canAccess,
   studentDisplayName,
@@ -132,12 +133,13 @@ export function managementDashboard(
       const missing = attendance.filter((a) => a.status === "falta");
       return {
         student,
+        alert: absenceAlert(store, student, reference),
         count: missing.length,
         lastDate: missing[0] ? lessonMap.get(missing[0].lesson_id)!.date : "",
         lastAbsent: attendance[0]?.status === "falta",
       };
     })
-    .filter((row) => row.count > 0)
+    .filter((row) => row.alert.active)
     .sort(
       (a, b) =>
         Number(b.lastAbsent) - Number(a.lastAbsent) ||
@@ -247,9 +249,7 @@ export function managementDashboard(
     .filter((r) => r.count >= 2)
     .sort((a, b) => b.count - a.count);
   const attentionIds = new Set([
-    ...absentStudents
-      .filter((r) => r.lastAbsent || r.count >= 3)
-      .map((r) => r.student.id),
+    ...absentStudents.map((r) => r.student.id),
     ...due.flatMap(({ record }) =>
       record.student_id ? [record.student_id] : [],
     ),
