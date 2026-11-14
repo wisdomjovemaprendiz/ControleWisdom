@@ -3133,3 +3133,95 @@ test("ficha interna e familiar têm conteúdos próprios e nome do aluno no arqu
     .click();
   await expect(dossier).toBeVisible();
 });
+
+test("modal permite escolher blocos e o PDF inclui somente os marcados", async ({
+  page,
+}) => {
+  await page.locator(".operational-class-directory > summary").click();
+  await page
+    .locator(".journal-table")
+    .getByRole("button", { name: "Gabriel Almeida", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Gabriel Almeida", exact: true })
+    .getByRole("button", { name: "Ficha interna", exact: true })
+    .click();
+  const modal = page.getByRole("dialog", {
+    name: "Emitir ficha do aluno",
+    exact: true,
+  });
+  await modal
+    .getByRole("button", { name: "Desmarcar todos", exact: true })
+    .click();
+  await expect(
+    modal.getByRole("button", {
+      name: "Baixar ficha interna PDF",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await modal
+    .getByRole("checkbox", { name: "Identificação e contatos", exact: true })
+    .check();
+  await modal
+    .getByRole("checkbox", { name: "Percurso e carga horária", exact: true })
+    .check();
+  await expect(modal.locator(".student-report-metrics")).toHaveCount(0);
+  await expect(modal.locator(".student-report-sections details")).toHaveCount(
+    2,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  const pending = page.waitForEvent("download");
+  await modal
+    .getByRole("button", { name: "Baixar ficha interna PDF", exact: true })
+    .click();
+  const download = await pending;
+  const { execFileSync } = await import("node:child_process");
+  const text = execFileSync("pdftotext", [(await download.path())!, "-"], {
+    encoding: "utf8",
+  });
+  expect(text).toContain("Gabriel Almeida");
+  expect(text).toContain("Identificação e contatos");
+  expect(text).toContain("Percurso e carga horária");
+  expect(text).not.toContain("Histórico de aulas e presença");
+  expect(text).not.toContain("Contatos e encaminhamentos da equipe");
+  expect(text).not.toContain("Faltas registradas");
+  await modal
+    .getByRole("button", { name: "Para a família", exact: true })
+    .click();
+  await expect(
+    modal.getByRole("checkbox", {
+      name: "Contatos e encaminhamentos da equipe",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await modal
+    .getByRole("button", { name: "Desmarcar todos", exact: true })
+    .click();
+  await modal
+    .getByRole("checkbox", { name: "Orientações para a família", exact: true })
+    .check();
+  await modal.getByRole("button", { name: "Uso interno", exact: true }).click();
+  await expect(
+    modal.getByRole("checkbox", {
+      name: "Identificação e contatos",
+      exact: true,
+    }),
+  ).toBeChecked();
+  await expect(
+    modal.getByRole("checkbox", {
+      name: "Indicadores de frequência e progresso",
+      exact: true,
+    }),
+  ).not.toBeChecked();
+  await modal
+    .getByRole("button", { name: "Marcar todos", exact: true })
+    .click();
+  await expect(
+    modal.locator(".student-report-block-grid input:not(:checked)"),
+  ).toHaveCount(0);
+});

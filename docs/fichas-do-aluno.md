@@ -1,6 +1,6 @@
 # Fichas do aluno
 
-Na ficha do aluno, **Ficha interna** e **Ficha para família** abrem uma prévia com as seções do documento. É possível alternar a versão e conferir os registros antes de baixar. O nome do arquivo inclui o nome do aluno, a versão e a data de emissão.
+Na ficha do aluno, **Ficha interna** e **Ficha para família** abrem uma prévia com as seções do documento. No modal, **Blocos do PDF** permite marcar os grupos de informações que serão incluídos, com ações para marcar ou desmarcar todos. Os registros pedagógicos são selecionados como um grupo. A prévia e o PDF mostram somente os blocos marcados, inclusive os indicadores do topo. Nome, unidade e identificação da emissão permanecem no cabeçalho. Cada versão mantém sua própria seleção enquanto o modal está aberto. É necessário selecionar pelo menos um bloco. É possível alternar a versão e conferir os registros antes de baixar. O nome do arquivo inclui o nome do aluno, a versão e a data de emissão.
 
 A ficha interna reúne identificação, contatos, matrícula, organização das aulas, carga horária e estimativa de conclusão, frequência mensal, histórico de aulas, registros pedagógicos, intervenções, ocorrências individuais e coletivas contextualizadas, contatos administrativos, pendências e checklist de desligamento quando existente.
 

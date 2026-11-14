@@ -6543,3 +6543,64 @@ button.secondary {
     justify-content: center;
   }
 }
+
+.student-report-blocks {
+  border: 1px solid #dfe7f2;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 16px 0;
+  min-width: 0;
+}
+.student-report-blocks legend {
+  font-weight: 600;
+  color: #234773;
+  padding: 0 5px;
+}
+.student-report-block-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #667d98;
+}
+.student-report-block-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.student-report-block-grid label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e2e9f3;
+  border-radius: 8px;
+  color: #365575;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.student-report-block-grid label:has(input:checked) {
+  background: #edf4fc;
+  border-color: #adc5e5;
+}
+.student-report-block-grid input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 0;
+  accent-color: #174d93;
+}
+.student-report-blocks small {
+  display: block;
+  margin-top: 12px;
+  color: #6b7f98;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .student-report-block-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

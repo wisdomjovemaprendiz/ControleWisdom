@@ -47,7 +47,9 @@ export async function createStudentReportPdf(
   ) as string[];
   const nameBottom = 38 + nameLines.length * 7;
   const cardsY = Math.max(nameBottom + 4, photo ? 63 : 0);
-  let y = cardsY + 29;
+  let y = report.metrics.length
+    ? cardsY + 29
+    : Math.max(nameBottom + 8, photo ? 59 : 0);
   report.sections.forEach((section) => {
     // Keep the section heading with its first row at page boundaries.
     doc.setFont("StudentReport", "bold");

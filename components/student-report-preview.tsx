@@ -7,6 +7,11 @@ import {
   type StudentReportAudience,
 } from "@/lib/student-report";
 import type { Store, Student } from "@/lib/domain";
+import {
+  availableStudentReportBlocks,
+  selectStudentReportBlocks,
+  type StudentReportBlock,
+} from "@/lib/student-report-selection";
 import { photoForReport } from "@/lib/photos";
 
 export function StudentReportPreview({
@@ -29,6 +34,17 @@ export function StudentReportPreview({
     () => studentReport(store, student, audience),
     [store, student, audience],
   );
+  const [excluded, setExcluded] = useState<
+    Record<StudentReportAudience, StudentReportBlock[]>
+  >({ internal: [], family: [] });
+  const blocks = availableStudentReportBlocks(report);
+  const selected = blocks
+    .filter(([id]) => !excluded[audience].includes(id))
+    .map(([id]) => id);
+  const selectedReport = selectStudentReportBlocks(report, selected);
+  function setExcludedBlocks(ids: StudentReportBlock[]) {
+    setExcluded((previous) => ({ ...previous, [audience]: ids }));
+  }
   return (
     <CompactDialog
       title="Emitir ficha do aluno"
@@ -43,6 +59,7 @@ export function StudentReportPreview({
         <button
           type="button"
           className={audience === "internal" ? "primary" : "secondary"}
+          disabled={busy}
           aria-pressed={audience === "internal"}
           onClick={() => setAudience("internal")}
         >
@@ -51,6 +68,7 @@ export function StudentReportPreview({
         <button
           type="button"
           className={audience === "family" ? "primary" : "secondary"}
+          disabled={busy}
           aria-pressed={audience === "family"}
           onClick={() => setAudience("family")}
         >
@@ -63,16 +81,67 @@ export function StudentReportPreview({
           ? "Histórico acadêmico, acompanhamento e pendências da equipe."
           : "Confira as observações pedagógicas antes de compartilhar com a família."}
       </p>
-      <div className="student-report-metrics">
-        {report.metrics.map((metric) => (
-          <div key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-          </div>
-        ))}
-      </div>
+      <fieldset className="student-report-blocks" disabled={busy}>
+        <legend>Blocos do PDF</legend>
+        <div className="student-report-block-actions">
+          <button
+            type="button"
+            className="text-link"
+            onClick={() => setExcludedBlocks([])}
+          >
+            Marcar todos
+          </button>
+          <button
+            type="button"
+            className="text-link"
+            onClick={() => setExcludedBlocks(blocks.map(([id]) => id))}
+          >
+            Desmarcar todos
+          </button>
+          <span aria-live="polite">
+            {selected.length} de {blocks.length} blocos selecionados
+          </span>
+        </div>
+        <div className="student-report-block-grid">
+          {blocks.map(([id, label]) => (
+            <label key={id}>
+              <input
+                type="checkbox"
+                checked={selected.includes(id)}
+                onChange={(event) =>
+                  setExcludedBlocks(
+                    event.target.checked
+                      ? excluded[audience].filter((block) => block !== id)
+                      : [...excluded[audience], id],
+                  )
+                }
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        <small>
+          Nome do aluno, unidade e identificação da emissão permanecem no
+          cabeçalho.
+        </small>
+      </fieldset>
+      {!selected.length && (
+        <p className="student-report-caption" role="status">
+          Selecione pelo menos um bloco para gerar o PDF.
+        </p>
+      )}
+      {!!selectedReport.metrics.length && (
+        <div className="student-report-metrics">
+          {selectedReport.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="student-report-sections">
-        {report.sections.map((section, index) => (
+        {selectedReport.sections.map((section, index) => (
           <details key={index} open={index < 2}>
             <summary>{section.title}</summary>
             <div className="student-report-table">
@@ -110,7 +179,7 @@ export function StudentReportPreview({
         <button
           type="button"
           className="primary"
-          disabled={busy}
+          disabled={busy || !selected.length}
           onClick={async () => {
             setBusy(true);
             setError("");
@@ -118,7 +187,11 @@ export function StudentReportPreview({
               const { createStudentReportPdf } =
                 await import("@/lib/student-report-pdf");
               const photo = await photoForReport(student).catch(() => null);
-              const doc = await createStudentReportPdf(report, author, photo);
+              const doc = await createStudentReportPdf(
+                selectedReport,
+                author,
+                photo,
+              );
               doc.save(report.filename);
             } catch (error) {
               setError((error as Error).message);
