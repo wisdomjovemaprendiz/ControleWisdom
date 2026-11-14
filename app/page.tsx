@@ -1379,8 +1379,17 @@ export default function App() {
   }
   if (!sessionReady)
     return (
-      <div className="loading">
-        <Loader2 className="spin" /> Preparando seu espaço…
+      <div className="loading" aria-busy="true">
+        <img
+          className="loading-logo"
+          src="/wisdom-logo.svg"
+          alt="Wisdom Cursos"
+          width={160}
+          height={102}
+        />
+        <span className="loading-message" role="status">
+          <Loader2 className="spin" aria-hidden="true" /> Preparando seu espaço…
+        </span>
       </div>
     );
   if (profile?.must_change_password)

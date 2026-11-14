@@ -1704,11 +1704,24 @@ tr:last-child td {
 }
 .loading {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 15px;
   color: #6782a2;
+}
+.loading-logo {
+  display: block;
+  width: 160px;
+  height: auto;
+  margin-bottom: 12px;
+}
+.loading-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .spin {
   animation: spin 1s linear infinite;
