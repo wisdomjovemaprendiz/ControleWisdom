@@ -6447,3 +6447,99 @@ button.secondary {
     padding-right: 10px;
   }
 }
+
+.student-report-dialog {
+  width: min(900px, calc(100vw - 24px));
+}
+.student-report-audiences {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.student-report-dialog h3 {
+  font-size: 20px;
+  margin: 0 0 8px;
+  color: #234773;
+}
+.student-report-caption {
+  color: #687d98;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.student-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.student-report-metrics > div {
+  background: #f0f5fc;
+  border-radius: 10px;
+  padding: 12px;
+}
+.student-report-metrics span {
+  display: block;
+  font-size: 12px;
+  color: #667e9b;
+}
+.student-report-metrics strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 22px;
+  color: #234773;
+}
+.student-report-sections details {
+  border: 1px solid #dfe7f2;
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.student-report-sections summary {
+  cursor: pointer;
+  padding: 14px;
+  font-weight: 600;
+  color: #234773;
+  background: #f5f8fc;
+}
+.student-report-table {
+  overflow-x: auto;
+}
+.student-report-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.student-report-table th,
+.student-report-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e4eaf2;
+  white-space: pre-wrap;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.student-report-table th {
+  color: #657d9d;
+  font-weight: 600;
+}
+.student-report-dialog footer {
+  position: sticky;
+  bottom: -1px;
+  background: white;
+  padding: 16px 0 4px;
+  border-top: 1px solid #dfe7f2;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .student-report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .student-report-dialog footer button {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -3040,3 +3040,96 @@ test("calendário da ficha navega por meses e preserva seleção no celular", as
   await builder.getByLabel("Mês das datas da ficha").selectOption("2027-10");
   await expect(october).toHaveAttribute("aria-pressed", "false");
 });
+
+test("ficha interna e familiar têm conteúdos próprios e nome do aluno no arquivo", async ({
+  page,
+}) => {
+  schoolApi.store.contacts.push({
+    id: "private-report",
+    student_id: "s1",
+    unit_id: "u1",
+    author_id: "p3",
+    date: "2026-11-01",
+    reason: "Tratativa interna",
+    outcome: "ANOTACAO EXCLUSIVA DA SECRETARIA",
+    next_contact: "2026-11-30",
+  });
+  await page.getByTitle("Atualizar dados", { exact: true }).click();
+  await expect(
+    page.getByTitle("Atualizar dados", { exact: true }),
+  ).toBeEnabled();
+  await page.locator(".operational-class-directory > summary").click();
+  await page
+    .locator(".journal-table")
+    .getByRole("button", { name: "Gabriel Almeida", exact: true })
+    .click();
+  const dossier = page.getByRole("dialog", {
+    name: "Gabriel Almeida",
+    exact: true,
+  });
+  await dossier
+    .getByRole("button", { name: "Ficha interna", exact: true })
+    .click();
+  const preview = page.getByRole("dialog", {
+    name: "Emitir ficha do aluno",
+    exact: true,
+  });
+  await expect(preview).toBeVisible();
+  await expect(
+    preview.getByRole("button", { name: "Uso interno", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await preview
+    .locator("summary")
+    .filter({ hasText: "Contatos e encaminhamentos da equipe" })
+    .click();
+  await expect(preview).toContainText("ANOTACAO EXCLUSIVA DA SECRETARIA");
+  let pending = page.waitForEvent("download");
+  await preview
+    .getByRole("button", { name: "Baixar ficha interna PDF", exact: true })
+    .click();
+  let download = await pending;
+  expect(download.suggestedFilename()).toMatch(
+    /^Gabriel-Almeida-ficha-interna-.*\.pdf$/,
+  );
+  await download.saveAs("/tmp/wisdom-ficha-interna.pdf");
+  const { execFileSync } = await import("node:child_process");
+  const internal = execFileSync("pdftotext", [(await download.path())!, "-"], {
+    encoding: "utf8",
+  });
+  expect(internal).toContain("ANOTACAO EXCLUSIVA DA SECRETARIA");
+  expect(internal).toContain("Histórico de aulas e presença");
+  expect(internal).toContain("Resolve fórmulas com autonomia");
+  await preview
+    .getByRole("button", { name: "Para a família", exact: true })
+    .click();
+  await expect(preview).not.toContainText("ANOTACAO EXCLUSIVA DA SECRETARIA");
+  await expect(preview).not.toContainText(
+    "Contatos e encaminhamentos da equipe",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  pending = page.waitForEvent("download");
+  await preview
+    .getByRole("button", { name: "Baixar ficha para família PDF", exact: true })
+    .click();
+  download = await pending;
+  expect(download.suggestedFilename()).toMatch(
+    /^Gabriel-Almeida-acompanhamento-familia-.*\.pdf$/,
+  );
+  await download.saveAs("/tmp/wisdom-ficha-familia.pdf");
+  const family = execFileSync("pdftotext", [(await download.path())!, "-"], {
+    encoding: "utf8",
+  });
+  expect(family).not.toContain("ANOTACAO EXCLUSIVA DA SECRETARIA");
+  expect(family).toContain("Como a família pode acompanhar");
+  expect(family).toContain("Resolve fórmulas com autonomia");
+  expect(family).toContain("Patrícia Almeida");
+  await preview
+    .getByRole("button", { name: "Voltar à ficha", exact: true })
+    .click();
+  await expect(dossier).toBeVisible();
+});

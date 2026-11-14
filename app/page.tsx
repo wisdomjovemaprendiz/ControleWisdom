@@ -4,12 +4,7 @@ import {
   ClassPlanningFields,
 } from "@/components/course-planning-fields";
 import { CompactDialog } from "@/components/compact-dialog";
-import {
-  naturalName,
-  studentChatUrl,
-  studentOccurrences,
-  occurrenceText,
-} from "@/lib/occurrences";
+import { naturalName, studentChatUrl } from "@/lib/occurrences";
 import { StudentListProgress } from "@/components/student-list-progress";
 import {
   LessonOccurrences,
@@ -96,6 +91,7 @@ import { StudentImporter } from "@/components/student-importer";
 import { birthdaysThisWeek } from "@/lib/birthdays";
 import { OperationsBoard } from "@/components/operations-board";
 import { FollowUpCenter } from "@/components/follow-up-center";
+import { StudentReportPreview } from "@/components/student-report-preview";
 import { StudentDossier } from "@/components/student-dossier";
 import { PedagogyFields } from "@/components/pedagogy-fields";
 import { PedagogyAgenda } from "@/components/pedagogy-agenda";
@@ -248,6 +244,10 @@ export default function App() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
   const [dossierId, setDossierId] = useState<string | null>(null);
+  const [studentReportSelection, setStudentReportSelection] = useState<{
+    id: string;
+    audience: "internal" | "family";
+  } | null>(null);
   const [studentStatus, setStudentStatus] = useState("ativo"),
     [studentClass, setStudentClass] = useState("all");
   const [individualStudentId, setIndividualStudentId] = useState("");
@@ -370,6 +370,7 @@ export default function App() {
         return;
       clearPhotoCache();
       if (event === "SIGNED_OUT") {
+        setStudentReportSelection(null);
         authenticatedUserId.current = null;
         attendanceSelection.current = "";
         setMarks({});
@@ -3173,38 +3174,31 @@ export default function App() {
             });
             setDossierId(null);
           }}
-          onPdf={() => {
-            const student = students.find((s) => s.id === dossierId)!;
-            void pdf("Ficha do aluno", [
-              evolutionMessage(store, student, allRecords!),
-              `Matrícula: ${displayDate(student.enrollment_date)}`,
-              ...(() => {
-                const p = courseProgress(reportSource, student);
-                return [
-                  `Progresso do curso: ${p.percent === null ? "Carga horária não definida" : `${p.percent}% — ${formatHours(p.completedHours)} h de ${formatHours(p.totalHours!)} h`}`,
-                  `Início do curso: ${p.startDate ? displayDate(p.startDate) : "A definir"}`,
-                  `Término estimado: ${p.estimatedEnd ? displayDate(p.estimatedEnd) : p.completed ? "Carga horária cumprida" : "Dados insuficientes"}`,
-                  `Último boleto: ${p.lastInstallment ? displayDate(p.lastInstallment) : "Não informado"}`,
-                ];
-              })(),
-              `Situação: ${labels[student.status]}`,
-              "Histórico de ocorrências",
-              ...studentOccurrences(reportSource, student.id).map(
-                (o) =>
-                  `${displayDate(reportSource.lessons.find((l) => l.id === o.lesson_id)!.date)} — ${o.student_id ? "Individual" : "Contexto da turma"}: ${occurrenceText(o)} · ${o.author_name}`,
-              ),
-              "Histórico pedagógico completo",
-              ...reportSource.pedagogy
-                .filter((p) => p.student_id === student.id)
-                .sort(comparePedagogy)
-                .flatMap((p) => [
-                  p.archived_at ? "Registro arquivado" : "Registro pedagógico",
-                  ...pedagogicalReportLines(p),
-                ]),
-            ]);
+          onPdf={(audience) => {
+            setStudentReportSelection({ id: dossierId, audience });
+            setDossierId(null);
           }}
         />
       )}
+      {studentReportSelection &&
+        profile.role !== "comercial" &&
+        students.some(
+          (student) => student.id === studentReportSelection.id,
+        ) && (
+          <StudentReportPreview
+            key={studentReportSelection.id}
+            store={reportSource}
+            student={students.find(
+              (student) => student.id === studentReportSelection.id,
+            )!}
+            initialAudience={studentReportSelection.audience}
+            author={profile.name}
+            onClose={() => {
+              setDossierId(studentReportSelection.id);
+              setStudentReportSelection(null);
+            }}
+          />
+        )}
       {welcome && (
         <ClassWelcome
           course={welcome.course}

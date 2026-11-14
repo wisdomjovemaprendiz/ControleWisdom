@@ -1,0 +1,11 @@
+# Fichas do aluno
+
+Na ficha do aluno, **Ficha interna** e **Ficha para família** abrem uma prévia com as seções do documento. É possível alternar a versão e conferir os registros antes de baixar. O nome do arquivo inclui o nome do aluno, a versão e a data de emissão.
+
+A ficha interna reúne identificação, contatos, matrícula, organização das aulas, carga horária e estimativa de conclusão, frequência mensal, histórico de aulas, registros pedagógicos, intervenções, ocorrências individuais e coletivas contextualizadas, contatos administrativos, pendências e checklist de desligamento quando existente.
+
+A ficha familiar traz identificação básica, responsável, turma, agenda, professor, progresso, frequência mensal, faltas/atrasos/justificativas, observações individuais de aprendizagem, objetivos, intervenções, resultados registrados e próximos acompanhamentos. Acrescenta orientações gerais de parceria com a escola. Não inclui endereço, identificador interno, boleto, notas de contatos administrativos, nível numérico interno, contexto interno de observação, notas livres de ocorrências ou situações coletivas da sala. Ocorrências individuais usam apenas as categorias registradas, sem as notas internas. Antes de compartilhar, a equipe deve conferir a adequação das observações pedagógicas para o destinatário.
+
+Os documentos usam os dados existentes, sem gerar interpretações automáticas, diagnósticos clínicos ou afirmar evolução quando não há registros. Os históricos individuais não misturam registros de outros alunos. Chamadas futuras, abertas ou arquivadas e registros de presença arquivados não compõem a frequência. As chamadas são deduplicadas por aula. Faltas justificadas ficam fora do denominador da frequência; atrasos contam como comparecimento. A frequência é histórica; a carga horária segue os critérios de curso/matrícula já existentes no sistema. Dados ausentes e limitações de duração são explicitados. Datas de conclusão são estimativas, não compromissos de término.
+
+O acesso segue a ficha existente: comercial não emite as versões com histórico pedagógico; os demais perfis usam apenas o contexto de alunos autorizado na aplicação e pelo banco. A emissão não altera cadastros nem registros e não envia mensagens automaticamente.

@@ -35,7 +35,7 @@ export function StudentDossier({
   onClose: () => void;
   onEdit: () => void;
   onMessage: () => void;
-  onPdf: () => void;
+  onPdf: (audience: "internal" | "family") => void;
   canViewPedagogy?: boolean;
   canEdit?: boolean;
   onGroup?: () => void;
@@ -374,9 +374,14 @@ export function StudentDossier({
             </button>
           )}
           {canViewPedagogy && (
-            <button className="secondary" onClick={onPdf}>
-              <Download size={15} /> PDF
-            </button>
+            <>
+              <button className="secondary" onClick={() => onPdf("internal")}>
+                <Download size={15} /> Ficha interna
+              </button>
+              <button className="secondary" onClick={() => onPdf("family")}>
+                <Download size={15} /> Ficha para família
+              </button>
+            </>
           )}
           {canViewPedagogy && (
             <button className="primary" onClick={onMessage}>
