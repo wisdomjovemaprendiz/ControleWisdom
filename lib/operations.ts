@@ -1,3 +1,4 @@
+import { courseReviewState, canReviewCourse } from "./course-alerts";
 import { enrollmentStage } from "./sales";
 import { absenceAlert } from "./absence-alerts";
 import { pendingPedagogy } from "./pedagogy";
@@ -12,7 +13,13 @@ import {
 export interface FollowUp {
   id: string;
   student: Student;
-  kind: "absence" | "registration" | "contact" | "pedagogy" | "enrollment";
+  kind:
+    | "absence"
+    | "registration"
+    | "contact"
+    | "pedagogy"
+    | "enrollment"
+    | "course";
   priority: number;
   title: string;
   detail: string;
@@ -32,6 +39,16 @@ export function followUps(
   );
   const items: FollowUp[] = [];
   for (const s of students) {
+    const course = courseReviewState(store, s);
+    if (course.active && canReviewCourse(store, profile, s))
+      items.push({
+        id: `course-${s.id}`,
+        student: s,
+        kind: "course",
+        priority: 0,
+        title: "Revisar prazo e carga horária",
+        detail: course.messages.join(" · "),
+      });
     const alert = absenceAlert(store, s);
     if (alert.active)
       items.push({

@@ -1818,7 +1818,7 @@ test("curso e turma registram carga horária e a chamada atualiza o progresso do
     .getByLabel("Data de início do curso", { exact: true })
     .fill("2026-11-01");
   await dialog
-    .getByLabel("Vencimento do último boleto", { exact: true })
+    .getByLabel("Prazo de término do curso (último boleto)", { exact: true })
     .fill("2027-05-01");
   await dialog
     .getByRole("button", { name: "Salvar registro", exact: true })
@@ -1870,7 +1870,9 @@ test("curso e turma registram carga horária e a chamada atualiza o progresso do
     exact: true,
   });
   await expect(
-    progress.getByRole("progressbar", { name: "Carga horária concluída" }),
+    progress.getByRole("progressbar", {
+      name: "Carga horária de Aluno Planejado",
+    }),
   ).toHaveAttribute("aria-valuenow", "1");
   await expect(progress).toContainText("2 h de 200 h");
   await expect(progress).toContainText("198 h restantes");
@@ -3340,4 +3342,87 @@ test("resumos de aula filtram turma e período sem alterar outros relatórios", 
     "",
   );
   await expect(panel.locator(".lesson-report")).toHaveCount(5);
+});
+
+test("excedente aparece separado na lista e na ficha, gera alerta e salva motivo", async ({
+  page,
+}) => {
+  const student = schoolApi.store.students.find((s) => s.id === "s1")!;
+  const course = schoolApi.store.offerings.find(
+    (o) => o.id === student.offering_id,
+  )!;
+  course.total_hours = 128;
+  student.opening_hours = 178;
+  student.course_start_date = "2024-05-07";
+  student.last_installment_date = "2026-12-01";
+  schoolApi.store.attendance = schoolApi.store.attendance.filter(
+    (a) => a.student_id !== student.id,
+  );
+  await page.getByTitle("Atualizar dados", { exact: true }).click();
+  await expect(
+    page.getByTitle("Atualizar dados", { exact: true }),
+  ).toBeEnabled();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Alunos", exact: true })
+    .click();
+  await page
+    .getByPlaceholder("Buscar aluno ou responsável…")
+    .fill(student.name);
+  const row = page.locator("tbody tr").filter({ hasText: student.name });
+  await expect(row).toContainText("+50 h excedentes");
+  const normal = await row
+    .locator(".course-progress-segmented .contracted")
+    .evaluate((el) => el.getBoundingClientRect().width);
+  const extra = await row
+    .locator(".course-progress-segmented .excess")
+    .evaluate((el) => el.getBoundingClientRect().width);
+  expect(normal).toBeGreaterThan(extra);
+  expect(extra).toBeGreaterThan(0);
+  await row.getByRole("button", { name: student.name, exact: true }).click();
+  const dossier = page.getByRole("dialog", { name: student.name, exact: true });
+  await expect(dossier).toContainText("128 h de 128 h contratadas");
+  await expect(dossier).toContainText("+50 h excedentes");
+  await expect(dossier).toContainText("Prazo contratual em 01/12/2026");
+  await dossier
+    .getByRole("button", { name: "Registrar análise do curso", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Análise de prazo e carga horária",
+    exact: true,
+  });
+  await dialog
+    .getByLabel("Motivo da análise do curso")
+    .fill("Reposição e reforço pedagógico acordados com a coordenação.");
+  await dialog
+    .getByRole("button", { name: "Salvar análise", exact: true })
+    .click();
+  await expect(dossier).toBeVisible();
+  await expect(dossier).toContainText("Reposição e reforço pedagógico");
+  expect(
+    schoolApi.store.contacts.some(
+      (c) =>
+        c.student_id === student.id && c.course_review?.completed_hours === 178,
+    ),
+  ).toBe(true);
+  await dossier
+    .getByRole("button", { name: "Fechar ficha", exact: true })
+    .click();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Central de atenção/ })
+    .click();
+  await page
+    .getByRole("group", { name: "Filtrar acompanhamentos" })
+    .getByRole("button", { name: /^Curso/ })
+    .click();
+  await expect(
+    page.locator(".followup-list article").filter({ hasText: student.name }),
+  ).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

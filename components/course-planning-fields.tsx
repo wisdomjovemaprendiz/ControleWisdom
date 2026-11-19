@@ -23,7 +23,7 @@ export function EnrollmentPlanningFields({
           />
         </label>
         <label>
-          Vencimento do último boleto
+          Prazo de término do curso (último boleto)
           <input
             type="date"
             name="last_installment_date"
@@ -50,8 +50,9 @@ export function EnrollmentPlanningFields({
         </label>
       )}
       <small>
-        Campos opcionais. As datas ajudam na previsão e não encerram a
-        matrícula.
+        Campos opcionais. A data do último boleto é o prazo contratual de
+        término. O sistema alerta um mês antes, na data limite e após o
+        vencimento; não encerra a matrícula automaticamente.
       </small>
     </fieldset>
   );

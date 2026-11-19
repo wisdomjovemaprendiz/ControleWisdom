@@ -25,6 +25,7 @@ export function StudentDossier({
   onEdit,
   onMessage,
   onPdf,
+  onCourseReview,
   canViewPedagogy = true,
   canEdit = true,
   onGroup,
@@ -35,6 +36,7 @@ export function StudentDossier({
   onClose: () => void;
   onEdit: () => void;
   onMessage: () => void;
+  onCourseReview?: () => void;
   onPdf: (audience: "internal" | "family") => void;
   canViewPedagogy?: boolean;
   canEdit?: boolean;
@@ -177,7 +179,11 @@ export function StudentDossier({
         <div className="dossier-content" role="tabpanel">
           {tab === "summary" && (
             <>
-              <CourseProgressCard store={progressStore || store} student={s} />
+              <CourseProgressCard
+                store={progressStore || store}
+                student={s}
+                onReview={canViewPedagogy ? onCourseReview : undefined}
+              />
               <dl className="student-details">
                 {isIndividual(s) && (
                   <>
@@ -351,6 +357,16 @@ export function StudentDossier({
                   <time>{displayDate(c.date)}</time>
                   <h3>{c.reason}</h3>
                   <p>{c.outcome}</p>
+                  {c.course_review && (
+                    <small>
+                      Análise por{" "}
+                      {store.profiles.find(
+                        (profile) => profile.id === c.author_id,
+                      )?.name || "Equipe"}{" "}
+                      · {c.course_review.completed_hours} h realizadas no
+                      registro
+                    </small>
+                  )}
                   {c.next_contact && (
                     <div className="dossier-note">
                       Retorno combinado: {displayDate(c.next_contact)}

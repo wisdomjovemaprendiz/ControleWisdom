@@ -1,15 +1,25 @@
 import { courseProgress, formatHours } from "@/lib/course-progress";
-import { displayDate, type Store, type Student } from "@/lib/domain";
+import {
+  displayDate,
+  studentDisplayName,
+  type Store,
+  type Student,
+} from "@/lib/domain";
 import { classColor } from "@/lib/class-appearance";
+import { CourseProgressBar } from "./course-progress-bar";
+import { courseReviewState } from "@/lib/course-alerts";
 export function CourseProgressCard({
   store,
   student,
+  onReview,
 }: {
   store: Store;
   student: Student;
+  onReview?: () => void;
 }) {
   const p = courseProgress(store, student),
     group = store.classes.find((c) => c.id === student.class_id);
+  const review = courseReviewState(store, student, undefined, p);
   return (
     <section className="course-progress-card" aria-label="Progresso do curso">
       <div className="course-progress-heading">
@@ -21,42 +31,35 @@ export function CourseProgressCard({
           {p.percent === null ? "—" : `${p.percent.toLocaleString("pt-BR")}%`}
         </strong>
       </div>
-      {p.totalHours ? (
-        <>
-          <div
-            className="course-progress-track"
-            role="progressbar"
-            aria-label="Carga horária concluída"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={p.percent!}
-            style={
-              {
-                "--course-progress-color": group
-                  ? classColor(group)
-                  : "#174b91",
-              } as import("react").CSSProperties
-            }
-          >
-            <span style={{ width: `${p.percent}%` }} />
-          </div>
-          <p className="course-progress-hours">
-            <strong>
-              {formatHours(p.completedHours)} h de {formatHours(p.totalHours)} h
-            </strong>
-            <span>
-              {p.completed
-                ? "Carga horária cumprida"
-                : `${formatHours(p.remainingHours!)} h restantes${p.remainingLessons !== null ? ` · cerca de ${p.remainingLessons} aulas com presença` : ""}`}
-            </span>
-          </p>
-        </>
-      ) : (
-        <p className="course-progress-help">
-          Informe a carga horária do curso ou da aula individual para acompanhar
-          o progresso.
-        </p>
+      <CourseProgressBar
+        progress={p}
+        name={studentDisplayName(student)}
+        color={group ? classColor(group) : undefined}
+      />
+      {review.messages.length > 0 && !p.inactive && (
+        <div className="course-review-warning">
+          {review.messages.map((message) => (
+            <p key={message}>{message}</p>
+          ))}
+        </div>
       )}
+      {review.latest && (
+        <div className="course-review-latest">
+          <strong>
+            Última análise · {displayDate(review.latest!.date)} ·{" "}
+            {store.profiles.find(
+              (profile) => profile.id === review.latest!.author_id,
+            )?.name || "Equipe"}
+          </strong>
+          <p>{review.latest!.outcome}</p>
+        </div>
+      )}
+      {onReview &&
+        (p.excessHours > 0 || p.completed || p.deadlineState !== "none") && (
+          <button type="button" className="secondary" onClick={onReview}>
+            Registrar análise do curso
+          </button>
+        )}
       <dl className="course-progress-dates">
         <div>
           <dt>Início do curso</dt>
@@ -78,7 +81,11 @@ export function CourseProgressCard({
         </div>
         <div>
           <dt>
-            {p.completed ? "Última aula contabilizada" : "Término estimado"}
+            {p.completed
+              ? "Última aula contabilizada"
+              : p.estimateBasis === "billing"
+                ? "Prazo contratual de término"
+                : "Término estimado"}
           </dt>
           <dd>
             {p.completed
@@ -96,7 +103,7 @@ export function CourseProgressCard({
               {p.noRecentPresence
                 ? "Supõe retorno às aulas"
                 : p.estimateBasis === "billing"
-                  ? "Referência pelo prazo de boletos"
+                  ? "Prazo contratual, sem agenda para estimar"
                   : p.usesAttendance
                     ? "Ajustada pela assiduidade"
                     : "Baseada nos dias de aula"}
@@ -104,7 +111,7 @@ export function CourseProgressCard({
           )}
         </div>
         <div>
-          <dt>Último boleto</dt>
+          <dt>Prazo contratual de término (último boleto)</dt>
           <dd>
             {p.lastInstallment
               ? displayDate(p.lastInstallment)
@@ -138,9 +145,9 @@ export function CourseProgressCard({
         )}
         {p.estimateBasis === "billing" && (
           <p>
-            Sem dias de aula definidos, a previsão usa o intervalo entre o
-            início e o vencimento do último boleto. É uma referência de
-            planejamento, não comprovação de conclusão.
+            Sem dias de aula definidos, a referência exibida é a data limite do
+            contrato. Não há extensão automática do prazo, nem comprovação de
+            conclusão.
           </p>
         )}
         {p.noRecentPresence && (
@@ -168,8 +175,9 @@ export function CourseProgressCard({
           </p>
         )}
         <p>
-          A data do boleto não gera horas concluídas e atingir 100% não arquiva
-          a matrícula automaticamente.
+          O prazo contratual é a data limite para concluir o curso. Ele não gera
+          horas concluídas, e atingir 100% não arquiva a matrícula
+          automaticamente.
         </p>
       </details>
     </section>

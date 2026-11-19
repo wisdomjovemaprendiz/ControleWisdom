@@ -169,7 +169,17 @@ export interface Pedagogy {
   intervention: string;
   follow_up: string;
 }
+export interface CourseReview {
+  start_date: string | null;
+  offering_id: string | null;
+  contracted_hours: number | null;
+  completed_hours: number;
+  deadline: string | null;
+  deadline_state: string;
+}
 export interface Contact {
+  created_at?: string;
+  course_review?: CourseReview | null;
   archived_at?: string | null;
   record_archive_reason?: string;
   id: string;

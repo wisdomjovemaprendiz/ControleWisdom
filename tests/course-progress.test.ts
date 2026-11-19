@@ -183,3 +183,22 @@ test("arredondamento da exibição não cria aula extra nem antecipa 100%", () =
   assert.equal(p.completed, false);
   assert.equal(p.remainingHours, 0.25);
 });
+
+test("progresso preserva horas excedentes e identifica prazo um mês antes, no dia e depois", () => {
+  const { store, s, o } = setup();
+  o.total_hours = 128;
+  s.opening_hours = 178;
+  s.last_installment_date = "2027-03-31";
+  let p = courseProgress(store, s, "2027-02-27");
+  assert.equal(p.percent, 100);
+  assert.equal(p.excessHours, 50);
+  assert.equal(p.actualPercent, 139.1);
+  assert.equal(p.deadlineWarningDate, "2027-02-28");
+  assert.equal(p.deadlineState, "none");
+  p = courseProgress(store, s, "2027-02-28");
+  assert.equal(p.deadlineState, "upcoming");
+  assert.equal(courseProgress(store, s, "2027-03-31").deadlineState, "due");
+  assert.equal(courseProgress(store, s, "2027-04-01").deadlineState, "overdue");
+  s.last_installment_date = "";
+  assert.equal(courseProgress(store, s, "2027-04-01").deadlineState, "none");
+});

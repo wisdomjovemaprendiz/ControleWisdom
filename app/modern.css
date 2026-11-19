@@ -6803,3 +6803,108 @@ button.secondary {
   font-size: 13px;
   color: #6d819c;
 }
+
+.course-progress-visual {
+  margin: 12px 0;
+}
+.course-progress-value {
+  font-size: 13px;
+  color: #365e8e;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.course-progress-segmented {
+  display: flex;
+  height: 9px;
+  background: #e6edf6;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+.course-progress-segmented > span {
+  display: block;
+  height: 100%;
+  flex: none;
+}
+.course-progress-segmented .contracted {
+  background: var(--progress-normal);
+}
+.course-progress-segmented .excess {
+  background: #d03948;
+  border-left: 2px solid white;
+}
+.course-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 7px;
+  font-size: 13px;
+}
+.course-excess-label {
+  color: #b72d3c;
+}
+.course-progress-visual > small {
+  display: block;
+  margin-top: 5px;
+  color: #71849d;
+}
+.student-list-progress .course-progress-visual {
+  width: 100%;
+  margin: 7px 0;
+}
+.student-list-progress .course-progress-value,
+.student-list-progress .course-progress-labels,
+.student-list-progress .course-progress-visual > small {
+  font-size: 12px;
+}
+.course-review-warning {
+  background: #fff2e5;
+  color: #925014;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.course-review-warning p {
+  margin: 5px 0;
+}
+.course-review-latest {
+  border-left: 3px solid #5682b5;
+  padding: 10px;
+  margin: 12px 0;
+  background: #f3f7fc;
+  font-size: 13px;
+}
+.course-review-latest p {
+  white-space: pre-wrap;
+}
+.course-deadline-label {
+  display: block;
+  color: #a65c1a;
+  margin-top: 5px;
+}
+.course-deadline-label.overdue,
+.course-deadline-label.due {
+  color: #b72d3c;
+}
+.course-review-dialog {
+  width: min(620px, calc(100vw - 24px));
+}
+.course-review-dialog p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.course-review-dialog textarea {
+  width: 100%;
+  margin-top: 8px;
+}
+.course-review-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+.course-review-dialog small {
+  color: #6d819c;
+  line-height: 1.5;
+}

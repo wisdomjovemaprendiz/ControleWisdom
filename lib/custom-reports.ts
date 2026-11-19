@@ -197,7 +197,11 @@ export const customReportFields: ReportField[] = [
       ["course_percent", "Progresso do curso (%)", "percent"],
       ["course_start", "Início do curso", "startDate"],
       ["course_end", "Término estimado do curso", "estimatedEnd"],
-      ["last_installment", "Vencimento do último boleto", "lastInstallment"],
+      [
+        "last_installment",
+        "Prazo contratual (último boleto)",
+        "lastInstallment",
+      ],
     ] as const
   ).map(([id, label, key]): ReportField => ({
     id,

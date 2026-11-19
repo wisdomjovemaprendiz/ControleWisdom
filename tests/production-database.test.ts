@@ -1641,5 +1641,89 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       assert.equal(Number(await pending()), 1);
     },
   );
+  await t.test(
+    "análises de curso preservam autor, histórico e restrição ao professor responsável",
+    async () => {
+      await db.exec("reset role");
+      await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+        id(1),
+      ]);
+      await db.exec(
+        readFileSync(
+          new URL("../supabase/017_course_reviews.sql", import.meta.url),
+          "utf8",
+        ),
+      );
+      await db.query(
+        "insert into public.classes(id,unit_id,name,course,teacher_id,teacher,schedule,capacity) values($1,$2,'Curso revisão','Informática',$3,'Ana','Terça',20)",
+        [id(1702), id(11), id(2)],
+      );
+      await db.query(
+        "insert into public.students(id,unit_id,class_id,name) values($1,$2,$3,'Aluno revisão')",
+        [id(1701), id(11), id(1702)],
+      );
+      const meta = {
+        offering_id: null,
+        contracted_hours: 128,
+        completed_hours: 178,
+        deadline: "2026-12-01",
+        deadline_state: "upcoming",
+        start_date: "2024-05-07",
+      };
+      await as(2);
+      await db.query(
+        "insert into public.contacts(id,unit_id,student_id,author_id,date,reason,outcome,next_contact,course_review) values($1,$2,$3,$4,'2026-11-19','Análise de curso','Reposição acordada','',$5::jsonb)",
+        [id(1704), id(11), id(1701), id(2), JSON.stringify(meta)],
+      );
+      const row = (
+        await db.query<any>("select * from public.contacts where id=$1", [
+          id(1704),
+        ])
+      ).rows[0];
+      assert.equal(row.author_id, id(2));
+      assert.equal(row.course_review.completed_hours, 178);
+      assert.ok(row.created_at);
+      await as(6);
+      assert.equal(
+        (
+          await db.query("select id from public.contacts where id=$1", [
+            id(1704),
+          ])
+        ).rows.length,
+        0,
+      );
+      await assert.rejects(
+        db.query(
+          "insert into public.contacts(id,unit_id,student_id,author_id,date,reason,outcome,course_review) values($1,$2,$3,$4,'2026-11-19','Forjada','Não permitido',$5::jsonb)",
+          [id(1705), id(11), id(1701), id(6), JSON.stringify(meta)],
+        ),
+      );
+      await as(4);
+      assert.equal(
+        (
+          await db.query("select id from public.contacts where id=$1", [
+            id(1704),
+          ])
+        ).rows.length,
+        0,
+      );
+      await as(1);
+      const audit = (
+        await db.query<any>(
+          "select * from public.audit_log where entity='contacts' and entity_id=$1",
+          [id(1704)],
+        )
+      ).rows;
+      assert.ok(audit.some((log) => log.actor_id === id(2)));
+      await db.exec("reset role");
+      await assert.rejects(
+        db.query(
+          "update public.contacts set course_review=$1::jsonb where id=$2",
+          [JSON.stringify({ ...meta, completed_hours: 200 }), id(1704)],
+        ),
+        /nova análise/,
+      );
+    },
+  );
   await db.close();
 });

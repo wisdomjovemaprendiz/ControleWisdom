@@ -58,6 +58,7 @@ export function FollowUpCenter({
             ["enrollment", "Pré-matrículas"],
             ["contact", "Retornos"],
             ["pedagogy", "Intervenções"],
+            ["course", "Curso"],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -88,13 +89,15 @@ export function FollowUpCenter({
             <div className={`followup-type ${task.kind}`}>
               <ClipboardList size={19} />
               <span>
-                {task.kind === "absence"
-                  ? "FREQUÊNCIA"
-                  : task.kind === "registration" || task.kind === "enrollment"
-                    ? "CADASTRO"
-                    : task.kind === "contact"
-                      ? "CONTATO"
-                      : "PEDAGÓGICO"}
+                {task.kind === "course"
+                  ? "CURSO"
+                  : task.kind === "absence"
+                    ? "FREQUÊNCIA"
+                    : task.kind === "registration" || task.kind === "enrollment"
+                      ? "CADASTRO"
+                      : task.kind === "contact"
+                        ? "CONTATO"
+                        : "PEDAGÓGICO"}
               </span>
             </div>
             <div className="followup-detail">
@@ -114,25 +117,30 @@ export function FollowUpCenter({
             <button
               className="secondary"
               onClick={() =>
-                task.kind === "pedagogy"
-                  ? onPedagogy(
-                      store.pedagogy.find((p) => p.id === task.pedagogy_id),
-                    )
-                  : onAction(
-                      task.kind === "registration" || task.kind === "enrollment"
-                        ? "student"
-                        : "contact",
-                      task.student,
-                    )
+                task.kind === "course"
+                  ? onAction("course-review", task.student)
+                  : task.kind === "pedagogy"
+                    ? onPedagogy(
+                        store.pedagogy.find((p) => p.id === task.pedagogy_id),
+                      )
+                    : onAction(
+                        task.kind === "registration" ||
+                          task.kind === "enrollment"
+                          ? "student"
+                          : "contact",
+                        task.student,
+                      )
               }
             >
-              {task.kind === "registration" || task.kind === "enrollment"
-                ? task.kind === "enrollment"
-                  ? "Concluir pré-matrícula"
-                  : "Completar cadastro"
-                : task.kind === "pedagogy"
-                  ? "Registrar evolução"
-                  : "Registrar contato"}
+              {task.kind === "course"
+                ? "Registrar análise"
+                : task.kind === "registration" || task.kind === "enrollment"
+                  ? task.kind === "enrollment"
+                    ? "Concluir pré-matrícula"
+                    : "Completar cadastro"
+                  : task.kind === "pedagogy"
+                    ? "Registrar evolução"
+                    : "Registrar contato"}
               <ArrowRight size={15} />
             </button>
           </article>

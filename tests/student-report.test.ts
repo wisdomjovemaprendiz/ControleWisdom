@@ -9,6 +9,9 @@ function setup() {
   const store = schoolFixture(),
     student = store.students[0];
   store.lessons[0].date = "2026-11-14";
+  store.pedagogy.forEach((record) => {
+    record.date = "2026-11-14";
+  });
   student.course_start_date = "2026-10-01";
   student.last_installment_date = "2027-07-10";
   student.address = "Endereço interno";

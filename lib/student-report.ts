@@ -162,7 +162,10 @@ export function studentReport(
               complete: "Cadastro concluído",
             }[student.registration_stage || "complete"],
           ],
-          ["Último boleto previsto", date(student.last_installment_date)],
+          [
+            "Prazo contratual de término (último boleto)",
+            date(student.last_installment_date),
+          ],
         ]
       : []),
   ]);
@@ -174,6 +177,7 @@ export function studentReport(
         : "Não definida",
     ],
     ["Carga horária realizada", `${formatHours(progress.completedHours)} h`],
+    ["Horas excedentes ao contrato", `${formatHours(progress.excessHours)} h`],
     [
       "Carga horária restante",
       progress.remainingHours === null

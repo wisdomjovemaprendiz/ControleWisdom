@@ -235,16 +235,39 @@ export function courseProgress(
     lastInstallment &&
     lastInstallment > startDate
   ) {
-    estimatedEnd = addDays(
-      anchor,
-      Math.ceil(
-        (daysBetween(startDate, lastInstallment) * remainingMinutes) /
-          (totalHours * 60) /
-          rate,
-      ),
-    );
+    estimatedEnd = lastInstallment;
     estimateBasis = "billing";
   }
+  const excessHours = totalHours
+    ? Math.max(0, Math.round((completedHours - totalHours) * 100) / 100)
+    : 0;
+  const actualPercent = totalHours
+    ? Math.round((completedHours / totalHours) * 1000) / 10
+    : null;
+  const daysUntilDeadline = lastInstallment
+    ? daysBetween(reference, lastInstallment)
+    : null;
+  let deadlineWarningDate: string | null = null;
+  if (lastInstallment) {
+    const date = dateValue(lastInstallment),
+      day = date.getUTCDate();
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() - 1);
+    const last = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    date.setUTCDate(Math.min(day, last));
+    deadlineWarningDate = date.toISOString().slice(0, 10);
+  }
+  const deadlineState = !lastInstallment
+    ? "none"
+    : reference > lastInstallment
+      ? "overdue"
+      : reference === lastInstallment
+        ? "due"
+        : deadlineWarningDate && reference >= deadlineWarningDate
+          ? "upcoming"
+          : "none";
   const inactive = student.status !== "ativo" || !!student.archived_at;
   if (inactive || !validDate(estimatedEnd)) estimatedEnd = null;
   const completedOn = completed
@@ -258,6 +281,11 @@ export function courseProgress(
       : null;
   return {
     inactive,
+    excessHours,
+    actualPercent,
+    daysUntilDeadline,
+    deadlineWarningDate,
+    deadlineState,
     offeringId,
     offeringName:
       offering?.name ||

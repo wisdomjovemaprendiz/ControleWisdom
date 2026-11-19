@@ -92,6 +92,8 @@ import { birthdaysThisWeek } from "@/lib/birthdays";
 import { OperationsBoard } from "@/components/operations-board";
 import { FollowUpCenter } from "@/components/follow-up-center";
 import { StudentReportPreview } from "@/components/student-report-preview";
+import { CourseReviewDialog } from "@/components/course-review-dialog";
+import { courseReviewState, canReviewCourse } from "@/lib/course-alerts";
 import { StudentDossier } from "@/components/student-dossier";
 import { PedagogyFields } from "@/components/pedagogy-fields";
 import { PedagogyAgenda } from "@/components/pedagogy-agenda";
@@ -247,6 +249,8 @@ export default function App() {
   const [summaryClass, setSummaryClass] = useState("all"),
     [summaryFrom, setSummaryFrom] = useState(""),
     [summaryTo, setSummaryTo] = useState(today());
+  const [courseReviewStudent, setCourseReviewStudent] =
+    useState<Student | null>(null);
   const [dossierId, setDossierId] = useState<string | null>(null);
   const [studentReportSelection, setStudentReportSelection] = useState<{
     id: string;
@@ -375,6 +379,7 @@ export default function App() {
       clearPhotoCache();
       if (event === "SIGNED_OUT") {
         setStudentReportSelection(null);
+        setCourseReviewStudent(null);
         authenticatedUserId.current = null;
         attendanceSelection.current = "";
         setMarks({});
@@ -1495,6 +1500,11 @@ export default function App() {
   ).filter((item) => item.state !== "upcoming").length;
   const attentionCount =
     alerts.length +
+    active.filter(
+      (student) =>
+        courseReviewState(allRecords!, student).active &&
+        canReviewCourse(allRecords!, profile, student),
+    ).length +
     interventionDueCount +
     (profile.role !== "comercial"
       ? students.filter(
@@ -1848,7 +1858,9 @@ export default function App() {
               }}
               onStudent={(s) => setDossierId(s.id)}
               onAction={(kind, data) => {
-                if (kind.startsWith("students:")) {
+                if (kind === "course-review" && data) {
+                  setCourseReviewStudent(data);
+                } else if (kind.startsWith("students:")) {
                   setStudentStatus(kind.slice(9));
                   setStudentClass("all");
                   setQuery("");
@@ -2815,7 +2827,9 @@ export default function App() {
                 unit={currentUnit}
                 onStudent={(s) => setDossierId(s.id)}
                 onAction={(kind, data) => {
-                  if (kind.startsWith("followup:")) {
+                  if (kind === "course-review") {
+                    setCourseReviewStudent(data);
+                  } else if (kind.startsWith("followup:")) {
                     const record = store.pedagogy.find(
                       (p) => p.id === kind.slice(9),
                     );
@@ -3263,6 +3277,20 @@ export default function App() {
           student={students.find((s) => s.id === dossierId)!}
           store={store}
           progressStore={allRecords!}
+          onCourseReview={
+            canReviewCourse(
+              allRecords!,
+              profile,
+              students.find((student) => student.id === dossierId)!,
+            )
+              ? () => {
+                  setCourseReviewStudent(
+                    students.find((s) => s.id === dossierId)!,
+                  );
+                  setDossierId(null);
+                }
+              : undefined
+          }
           canViewPedagogy={profile.role !== "comercial"}
           canEdit={canEditStudent(
             profile,
@@ -3305,6 +3333,19 @@ export default function App() {
           }}
         />
       )}
+      {courseReviewStudent &&
+        canReviewCourse(allRecords!, profile, courseReviewStudent) && (
+          <CourseReviewDialog
+            store={allRecords!}
+            student={courseReviewStudent}
+            profile={profile}
+            onSave={(record) => save("contacts", record)}
+            onClose={() => {
+              setDossierId(courseReviewStudent.id);
+              setCourseReviewStudent(null);
+            }}
+          />
+        )}
       {studentReportSelection &&
         profile.role !== "comercial" &&
         students.some(

@@ -63,10 +63,27 @@ test("individual mantém relatórios, alertas e horas sem criar turma artificial
   assert.equal(individualMinutes(store, s.id), 0);
   const secretary = store.profiles.find((p) => p.role === "secretaria")!;
   assert.ok(
+    !followUps(store, secretary).some(
+      (x) => x.student.id === s.id && x.kind === "absence",
+    ),
+  );
+  store.lessons.push({ ...l, id: "individual-2", date: "2026-01-02" });
+  store.attendance.push({
+    id: "mark-2",
+    unit_id: s.unit_id,
+    lesson_id: "individual-2",
+    student_id: s.id,
+    status: "falta",
+  });
+  assert.ok(
     followUps(store, secretary).some(
       (x) => x.student.id === s.id && x.kind === "absence",
     ),
   );
+  store.lessons = store.lessons.filter(
+    (lesson) => lesson.id !== "individual-2",
+  );
+  store.attendance = store.attendance.filter((mark) => mark.id !== "mark-2");
   assert.ok(
     !followUps(store, secretary)
       .filter((x) => x.student.id === s.id && x.kind === "registration")

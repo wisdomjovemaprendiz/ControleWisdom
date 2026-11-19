@@ -43,7 +43,7 @@ interface PriorityItem {
   action: () => void;
   actionLabel: string;
   urgent: boolean;
-  kind: "absence" | "pedagogy" | "occurrence";
+  kind: "absence" | "pedagogy" | "occurrence" | "course";
 }
 function Metric({
   label,
@@ -142,17 +142,30 @@ export function ManagementOverview({
       kind: "occurrence",
     }),
   );
+  const courseItems: PriorityItem[] = data.courseAlerts.map((row) => ({
+    id: `course-${row.student.id}`,
+    title: studentDisplayName(row.student),
+    detail: row.messages.join(" · "),
+    student: row.student,
+    action: () => onAction("course-review", row.student),
+    actionLabel: "Registrar análise",
+    urgent: true,
+    kind: "course",
+  }));
   const priority = [
+    ...courseItems,
     ...interventionItems.filter((i) => i.urgent),
     ...absenceItems.filter((i) => i.urgent),
     ...occurrenceItems,
   ];
   const list =
-    tab === "absence"
-      ? absenceItems
-      : tab === "pedagogy"
-        ? interventionItems
-        : priority;
+    tab === "course"
+      ? courseItems
+      : tab === "absence"
+        ? absenceItems
+        : tab === "pedagogy"
+          ? interventionItems
+          : priority;
   const visibleStudents = new Set(
     list.flatMap((item) => (item.student ? [item.student.id] : [])),
   ).size;
@@ -256,6 +269,7 @@ export function ManagementOverview({
               ["priority", "Prioridades", priority.length],
               ["absence", "Faltas", absenceItems.length],
               ["pedagogy", "Intervenções", interventionItems.length],
+              ["course", "Curso", courseItems.length],
             ].map(([key, label, count]) => (
               <button
                 key={key}
@@ -303,11 +317,13 @@ export function ManagementOverview({
                     <ArrowUpRight size={17} />
                   )}
                   <span>
-                    {item.kind === "absence"
-                      ? "Contato"
-                      : item.kind === "pedagogy"
-                        ? "Acompanhar"
-                        : "Histórico"}
+                    {item.kind === "course"
+                      ? "Analisar"
+                      : item.kind === "absence"
+                        ? "Contato"
+                        : item.kind === "pedagogy"
+                          ? "Acompanhar"
+                          : "Histórico"}
                   </span>
                 </button>
               </article>

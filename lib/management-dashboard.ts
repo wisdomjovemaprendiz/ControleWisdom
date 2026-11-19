@@ -1,3 +1,4 @@
+import { courseReviewState } from "./course-alerts";
 import { absenceAlert } from "./absence-alerts";
 import {
   canAccess,
@@ -248,7 +249,14 @@ export function managementDashboard(
     }))
     .filter((r) => r.count >= 2)
     .sort((a, b) => b.count - a.count);
+  const courseAlerts = active
+    .map((student) => ({
+      student,
+      ...courseReviewState(store, student, reference),
+    }))
+    .filter((row) => row.active);
   const attentionIds = new Set([
+    ...courseAlerts.map((row) => row.student.id),
     ...absentStudents.map((r) => r.student.id),
     ...due.flatMap(({ record }) =>
       record.student_id ? [record.student_id] : [],
@@ -295,6 +303,7 @@ export function managementDashboard(
     leaders,
     recurringOccurrences,
     attentionCount: attentionIds.size,
+    courseAlerts,
     trend,
     departures,
   };
