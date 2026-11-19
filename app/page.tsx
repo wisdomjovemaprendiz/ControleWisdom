@@ -105,6 +105,7 @@ import { operationalStore, type RecordTable } from "@/lib/records";
 import { TeamManager } from "@/components/team-manager";
 import { PasswordChangeDialog } from "@/components/password-change-dialog";
 import { PasswordChange } from "@/components/password-change";
+import { ReportSection } from "@/components/report-section";
 import { DailyAnalysis } from "@/components/daily-analysis";
 import { StudentAvatar } from "@/components/student-avatar";
 import { StudentPhotoEditor } from "@/components/student-photo-editor";
@@ -2860,204 +2861,239 @@ export default function App() {
             />
           )}
           {page === "reports" && profile.role !== "comercial" && (
-            <>
-              <SignatureSheetBuilder
-                store={store}
-                profile={profile}
-                unit={currentUnit}
-                onCalendar={() => goto("calendar")}
-              />
-              {isManager(profile.role) && (
-                <DailyAnalysis unit={currentUnit} units={store.units} />
-              )}
-              <section className="panel report-filters">
-                <Filter size={19} />
-                <strong>Período dos relatórios</strong>
-                <label>
-                  Turma dos registros
-                  <select
-                    aria-label="Turma dos registros"
-                    value={reportClass}
-                    onChange={(e) => setReportClass(e.target.value)}
-                  >
-                    <option value="all">Todas as turmas</option>
-                    <option value={INDIVIDUAL}>Aulas individuais</option>
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  De
-                  <input
-                    type="date"
-                    value={reportFrom}
-                    onChange={(e) => setReportFrom(e.target.value)}
-                    max={reportTo}
-                  />
-                </label>
-                <label>
-                  Até
-                  <input
-                    type="date"
-                    value={reportTo}
-                    onChange={(e) => setReportTo(e.target.value)}
-                    min={reportFrom}
-                    max={today()}
-                  />
-                </label>
-              </section>
-              <CustomReportBuilder
-                store={reportSource}
-                profile={profile}
-                unit={currentUnit}
-                classId={reportClass}
-                from={reportFrom}
-                to={reportTo}
-              />
-              <div className="class-grid">
-                {[
-                  {
-                    title: "Panorama da gestão",
-                    description:
-                      "Matrículas, saídas, ocupação e alunos por unidade.",
-                    icon: BarChart3,
-                    action: () =>
-                      pdf("Panorama da gestão", [
-                        `Alunos ativos: ${active.length}`,
-                        `Matrículas totais: ${students.length}`,
-                        `Conclusões: ${students.filter((s) => s.status === "conclusao").length}`,
-                        `Cancelamentos: ${students.filter((s) => s.status === "cancelamento").length}`,
-                        `Abandonos: ${students.filter((s) => s.status === "abandono").length}`,
-                        `Inadimplência: ${students.filter((s) => s.status === "inadimplencia").length}`,
-                        ...classes.map(
-                          (c) =>
-                            `${c.name}: ${active.filter((s) => s.class_id === c.id).length}/${c.capacity} vagas | ${c.teacher}`,
-                        ),
-                        "Indicadores de matrícula são do cadastro atual; para presença aplica-se o período selecionado.",
-                      ]),
-                  },
-                  {
-                    title: "Frequência e faltas",
-                    description:
-                      "Presenças por aluno, com faltas e atrasos no período.",
-                    icon: ClipboardCheck,
-                    action: () =>
-                      pdf("Frequência e faltas", [
-                        `Período: ${reportFrom ? displayDate(reportFrom) : "início"} a ${displayDate(reportTo)}`,
-                        `Aulas registradas: ${reportLessons.length}`,
-                        ...frequencyReportLines(
-                          reportSource,
-                          reportLessons,
-                          currentUnit,
-                          reportClass,
-                        ),
-                      ]),
-                  },
-                  {
-                    title: "Atividade da equipe",
-                    description:
-                      "Aulas, matrículas e acompanhamentos por professor e secretaria.",
-                    icon: Users,
-                    action: () =>
-                      pdf(
-                        "Atividade da equipe",
-                        store.profiles
-                          .filter((p) => scoped(p.unit_id))
-                          .map(
-                            (p) =>
-                              `${p.name} | ${labels[p.role]} | Aulas no período: ${reportLessons.filter((l) => l.teacher_id === p.id).length} | Matrículas no período: ${students.filter((s) => s.created_by === p.id && (!reportFrom || s.enrollment_date >= reportFrom) && s.enrollment_date <= reportTo).length} | Registros pedagógicos: ${store.pedagogy.filter((r) => r.author_id === p.id && (!reportFrom || r.date >= reportFrom) && r.date <= reportTo).length} | Contatos: ${store.contacts.filter((c) => c.author_id === p.id && (!reportFrom || c.date >= reportFrom) && c.date <= reportTo).length}`,
+            <div className="reports-workspace">
+              <ReportSection
+                id="signature"
+                title="Ficha avaliativa do aluno"
+                description="Aluno, calendário e PDF para assinatura das aulas."
+                icon={CalendarDays}
+              >
+                <SignatureSheetBuilder
+                  store={store}
+                  profile={profile}
+                  unit={currentUnit}
+                  onCalendar={() => goto("calendar")}
+                />
+              </ReportSection>
+              <ReportSection
+                id="exports"
+                title="Relatórios por período"
+                description="Frequência, gestão, equipe e acompanhamento pedagógico."
+                icon={BarChart3}
+              >
+                <section className="panel report-filters">
+                  <Filter size={19} />
+                  <strong>Período dos relatórios</strong>
+                  <label>
+                    Turma dos registros
+                    <select
+                      aria-label="Turma dos registros"
+                      value={reportClass}
+                      onChange={(e) => setReportClass(e.target.value)}
+                    >
+                      <option value="all">Todas as turmas</option>
+                      <option value={INDIVIDUAL}>Aulas individuais</option>
+                      {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    De
+                    <input
+                      type="date"
+                      value={reportFrom}
+                      onChange={(e) => setReportFrom(e.target.value)}
+                      max={reportTo}
+                    />
+                  </label>
+                  <label>
+                    Até
+                    <input
+                      type="date"
+                      value={reportTo}
+                      onChange={(e) => setReportTo(e.target.value)}
+                      min={reportFrom}
+                      max={today()}
+                    />
+                  </label>
+                </section>
+                <div className="report-export-grid">
+                  {[
+                    {
+                      title: "Panorama da gestão",
+                      description:
+                        "Matrículas, saídas, ocupação e alunos por unidade.",
+                      icon: BarChart3,
+                      action: () =>
+                        pdf("Panorama da gestão", [
+                          `Alunos ativos: ${active.length}`,
+                          `Matrículas totais: ${students.length}`,
+                          `Conclusões: ${students.filter((s) => s.status === "conclusao").length}`,
+                          `Cancelamentos: ${students.filter((s) => s.status === "cancelamento").length}`,
+                          `Abandonos: ${students.filter((s) => s.status === "abandono").length}`,
+                          `Inadimplência: ${students.filter((s) => s.status === "inadimplencia").length}`,
+                          ...classes.map(
+                            (c) =>
+                              `${c.name}: ${active.filter((s) => s.class_id === c.id).length}/${c.capacity} vagas | ${c.teacher}`,
                           ),
-                      ),
-                  },
-                  {
-                    title: "Acompanhamento pedagógico",
-                    description:
-                      "Diagnósticos, evolução e intervenções documentadas.",
-                    icon: BookOpen,
-                    action: () =>
-                      pdf(
-                        "Acompanhamento pedagógico",
-                        store.pedagogy
-                          .filter(
-                            (p) =>
-                              scoped(p.unit_id) &&
-                              (!reportFrom || p.date >= reportFrom) &&
-                              p.date <= reportTo,
-                          )
-                          .flatMap((p) => [
-                            `${displayDate(p.date)} | ${studentName(p.student_id)} | ${p.class_id ? className(p.class_id) : "Aula individual"} | ${p.kind}`,
-                            ...pedagogicalReportLines(p),
-                          ]),
-                      ),
-                  },
-                ].map((r) => (
-                  <section className="panel report-card" key={r.title}>
-                    <span className="circle-icon green">
-                      <r.icon size={23} />
-                    </span>
-                    <h2>{r.title}</h2>
-                    <p>{r.description}</p>
-                    <button className="secondary" onClick={r.action}>
-                      <Download size={16} /> Exportar PDF
-                    </button>
-                  </section>
-                ))}
-              </div>
-              <section className="panel">
-                <div className="panel-header">
-                  <div>
-                    <h2>Resumos de aula</h2>
-                    <p>
-                      Conteúdo, professor e chamada prontos para compartilhar
-                    </p>
-                  </div>
-                </div>
-                {reportLessons
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((l) => (
-                    <div className="lesson-report" key={l.id}>
-                      <div>
-                        <strong>{lessonPlacement(store, l)}</strong>
-                        <small>
-                          {displayDate(l.date)} • {l.teacher}
-                        </small>
-                        <p>{l.topic}</p>
-                      </div>
-                      <div className="row-actions">
-                        <button
-                          className="secondary"
-                          onClick={() =>
-                            pdf(
-                              "Resumo da aula",
-                              attendanceReportLines(allRecords!, l),
+                          "Indicadores de matrícula são do cadastro atual; para presença aplica-se o período selecionado.",
+                        ]),
+                    },
+                    {
+                      title: "Frequência e faltas",
+                      description:
+                        "Presenças por aluno, com faltas e atrasos no período.",
+                      icon: ClipboardCheck,
+                      action: () =>
+                        pdf("Frequência e faltas", [
+                          `Período: ${reportFrom ? displayDate(reportFrom) : "início"} a ${displayDate(reportTo)}`,
+                          `Aulas registradas: ${reportLessons.length}`,
+                          ...frequencyReportLines(
+                            reportSource,
+                            reportLessons,
+                            currentUnit,
+                            reportClass,
+                          ),
+                        ]),
+                    },
+                    {
+                      title: "Atividade da equipe",
+                      description:
+                        "Aulas, matrículas e acompanhamentos por professor e secretaria.",
+                      icon: Users,
+                      action: () =>
+                        pdf(
+                          "Atividade da equipe",
+                          store.profiles
+                            .filter((p) => scoped(p.unit_id))
+                            .map(
+                              (p) =>
+                                `${p.name} | ${labels[p.role]} | Aulas no período: ${reportLessons.filter((l) => l.teacher_id === p.id).length} | Matrículas no período: ${students.filter((s) => s.created_by === p.id && (!reportFrom || s.enrollment_date >= reportFrom) && s.enrollment_date <= reportTo).length} | Registros pedagógicos: ${store.pedagogy.filter((r) => r.author_id === p.id && (!reportFrom || r.date >= reportFrom) && r.date <= reportTo).length} | Contatos: ${store.contacts.filter((c) => c.author_id === p.id && (!reportFrom || c.date >= reportFrom) && c.date <= reportTo).length}`,
+                            ),
+                        ),
+                    },
+                    {
+                      title: "Acompanhamento pedagógico",
+                      description:
+                        "Diagnósticos, evolução e intervenções documentadas.",
+                      icon: BookOpen,
+                      action: () =>
+                        pdf(
+                          "Acompanhamento pedagógico",
+                          store.pedagogy
+                            .filter(
+                              (p) =>
+                                scoped(p.unit_id) &&
+                                (!reportFrom || p.date >= reportFrom) &&
+                                p.date <= reportTo,
                             )
-                          }
-                        >
-                          <Download size={16} /> PDF
-                        </button>
-                        <button
-                          className="primary"
-                          onClick={() =>
-                            setMessage({
-                              title: "Resumo da aula",
-                              text: attendanceMessage(allRecords!, l),
-                              phone: "",
-                            })
-                          }
-                        >
-                          <MessageCircle size={17} /> WhatsApp
-                        </button>
-                      </div>
-                    </div>
+                            .flatMap((p) => [
+                              `${displayDate(p.date)} | ${studentName(p.student_id)} | ${p.class_id ? className(p.class_id) : "Aula individual"} | ${p.kind}`,
+                              ...pedagogicalReportLines(p),
+                            ]),
+                        ),
+                    },
+                  ].map((r) => (
+                    <section className="panel report-card" key={r.title}>
+                      <span className="circle-icon green">
+                        <r.icon size={23} />
+                      </span>
+                      <h2>{r.title}</h2>
+                      <p>{r.description}</p>
+                      <button className="secondary" onClick={r.action}>
+                        <Download size={16} /> Exportar PDF
+                      </button>
+                    </section>
                   ))}
-                {!reportLessons.length && (
-                  <Empty text="Nenhuma aula no período selecionado." />
-                )}
-              </section>
-            </>
+                </div>
+                <ReportSection
+                  id="custom"
+                  title="Relatório personalizado"
+                  description="Escolha as colunas e baixe em PDF ou Excel com os filtros acima."
+                  icon={Filter}
+                >
+                  <CustomReportBuilder
+                    store={reportSource}
+                    profile={profile}
+                    unit={currentUnit}
+                    classId={reportClass}
+                    from={reportFrom}
+                    to={reportTo}
+                  />
+                </ReportSection>
+              </ReportSection>
+              <ReportSection
+                id="lessons"
+                title="Resumos de aula"
+                description="Consulte os registros e prepare mensagens para o WhatsApp."
+                icon={ClipboardCheck}
+              >
+                <section className="panel">
+                  <div className="panel-header">
+                    <div>
+                      <h2>Resumos de aula</h2>
+                      <p>
+                        Conteúdo, professor e chamada prontos para compartilhar
+                      </p>
+                    </div>
+                  </div>
+                  {reportLessons
+                    .sort((a, b) => b.date.localeCompare(a.date))
+                    .map((l) => (
+                      <div className="lesson-report" key={l.id}>
+                        <div>
+                          <strong>{lessonPlacement(store, l)}</strong>
+                          <small>
+                            {displayDate(l.date)} • {l.teacher}
+                          </small>
+                          <p>{l.topic}</p>
+                        </div>
+                        <div className="row-actions">
+                          <button
+                            className="secondary"
+                            onClick={() =>
+                              pdf(
+                                "Resumo da aula",
+                                attendanceReportLines(allRecords!, l),
+                              )
+                            }
+                          >
+                            <Download size={16} /> PDF
+                          </button>
+                          <button
+                            className="primary"
+                            onClick={() =>
+                              setMessage({
+                                title: "Resumo da aula",
+                                text: attendanceMessage(allRecords!, l),
+                                phone: "",
+                              })
+                            }
+                          >
+                            <MessageCircle size={17} /> WhatsApp
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  {!reportLessons.length && (
+                    <Empty text="Nenhuma aula no período selecionado." />
+                  )}
+                </section>
+              </ReportSection>
+              {isManager(profile.role) && (
+                <ReportSection
+                  id="daily"
+                  title="Análise diária das unidades"
+                  description="Histórico de matrículas, ocupação, frequência e cadastros pendentes."
+                  icon={BarChart3}
+                >
+                  <DailyAnalysis unit={currentUnit} units={store.units} />
+                </ReportSection>
+              )}
+            </div>
           )}
           {page === "units" && isManager(profile.role) && (
             <div className="class-grid">

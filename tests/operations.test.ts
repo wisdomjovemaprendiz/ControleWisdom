@@ -5,7 +5,9 @@ import { followUps, classLessons } from "../lib/operations";
 import { today } from "../lib/domain";
 test("fila de trabalho nunca inclui alunos de outra unidade para professor ou secretaria", () => {
   const data = schoolFixture();
-  for (const profile of data.profiles.filter((p) => p.role !== "coordenacao" && p.role !== "admin")) {
+  for (const profile of data.profiles.filter(
+    (p) => p.role !== "coordenacao" && p.role !== "admin",
+  )) {
     const tasks = followUps(data, profile);
     assert.ok(tasks.every((t) => t.student.unit_id === profile.unit_id));
   }
@@ -95,4 +97,29 @@ test("retornos na mesma data mantêm o prazo mais próximo sem ordenar UUID como
   assert.ok(
     followUps(data, data.profiles[0]).some((t) => t.id === "contact-a"),
   );
+});
+
+test("endereço vazio não gera pendência de matrícula", () => {
+  const store = schoolFixture(),
+    student = store.students[0];
+  Object.assign(student, {
+    name: "Aluno completo",
+    guardian: "Responsável",
+    guardian_phone: "71999999999",
+    birth_date: "2010-01-01",
+    address: "",
+    registration_stage: "complete",
+  });
+  const tasks = followUps(store, store.profiles[0]);
+  assert.ok(
+    !tasks.some(
+      (task) => task.kind === "registration" && task.student.id === student.id,
+    ),
+  );
+  student.birth_date = "";
+  const pending = followUps(store, store.profiles[0]).find(
+    (task) => task.kind === "registration" && task.student.id === student.id,
+  )!;
+  assert.match(pending.detail, /nascimento/);
+  assert.ok(!pending.detail.includes("endereço"));
 });

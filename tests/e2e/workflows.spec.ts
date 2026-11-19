@@ -118,6 +118,7 @@ test("gera PDF e registra acompanhamento pedagógico", async ({ page }) => {
     .locator("nav")
     .getByRole("button", { name: "Relatórios", exact: true })
     .click();
+  await page.locator('[data-report-section="exports"] > summary').click();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exportar PDF" }).first().click();
   expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
@@ -1514,6 +1515,8 @@ test("relatório personalizado exporta somente as colunas marcadas em XLS e PDF"
     .locator("nav")
     .getByRole("button", { name: "Relatórios", exact: true })
     .click();
+  await page.locator('[data-report-section="exports"] > summary').click();
+  await page.locator('[data-report-section="custom"] > summary').click();
   const report = page.getByRole("region", {
     name: "Relatório personalizado",
     exact: true,
@@ -2631,6 +2634,7 @@ test("calendário seleciona intervalo por clique e ficha anual inclui dias sem a
   expect(event.class_id).toBe("c1");
   expect(event.unit_id).toBe("u1");
   await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  await page.locator('[data-report-section="signature"] > summary').click();
   const builder = page.getByRole("region", {
     name: "Emissão da ficha avaliativa",
   });
@@ -2721,6 +2725,7 @@ test("professor consulta calendário e só escolhe alunos da própria unidade pa
   ).toHaveCount(0);
   await expect(page.locator(".calendar-event-actions")).toHaveCount(0);
   await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  await page.locator('[data-report-section="signature"] > summary').click();
   const select = page.getByLabel("Aluno da ficha avaliativa");
   await expect(select.locator('option[value="s14"]')).toHaveCount(0);
   await select.selectOption("s1");
@@ -2913,6 +2918,7 @@ test("ficha permite excluir dias do PDF sem alterar o calendário", async ({
     page.getByTitle("Atualizar dados", { exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  await page.locator('[data-report-section="signature"] > summary').click();
   const builder = page.getByRole("region", {
     name: "Emissão da ficha avaliativa",
   });
@@ -2983,6 +2989,7 @@ test("calendário da ficha navega por meses e preserva seleção no celular", as
     page.getByTitle("Atualizar dados", { exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  await page.locator('[data-report-section="signature"] > summary').click();
   await page.setViewportSize({ width: 390, height: 844 });
   const builder = page.getByRole("region", {
     name: "Emissão da ficha avaliativa",
@@ -3224,4 +3231,37 @@ test("modal permite escolher blocos e o PDF inclui somente os marcados", async (
   await expect(
     modal.locator(".student-report-block-grid input:not(:checked)"),
   ).toHaveCount(0);
+});
+
+test("relatórios começam recolhidos, preservam escolhas e cabem no celular", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  const sections = page.locator(".reports-workspace > .report-section");
+  await expect(sections).toHaveCount(4);
+  await expect(page.locator(".report-section[open]")).toHaveCount(0);
+  await expect(page.getByLabel("Aluno da ficha avaliativa")).toHaveCount(0);
+  const signature = page.locator('[data-report-section="signature"] > summary');
+  await signature.click();
+  await page.getByLabel("Aluno da ficha avaliativa").selectOption("s1");
+  await signature.click();
+  await expect(page.getByLabel("Aluno da ficha avaliativa")).not.toBeVisible();
+  await signature.click();
+  await expect(page.getByLabel("Aluno da ficha avaliativa")).toHaveValue("s1");
+  await signature.click();
+  await page.locator('[data-report-section="exports"] > summary').click();
+  await expect(page.locator(".report-export-grid .report-card")).toHaveCount(4);
+  await expect(page.getByLabel("Turma dos registros")).toBeVisible();
+  await expect(
+    page.locator('[data-report-section="custom"]'),
+  ).not.toHaveAttribute("open", "");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "/tmp/reports-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1360, height: 1000 });
+  await page.screenshot({ path: "/tmp/reports-desktop.png", fullPage: true });
 });

@@ -50,8 +50,8 @@ export function DailyAnalysis({
           <span className="index-label">ACOMPANHAMENTO AUTOMÁTICO</span>
           <h2>Análise diária das unidades</h2>
           <p>
-            Indicadores consolidados pelo processamento diário. As datas de
-            execução ficam registradas.
+            Histórico diário. As pendências seguem os critérios vigentes na data
+            de cada cálculo.
           </p>
         </div>
         <CalendarCheck size={24} />

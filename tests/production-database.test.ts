@@ -1604,5 +1604,42 @@ test("esquema de produção: contas, fotos privadas e análise diária", async (
       );
     },
   );
+  await t.test(
+    "endereço opcional não entra nas pendências da análise diária",
+    async () => {
+      await db.exec("reset role");
+      await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+        id(1),
+      ]);
+      await db.exec(
+        readFileSync(
+          new URL("../supabase/016_optional_address.sql", import.meta.url),
+          "utf8",
+        ),
+      );
+      await db.query(
+        "insert into public.units(id,name) values($1,'Unidade endereço opcional')",
+        [id(1601)],
+      );
+      await db.query(
+        "insert into public.students(id,unit_id,name,guardian,guardian_phone,birth_date,address,enrollment_mode,registration_stage) values($1,$2,'Aluno completo','Responsável','71999999999','2010-01-01','','individual','complete')",
+        [id(1602), id(1601)],
+      );
+      await db.query("select public.run_daily_analytics()");
+      const pending = async () =>
+        (
+          await db.query<{ incomplete_registrations: number }>(
+            "select incomplete_registrations from public.daily_analytics where unit_id=$1 order by snapshot_date desc limit 1",
+            [id(1601)],
+          )
+        ).rows[0].incomplete_registrations;
+      assert.equal(Number(await pending()), 0);
+      await db.query("update public.students set birth_date='' where id=$1", [
+        id(1602),
+      ]);
+      await db.query("select public.run_daily_analytics()");
+      assert.equal(Number(await pending()), 1);
+    },
+  );
   await db.close();
 });

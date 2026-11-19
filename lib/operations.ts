@@ -50,7 +50,6 @@ export function followUps(
       !s.guardian && "responsável",
       !s.guardian_phone && "WhatsApp",
       !s.birth_date && "nascimento",
-      !s.address && "endereço",
     ].filter(Boolean);
     if (enrollmentStage(s) !== "complete" && profile.role !== "comercial")
       items.push({
