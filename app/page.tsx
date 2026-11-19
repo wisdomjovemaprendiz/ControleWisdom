@@ -244,6 +244,9 @@ export default function App() {
   const [importOpen, setImportOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [reportClass, setReportClass] = useState("all");
+  const [summaryClass, setSummaryClass] = useState("all"),
+    [summaryFrom, setSummaryFrom] = useState(""),
+    [summaryTo, setSummaryTo] = useState(today());
   const [dossierId, setDossierId] = useState<string | null>(null);
   const [studentReportSelection, setStudentReportSelection] = useState<{
     id: string;
@@ -1508,6 +1511,20 @@ export default function App() {
         (reportClass === INDIVIDUAL && !!l.student_id) ||
         l.class_id === reportClass),
   );
+  const summaryLessons = reportSource.lessons
+    .filter(
+      (lesson) =>
+        scoped(lesson.unit_id) &&
+        lesson.closed &&
+        !lesson.archived_at &&
+        (!summaryFrom || lesson.date >= summaryFrom) &&
+        (!summaryTo || lesson.date <= summaryTo) &&
+        (summaryClass === "all" ||
+          (summaryClass === INDIVIDUAL
+            ? !!lesson.student_id
+            : lesson.class_id === summaryClass)),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
   return (
     <div className="app-shell">
       <header className="institutional-header">
@@ -3031,55 +3048,118 @@ export default function App() {
                 description="Consulte os registros e prepare mensagens para o WhatsApp."
                 icon={ClipboardCheck}
               >
-                <section className="panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>Resumos de aula</h2>
-                      <p>
-                        Conteúdo, professor e chamada prontos para compartilhar
-                      </p>
-                    </div>
+                <section
+                  className="panel report-filters summary-filters"
+                  aria-label="Filtros dos resumos de aula"
+                >
+                  <strong>Filtrar resumos</strong>
+                  <label>
+                    Turma
+                    <select
+                      aria-label="Turma dos resumos"
+                      value={summaryClass}
+                      onChange={(event) => setSummaryClass(event.target.value)}
+                    >
+                      <option value="all">Todas as turmas</option>
+                      <option value={INDIVIDUAL}>Aulas individuais</option>
+                      {classes.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    De
+                    <input
+                      type="date"
+                      aria-label="Início do período dos resumos"
+                      max={summaryTo || today()}
+                      value={summaryFrom}
+                      onChange={(event) => {
+                        setSummaryFrom(event.target.value);
+                        if (summaryTo && event.target.value > summaryTo)
+                          setSummaryTo(event.target.value);
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Até
+                    <input
+                      type="date"
+                      aria-label="Fim do período dos resumos"
+                      min={summaryFrom}
+                      max={today()}
+                      value={summaryTo}
+                      onChange={(event) => {
+                        setSummaryTo(event.target.value);
+                        if (
+                          event.target.value &&
+                          summaryFrom > event.target.value
+                        )
+                          setSummaryFrom(event.target.value);
+                      }}
+                    />
+                  </label>
+                  <div className="summary-filter-actions">
+                    <span role="status">
+                      {summaryLessons.length}{" "}
+                      {summaryLessons.length === 1
+                        ? "aula encontrada"
+                        : "aulas encontradas"}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => {
+                        setSummaryClass("all");
+                        setSummaryFrom("");
+                        setSummaryTo(today());
+                      }}
+                    >
+                      Limpar filtros dos resumos
+                    </button>
                   </div>
-                  {reportLessons
-                    .sort((a, b) => b.date.localeCompare(a.date))
-                    .map((l) => (
-                      <div className="lesson-report" key={l.id}>
-                        <div>
-                          <strong>{lessonPlacement(store, l)}</strong>
-                          <small>
-                            {displayDate(l.date)} • {l.teacher}
-                          </small>
-                          <p>{l.topic}</p>
-                        </div>
-                        <div className="row-actions">
-                          <button
-                            className="secondary"
-                            onClick={() =>
-                              pdf(
-                                "Resumo da aula",
-                                attendanceReportLines(allRecords!, l),
-                              )
-                            }
-                          >
-                            <Download size={16} /> PDF
-                          </button>
-                          <button
-                            className="primary"
-                            onClick={() =>
-                              setMessage({
-                                title: "Resumo da aula",
-                                text: attendanceMessage(allRecords!, l),
-                                phone: "",
-                              })
-                            }
-                          >
-                            <MessageCircle size={17} /> WhatsApp
-                          </button>
-                        </div>
+                </section>
+                <section className="panel">
+                  {summaryLessons.map((l) => (
+                    <div className="lesson-report" key={l.id}>
+                      <div>
+                        <strong>{lessonPlacement(store, l)}</strong>
+                        <small>
+                          {displayDate(l.date)} • {l.teacher}
+                        </small>
+                        <p>{l.topic}</p>
                       </div>
-                    ))}
-                  {!reportLessons.length && (
-                    <Empty text="Nenhuma aula no período selecionado." />
+                      <div className="row-actions">
+                        <button
+                          className="secondary"
+                          onClick={() =>
+                            pdf(
+                              "Resumo da aula",
+                              attendanceReportLines(allRecords!, l),
+                            )
+                          }
+                        >
+                          <Download size={16} /> PDF
+                        </button>
+                        <button
+                          className="primary"
+                          onClick={() =>
+                            setMessage({
+                              title: "Resumo da aula",
+                              text: attendanceMessage(allRecords!, l),
+                              phone: "",
+                            })
+                          }
+                        >
+                          <MessageCircle size={17} /> WhatsApp
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {!summaryLessons.length && (
+                    <Empty text="Nenhuma aula encontrada para a turma e o período selecionados." />
                   )}
                 </section>
               </ReportSection>

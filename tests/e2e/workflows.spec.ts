@@ -3265,3 +3265,79 @@ test("relatórios começam recolhidos, preservam escolhas e cabem no celular", a
   await page.setViewportSize({ width: 1360, height: 1000 });
   await page.screenshot({ path: "/tmp/reports-desktop.png", fullPage: true });
 });
+
+test("resumos de aula filtram turma e período sem alterar outros relatórios", async ({
+  page,
+}) => {
+  const base = schoolApi.store.lessons[0];
+  schoolApi.store.lessons.push(
+    {
+      ...base,
+      id: "summary-c2",
+      class_id: "c2",
+      date: "2026-10-10",
+      topic: "Resumo da turma dois",
+    },
+    {
+      ...base,
+      id: "summary-individual",
+      class_id: null,
+      student_id: "s2",
+      date: "2026-10-11",
+      topic: "Resumo individual",
+    },
+  );
+  await page.getByTitle("Atualizar dados", { exact: true }).click();
+  await expect(
+    page.getByTitle("Atualizar dados", { exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  const toggle = page.locator('[data-report-section="lessons"] > summary');
+  await toggle.click();
+  const panel = page.locator('[data-report-section="lessons"]');
+  await expect(panel.locator(".lesson-report")).toHaveCount(5);
+  await panel.getByLabel("Início do período dos resumos").fill("2026-10-26");
+  await panel.getByLabel("Fim do período dos resumos").fill("2026-10-28");
+  await expect(panel.locator(".lesson-report")).toHaveCount(2);
+  await panel.getByLabel("Turma dos resumos").selectOption("c2");
+  await expect(panel.locator(".lesson-report")).toHaveCount(0);
+  await expect(panel).toContainText("Nenhuma aula encontrada");
+  await panel.getByLabel("Início do período dos resumos").fill("2026-10-01");
+  await expect(panel.locator(".lesson-report")).toHaveCount(1);
+  await expect(panel.locator(".lesson-report")).toContainText(
+    "Resumo da turma dois",
+  );
+  await panel.getByLabel("Turma dos resumos").selectOption("individual");
+  await expect(panel.locator(".lesson-report")).toHaveCount(1);
+  await expect(panel.locator(".lesson-report")).toContainText(
+    "Resumo individual",
+  );
+  await toggle.click();
+  await toggle.click();
+  await expect(panel.getByLabel("Início do período dos resumos")).toHaveValue(
+    "2026-10-01",
+  );
+  await panel.getByRole("button", { name: "WhatsApp", exact: true }).click();
+  await expect(page.getByLabel("Mensagem para WhatsApp")).toHaveValue(
+    /Resumo individual/,
+  );
+  await page
+    .getByRole("button", { name: "Fechar mensagem", exact: true })
+    .click();
+  await page.locator('[data-report-section="exports"] > summary').click();
+  await expect(page.getByLabel("Turma dos registros")).toHaveValue("all");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await panel
+    .getByRole("button", { name: "Limpar filtros dos resumos", exact: true })
+    .click();
+  await expect(panel.getByLabel("Turma dos resumos")).toHaveValue("all");
+  await expect(panel.getByLabel("Início do período dos resumos")).toHaveValue(
+    "",
+  );
+  await expect(panel.locator(".lesson-report")).toHaveCount(5);
+});
